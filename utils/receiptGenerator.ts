@@ -73,8 +73,8 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
   const actionTitle = movement_type === 'outgoing' ? 'استلام حوالة' : 'إرسال حوالة';
 
-  const primaryColor = movement_type === 'outgoing' ? '#3B82F6' : '#F97316';
-  const darkColor = movement_type === 'outgoing' ? '#2563EB' : '#EA580C';
+  const primaryColor = '#3B82F6';
+  const darkColor = '#2563EB';
 
   return `
 <!DOCTYPE html>

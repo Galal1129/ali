@@ -37,17 +37,17 @@ export default function ReceiptPreviewScreen() {
   const loadMovement = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data: movementData, error: movementError } = await supabase
         .from('account_movements')
-        .select('*')
+        .select('*, customers(name, account_number, phone)')
         .eq('id', movementId)
         .single();
 
-      if (error) throw error;
+      if (movementError) throw movementError;
 
-      if (data) {
-        setMovement(data);
-        await generateReceipt(data);
+      if (movementData) {
+        setMovement(movementData);
+        await generateReceipt(movementData);
       }
     } catch (error) {
       console.error('Error loading movement:', error);
@@ -57,13 +57,17 @@ export default function ReceiptPreviewScreen() {
     }
   };
 
-  const generateReceipt = async (movementData: AccountMovement) => {
+  const generateReceipt = async (movementData: any) => {
     try {
-      const qrData = generateQRCodeData({
+      const customerData = movementData.customers;
+      const receiptData = {
         ...movementData,
-        customerName: customerName as string,
-        customerAccountNumber: customerAccountNumber as string,
-      });
+        customerName: customerData?.name || (customerName as string) || 'عميل غير محدد',
+        customerAccountNumber: customerData?.account_number || (customerAccountNumber as string) || '0000000',
+        customerPhone: customerData?.phone,
+      };
+
+      const qrData = generateQRCodeData(receiptData);
 
       const qrCodeDataUrl = await new Promise<string>((resolve) => {
         setTimeout(async () => {
@@ -77,14 +81,7 @@ export default function ReceiptPreviewScreen() {
         }, 100);
       });
 
-      const html = generateReceiptHTML(
-        {
-          ...movementData,
-          customerName: customerName as string,
-          customerAccountNumber: customerAccountNumber as string,
-        },
-        qrCodeDataUrl
-      );
+      const html = generateReceiptHTML(receiptData, qrCodeDataUrl);
 
       setHtmlContent(html);
     } catch (error) {
@@ -214,8 +211,8 @@ export default function ReceiptPreviewScreen() {
           <QRCode
             value={generateQRCodeData({
               ...movement,
-              customerName: customerName as string,
-              customerAccountNumber: customerAccountNumber as string,
+              customerName: (movement as any).customers?.name || (customerName as string) || 'عميل غير محدد',
+              customerAccountNumber: (movement as any).customers?.account_number || (customerAccountNumber as string) || '0000000',
             })}
             size={120}
             getRef={(ref) => (qrRef.current = ref)}

@@ -338,7 +338,7 @@ export default function NewMovementScreen() {
               style={[
                 styles.movementTypeButton,
                 formData.movement_type === 'outgoing' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'outgoing' ? '#3B82F6' : '#F3F4F6' },
+                { backgroundColor: formData.movement_type === 'outgoing' ? '#10B981' : '#F3F4F6' },
               ]}
               onPress={() => setFormData({ ...formData, movement_type: 'outgoing' })}
             >
@@ -352,15 +352,15 @@ export default function NewMovementScreen() {
                   { color: formData.movement_type === 'outgoing' ? '#FFFFFF' : '#6B7280' },
                 ]}
               >
-                دفع
+                استلام من العميل
               </Text>
               <Text
                 style={[
                   styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'outgoing' ? '#DBEAFE' : '#9CA3AF' },
+                  { color: formData.movement_type === 'outgoing' ? '#D1FAE5' : '#9CA3AF' },
                 ]}
               >
-                العميل دفع لك
+                قبض من العميل
               </Text>
             </TouchableOpacity>
 
@@ -368,7 +368,7 @@ export default function NewMovementScreen() {
               style={[
                 styles.movementTypeButton,
                 formData.movement_type === 'incoming' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'incoming' ? '#F97316' : '#F3F4F6' },
+                { backgroundColor: formData.movement_type === 'incoming' ? '#3B82F6' : '#F3F4F6' },
               ]}
               onPress={() => setFormData({ ...formData, movement_type: 'incoming' })}
             >
@@ -382,15 +382,15 @@ export default function NewMovementScreen() {
                   { color: formData.movement_type === 'incoming' ? '#FFFFFF' : '#6B7280' },
                 ]}
               >
-                إرسال
+                تسليم للعميل
               </Text>
               <Text
                 style={[
                   styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'incoming' ? '#FFEDD5' : '#9CA3AF' },
+                  { color: formData.movement_type === 'incoming' ? '#DBEAFE' : '#9CA3AF' },
                 ]}
               >
-                أنت أرسلت له
+                صرف للعميل
               </Text>
             </TouchableOpacity>
           </View>

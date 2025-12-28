@@ -105,7 +105,9 @@ function calculateBalanceByCurrency(movements: AccountMovement[]): CurrencyBalan
   });
 
   Object.values(currencyMap).forEach((item) => {
-    item.balance = item.outgoing - item.incoming;
+    // الرصيد = التسليم - الاستلام
+    // رصيد موجب = "لنا عندك"، رصيد سالب = "لك عندنا"
+    item.balance = item.incoming - item.outgoing;
   });
 
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
@@ -187,9 +189,9 @@ export default function CustomerDetailsScreen() {
         balances.forEach((currBalance) => {
           const symbol = getCurrencySymbol(currBalance.currency);
           if (currBalance.balance > 0) {
-            message += `• لك عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
+            message += `• لنا عندك ${Math.round(currBalance.balance)} ${symbol}\n`;
           } else {
-            message += `• لنا عندك ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+            message += `• لك عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
           }
         });
       }
@@ -249,9 +251,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          accountText += `• لك عند العميل: ${Math.round(currBalance.balance)} ${symbol}\n`;
+          accountText += `• لنا عند العميل: ${Math.round(currBalance.balance)} ${symbol}\n`;
         } else {
-          accountText += `• للعميل عندك: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          accountText += `• للعميل عندنا: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       accountText += `\n`;
@@ -267,7 +269,7 @@ export default function CustomerDetailsScreen() {
         accountText += `-------------------------------------\n`;
         monthMovements.forEach((movement) => {
           const date = format(new Date(movement.created_at), 'dd/MM/yyyy', { locale: ar });
-          const type = movement.movement_type === 'incoming' ? 'دفع' : 'إرسال';
+          const type = movement.movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(Number(movement.amount))} ${symbol}\n`;
@@ -364,16 +366,16 @@ export default function CustomerDetailsScreen() {
             currencyBalances.map((currBalance) => (
               <View key={currBalance.currency} style={styles.currencyBalanceContainer}>
                 {currBalance.balance > 0 ? (
-                  <Text style={styles.summaryLineRed}>
-                    {customer.name} له عندك{' '}
-                    <Text style={styles.summaryAmountRed}>
+                  <Text style={styles.summaryLineGreen}>
+                    لنا عند {customer.name}{' '}
+                    <Text style={styles.summaryAmountGreen}>
                       {Math.round(currBalance.balance)} {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 ) : (
-                  <Text style={styles.summaryLineGreen}>
-                    لك عند {customer.name}{' '}
-                    <Text style={styles.summaryAmountGreen}>
+                  <Text style={styles.summaryLineRed}>
+                    {customer.name} له عندنا{' '}
+                    <Text style={styles.summaryAmountRed}>
                       {Math.round(Math.abs(currBalance.balance))} {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
@@ -446,11 +448,11 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementType,
                           {
-                            color: movement.movement_type === 'incoming' ? '#10B981' : '#EF4444',
+                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
-                        {movement.movement_type === 'incoming' ? 'دفع' : 'إرسال'}
+                        {movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم'}
                       </Text>
                       {movement.notes && (
                         <Text style={styles.movementNotes} numberOfLines={1}>
@@ -466,7 +468,7 @@ export default function CustomerDetailsScreen() {
                         styles.movementIcon,
                         {
                           backgroundColor:
-                            movement.movement_type === 'incoming' ? '#ECFDF5' : '#FEF2F2',
+                            movement.movement_type === 'outgoing' ? '#ECFDF5' : '#EFF6FF',
                         },
                       ]}
                     >
@@ -474,7 +476,7 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.currencySymbolText,
                           {
-                            color: movement.movement_type === 'incoming' ? '#10B981' : '#EF4444',
+                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
@@ -487,14 +489,14 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementAmountText,
                           {
-                            color: movement.movement_type === 'incoming' ? '#10B981' : '#EF4444',
+                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
                         {Math.round(Number(movement.amount))}
                       </Text>
                       <Text style={styles.movementLabel}>
-                        {movement.movement_type === 'incoming' ? 'لك' : 'للعميل'}
+                        {movement.movement_type === 'outgoing' ? 'من العميل' : 'للعميل'}
                       </Text>
                     </View>
                   </TouchableOpacity>

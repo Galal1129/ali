@@ -71,7 +71,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
   const amountInWords = numberToArabicTextWithCurrency(totalAmount, currency as Currency);
 
-  const actionTitle = movement_type === 'outgoing' ? 'استلام حوالة' : 'إرسال حوالة';
+  const actionTitle = movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
 
   const primaryColor = '#3B82F6';
   const darkColor = '#2563EB';
@@ -850,7 +850,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
           <div class="notice-row">
             <div class="notice-box">
-              نود إشعاركم أننا ${movement_type === 'outgoing' ? 'خصمنا من حسابكم لدينا' : 'أضفنا إلى حسابكم لدينا'} حسب توجيهكم لنا بـ${actionTitle} حسب التفاصيل التالية
+              نود إشعاركم أننا ${movement_type === 'outgoing' ? 'استلمنا منكم' : 'سلمنا لكم'} حسب توجيهكم لنا بـ${actionTitle} حسب التفاصيل التالية
             </div>
           </div>
 

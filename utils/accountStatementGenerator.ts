@@ -60,7 +60,9 @@ export function generateAccountStatementHTML(
 
     currMovements.forEach((movement) => {
       const amount = Number(movement.amount);
-      if (movement.movement_type === 'outgoing') {
+      // incoming = تسليم للعميل (يضيف للرصيد)
+      // outgoing = استلام من العميل (يخصم من الرصيد)
+      if (movement.movement_type === 'incoming') {
         runningBalance += amount;
       } else {
         runningBalance -= amount;
@@ -80,11 +82,15 @@ export function generateAccountStatementHTML(
       .filter(m => m.movement_type === 'incoming')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    const finalBalance = totalOutgoing - totalIncoming;
+    // الرصيد = التسليم - الاستلام
+    // رصيد موجب = "لنا عنده"، رصيد سالب = "له عندنا"
+    const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
 
     const movementRows = movementsWithBalance
       .map((movement) => {
+        // رصيد موجب = "لنا عنده" (يعرض عليه)
+        // رصيد سالب = "له عندنا" (يعرض له)
         const balanceDisplay = movement.runningBalance > 0
           ? `${Math.round(movement.runningBalance).toLocaleString('en-US')}- ${currencyName}`
           : movement.runningBalance < 0
@@ -95,8 +101,8 @@ export function generateAccountStatementHTML(
         <tr>
           <td class="cell">${format(new Date(movement.created_at), 'dd-MM-yyyy')}</td>
           <td class="cell">${movement.notes || movement.movement_number}</td>
-          <td class="cell text-center">${movement.movement_type === 'outgoing' ? Math.round(Number(movement.amount)).toLocaleString('en-US') : ''}</td>
           <td class="cell text-center">${movement.movement_type === 'incoming' ? Math.round(Number(movement.amount)).toLocaleString('en-US') : ''}</td>
+          <td class="cell text-center">${movement.movement_type === 'outgoing' ? Math.round(Number(movement.amount)).toLocaleString('en-US') : ''}</td>
           <td class="cell text-center">${balanceDisplay}</td>
         </tr>
         `;
@@ -119,8 +125,8 @@ export function generateAccountStatementHTML(
           <tr>
             <th>التاريخ</th>
             <th>التفاصيل</th>
-            <th>عليه</th>
             <th>له</th>
+            <th>عليه</th>
             <th>الرصيد</th>
           </tr>
         </thead>
@@ -128,8 +134,8 @@ export function generateAccountStatementHTML(
           ${movementRows}
           <tr class="total-row">
             <td colspan="2" class="cell text-center">إجمالي العمليات</td>
-            <td class="cell text-center">${Math.round(totalOutgoing).toLocaleString('en-US')}</td>
             <td class="cell text-center">${Math.round(totalIncoming).toLocaleString('en-US')}</td>
+            <td class="cell text-center">${Math.round(totalOutgoing).toLocaleString('en-US')}</td>
             <td class="cell text-center"></td>
           </tr>
           <tr class="final-row">

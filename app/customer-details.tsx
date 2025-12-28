@@ -415,7 +415,15 @@ export default function CustomerDetailsScreen() {
               <View key={monthYear}>
                 <Text style={styles.monthHeader}>{monthYear}</Text>
                 {monthMovements.map((movement) => (
-                  <View key={movement.id} style={styles.movementRow}>
+                  <TouchableOpacity
+                    key={movement.id}
+                    style={styles.movementRow}
+                    activeOpacity={0.7}
+                    onPress={() => router.push({
+                      pathname: '/movement-details',
+                      params: { movementId: movement.id }
+                    })}
+                  >
                     <View style={styles.movementDate}>
                       <Text style={styles.movementDateMonth}>
                         {format(new Date(movement.created_at), 'MMM', { locale: ar })}
@@ -485,7 +493,7 @@ export default function CustomerDetailsScreen() {
                         {movement.movement_type === 'incoming' ? 'لك' : 'للعميل'}
                       </Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             ))

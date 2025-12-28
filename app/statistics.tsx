@@ -383,10 +383,10 @@ export default function StatisticsScreen() {
                     <View style={styles.balanceRow}>
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
-                          <TrendingDown size={18} color="#10B981" />
+                          <TrendingUp size={18} color="#EF4444" />
                           <Text style={styles.balanceItemLabel}>استلمت منه (صادر)</Text>
                         </View>
-                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
+                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
                           {balance.total_outgoing.toFixed(2)}
                         </Text>
                       </View>
@@ -395,10 +395,10 @@ export default function StatisticsScreen() {
 
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
-                          <TrendingUp size={18} color="#EF4444" />
+                          <TrendingDown size={18} color="#10B981" />
                           <Text style={styles.balanceItemLabel}>سلمت له (وارد)</Text>
                         </View>
-                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
+                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
                           {balance.total_incoming.toFixed(2)}
                         </Text>
                       </View>
@@ -413,7 +413,7 @@ export default function StatisticsScreen() {
                           style={[
                             styles.netBalanceValue,
                             {
-                              color: isPositive ? '#10B981' : isNegative ? '#EF4444' : '#6B7280',
+                              color: isPositive ? '#EF4444' : isNegative ? '#10B981' : '#6B7280',
                             },
                           ]}
                         >
@@ -423,9 +423,9 @@ export default function StatisticsScreen() {
                       </View>
                       <Text style={styles.netBalanceDescription}>
                         {isPositive
-                          ? 'لك (استلمت أكثر مما سلمت)'
+                          ? 'عليك (استلمت أكثر مما سلمت)'
                           : isNegative
-                          ? 'عليك (سلمت أكثر مما استلمت)'
+                          ? 'لك (سلمت أكثر مما استلمت)'
                           : 'متوازن'}
                       </Text>
                     </View>

@@ -21,6 +21,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
 import { AccountMovement } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
+import { getLogoBase64 } from '@/utils/logoHelper';
 
 export default function ReceiptPreviewScreen() {
   const router = useRouter();
@@ -81,7 +82,9 @@ export default function ReceiptPreviewScreen() {
         }, 100);
       });
 
-      const html = generateReceiptHTML(receiptData, qrCodeDataUrl);
+      const logoDataUrl = await getLogoBase64();
+
+      const html = generateReceiptHTML(receiptData, qrCodeDataUrl, logoDataUrl);
 
       setHtmlContent(html);
     } catch (error) {

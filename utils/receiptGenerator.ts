@@ -37,7 +37,7 @@ export function generateQRCodeData(receiptData: ReceiptData): string {
   return JSON.stringify(qrData);
 }
 
-export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: string): string {
+export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: string, logoDataUrl?: string): string {
   const {
     receipt_number,
     customerName,
@@ -216,6 +216,13 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       direction: ltr;
       letter-spacing: 0.8px;
       white-space: nowrap;
+    }
+
+    .company-logo {
+      height: 100px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));
     }
 
     .company-name-ar-line {
@@ -798,8 +805,11 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
           </div>
 
           <div class="header-center">
-            <div class="company-name-ar-line">الترف</div>
-            <div class="company-name-ar-line">للتحويلات المالية</div>
+            ${logoDataUrl
+              ? `<img src="${logoDataUrl}" alt="Logo" class="company-logo" />`
+              : `<div class="company-name-ar-line">الترف</div>
+                 <div class="company-name-ar-line">للتحويلات المالية</div>`
+            }
             <div class="company-name-en">Al-Taraf</div>
           </div>
 

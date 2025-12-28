@@ -1,5 +1,6 @@
 import { AccountMovement } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
+import { getLogoBase64 } from '@/utils/logoHelper';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -17,13 +18,16 @@ interface GenerateReceiptParams {
 export async function generateAndShareReceipt(params: GenerateReceiptParams): Promise<void> {
   const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
 
+  const logoDataUrl = await getLogoBase64();
+
   const html = generateReceiptHTML(
     {
       ...movement,
       customerName,
       ...extraData,
     },
-    qrCodeDataUrl || getPlaceholderQRCode()
+    qrCodeDataUrl || getPlaceholderQRCode(),
+    logoDataUrl
   );
 
   const { uri } = await Print.printToFileAsync({
@@ -54,13 +58,16 @@ export async function generateAndShareReceipt(params: GenerateReceiptParams): Pr
 export async function printReceipt(params: GenerateReceiptParams): Promise<void> {
   const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
 
+  const logoDataUrl = await getLogoBase64();
+
   const html = generateReceiptHTML(
     {
       ...movement,
       customerName,
       ...extraData,
     },
-    qrCodeDataUrl || getPlaceholderQRCode()
+    qrCodeDataUrl || getPlaceholderQRCode(),
+    logoDataUrl
   );
 
   await Print.printAsync({

@@ -219,7 +219,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     }
 
     .company-logo {
-      height: 100px;
+      height: 60px;
       width: auto;
       object-fit: contain;
       filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));

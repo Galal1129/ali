@@ -413,7 +413,7 @@ export default function StatisticsScreen() {
                           style={[
                             styles.netBalanceValue,
                             {
-                              color: isPositive ? '#EF4444' : isNegative ? '#10B981' : '#6B7280',
+                              color: isPositive ? '#10B981' : isNegative ? '#EF4444' : '#6B7280',
                             },
                           ]}
                         >
@@ -423,9 +423,9 @@ export default function StatisticsScreen() {
                       </View>
                       <Text style={styles.netBalanceDescription}>
                         {isPositive
-                          ? 'عليك (استلمت أكثر مما سلمت)'
+                          ? 'لك عندهم (استلمت أكثر مما سلمت)'
                           : isNegative
-                          ? 'لك (سلمت أكثر مما استلمت)'
+                          ? 'عليك (سلمت أكثر مما استلمت)'
                           : 'متوازن'}
                       </Text>
                     </View>

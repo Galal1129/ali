@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download } from 'lucide-react-native';
+import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import QRCode from 'react-native-qrcode-svg';
@@ -39,6 +39,7 @@ export default function NewMovementScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedMovementData, setSavedMovementData] = useState<any>(null);
   const [isSavingPdf, setIsSavingPdf] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
     customer_id: '',
@@ -246,7 +247,19 @@ export default function NewMovementScreen() {
       return newFormData;
     });
     setShowCustomerPicker(false);
+    setSearchQuery('');
   };
+
+  const filteredCustomers = customers.filter((customer) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
+    return (
+      customer.name.toLowerCase().includes(query) ||
+      customer.phone.toLowerCase().includes(query) ||
+      customer.account_number.toLowerCase().includes(query)
+    );
+  });
 
   const selectCurrency = (currency: Currency) => {
     setFormData({ ...formData, currency });
@@ -522,31 +535,65 @@ export default function NewMovementScreen() {
         visible={showCustomerPicker}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowCustomerPicker(false)}
+        onRequestClose={() => {
+          setShowCustomerPicker(false);
+          setSearchQuery('');
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>اختر عميل</Text>
-            <ScrollView style={styles.modalList}>
-              {customers.map((customer) => (
+
+            <View style={styles.searchContainer}>
+              <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="ابحث بالاسم، الهاتف، أو رقم الحساب"
+                placeholderTextColor="#9CA3AF"
+                textAlign="right"
+              />
+              {searchQuery.length > 0 && (
                 <TouchableOpacity
-                  key={customer.id}
-                  style={styles.modalItem}
-                  onPress={() => selectCustomer(customer)}
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearSearchButton}
                 >
-                  <Text style={styles.modalItemText}>{customer.name}</Text>
-                  <View style={styles.modalItemInfo}>
-                    <Text style={styles.modalItemSubtext}>{customer.phone}</Text>
-                    <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
-                      رقم الحساب: {customer.account_number}
-                    </Text>
-                  </View>
+                  <X size={18} color="#6B7280" />
                 </TouchableOpacity>
-              ))}
+              )}
+            </View>
+
+            <ScrollView style={styles.modalList}>
+              {filteredCustomers.length > 0 ? (
+                filteredCustomers.map((customer) => (
+                  <TouchableOpacity
+                    key={customer.id}
+                    style={styles.modalItem}
+                    onPress={() => selectCustomer(customer)}
+                  >
+                    <Text style={styles.modalItemText}>{customer.name}</Text>
+                    <View style={styles.modalItemInfo}>
+                      <Text style={styles.modalItemSubtext}>{customer.phone}</Text>
+                      <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
+                        رقم الحساب: {customer.account_number}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.emptySearchResult}>
+                  <Text style={styles.emptySearchText}>لا توجد نتائج مطابقة</Text>
+                  <Text style={styles.emptySearchSubtext}>جرب البحث بكلمات أخرى</Text>
+                </View>
+              )}
             </ScrollView>
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setShowCustomerPicker(false)}
+              onPress={() => {
+                setShowCustomerPicker(false);
+                setSearchQuery('');
+              }}
             >
               <Text style={styles.modalCloseButtonText}>إغلاق</Text>
             </TouchableOpacity>
@@ -971,6 +1018,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#374151',
+    textAlign: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchIcon: {
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+  },
+  clearSearchButton: {
+    padding: 4,
+    marginRight: 4,
+  },
+  emptySearchResult: {
+    paddingVertical: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptySearchText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySearchSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
     textAlign: 'center',
   },
   successModalContainer: {

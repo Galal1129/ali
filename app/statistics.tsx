@@ -7,46 +7,39 @@ import {
   RefreshControl,
   I18nManager,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, TrendingUp, Users, DollarSign, AlertCircle, Calendar, TrendingDown, Coins } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
-import { format, subDays } from 'date-fns';
+import {
+  ArrowRight,
+  TrendingUp,
+  Users,
+  DollarSign,
+  AlertCircle,
+  Calendar,
+  TrendingDown,
+  Coins,
+  ArrowLeftRight,
+  Trophy,
+  Percent,
+  Activity
+} from 'lucide-react-native';
+import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { TotalBalanceByCurrency, CURRENCIES } from '@/types/database';
+import { StatisticsService, StatisticsData } from '@/services/statisticsService';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
 
-interface Stats {
-  totalCustomers: number;
-  totalTransactions: number;
-  totalAmount: number;
-  totalDebts: number;
-  todayTransactions: number;
-  todayAmount: number;
-  weekTransactions: number;
-  weekAmount: number;
-  monthTransactions: number;
-  monthAmount: number;
-}
+type PeriodFilter = 'today' | 'yesterday' | 'week' | 'month';
 
 export default function StatisticsScreen() {
   const router = useRouter();
-  const [stats, setStats] = useState<Stats>({
-    totalCustomers: 0,
-    totalTransactions: 0,
-    totalAmount: 0,
-    totalDebts: 0,
-    todayTransactions: 0,
-    todayAmount: 0,
-    weekTransactions: 0,
-    weekAmount: 0,
-    monthTransactions: 0,
-    monthAmount: 0,
-  });
-  const [currencyBalances, setCurrencyBalances] = useState<TotalBalanceByCurrency[]>([]);
+  const [stats, setStats] = useState<StatisticsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('today');
 
   useEffect(() => {
     loadStats();
@@ -54,69 +47,13 @@ export default function StatisticsScreen() {
 
   const loadStats = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const weekAgo = subDays(new Date(), 7).toISOString().split('T')[0];
-      const monthAgo = subDays(new Date(), 30).toISOString().split('T')[0];
-
-      const [
-        customersResult,
-        allTransactionsResult,
-        todayTransactionsResult,
-        weekTransactionsResult,
-        monthTransactionsResult,
-        debtsResult,
-        currencyBalancesResult,
-      ] = await Promise.all([
-        supabase.from('customers').select('id', { count: 'exact' }),
-        supabase.from('transactions').select('amount_sent'),
-        supabase.from('transactions').select('amount_sent').gte('created_at', today),
-        supabase.from('transactions').select('amount_sent').gte('created_at', weekAgo),
-        supabase.from('transactions').select('amount_sent').gte('created_at', monthAgo),
-        supabase.from('debts').select('amount, paid_amount').eq('status', 'pending'),
-        supabase.from('total_balances_by_currency').select('*'),
-      ]);
-
-      const totalAmount = allTransactionsResult.data?.reduce(
-        (sum, t) => sum + Number(t.amount_sent),
-        0
-      ) || 0;
-
-      const todayAmount = todayTransactionsResult.data?.reduce(
-        (sum, t) => sum + Number(t.amount_sent),
-        0
-      ) || 0;
-
-      const weekAmount = weekTransactionsResult.data?.reduce(
-        (sum, t) => sum + Number(t.amount_sent),
-        0
-      ) || 0;
-
-      const monthAmount = monthTransactionsResult.data?.reduce(
-        (sum, t) => sum + Number(t.amount_sent),
-        0
-      ) || 0;
-
-      const totalDebts = debtsResult.data?.reduce(
-        (sum, d) => sum + (Number(d.amount) - Number(d.paid_amount)),
-        0
-      ) || 0;
-
-      setStats({
-        totalCustomers: customersResult.count || 0,
-        totalTransactions: allTransactionsResult.data?.length || 0,
-        totalAmount,
-        totalDebts,
-        todayTransactions: todayTransactionsResult.data?.length || 0,
-        todayAmount,
-        weekTransactions: weekTransactionsResult.data?.length || 0,
-        weekAmount,
-        monthTransactions: monthTransactionsResult.data?.length || 0,
-        monthAmount,
-      });
-
-      setCurrencyBalances(currencyBalancesResult.data || []);
+      setLoading(true);
+      const data = await StatisticsService.fetchAllStatistics();
+      setStats(data);
     } catch (error) {
       console.error('Error loading stats:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,6 +67,52 @@ export default function StatisticsScreen() {
     const currency = CURRENCIES.find((c) => c.code === code);
     return currency || { code, name: code, symbol: code };
   };
+
+  const getPeriodLabel = (period: PeriodFilter) => {
+    switch (period) {
+      case 'today':
+        return 'اليوم';
+      case 'yesterday':
+        return 'أمس';
+      case 'week':
+        return 'آخر 7 أيام';
+      case 'month':
+        return 'آخر 30 يوم';
+    }
+  };
+
+  const getPeriodColor = (period: PeriodFilter) => {
+    switch (period) {
+      case 'today':
+        return '#4F46E5';
+      case 'yesterday':
+        return '#8B5CF6';
+      case 'week':
+        return '#10B981';
+      case 'month':
+        return '#F59E0B';
+    }
+  };
+
+  if (loading || !stats) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowRight size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الإحصائيات</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4F46E5" />
+          <Text style={styles.loadingText}>جاري تحميل الإحصائيات...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const currentPeriodStats = stats.periodStats[selectedPeriod];
 
   const statCards = [
     {
@@ -147,6 +130,13 @@ export default function StatisticsScreen() {
       bgColor: '#ECFDF5',
     },
     {
+      title: 'إجمالي الحركات',
+      value: stats.totalMovements.toString(),
+      icon: ArrowLeftRight,
+      color: '#8B5CF6',
+      bgColor: '#F3E8FF',
+    },
+    {
       title: 'إجمالي المبالغ',
       value: `${stats.totalAmount.toFixed(0)} $`,
       icon: DollarSign,
@@ -154,32 +144,18 @@ export default function StatisticsScreen() {
       bgColor: '#FEF3C7',
     },
     {
+      title: 'إجمالي العمولات',
+      value: `${stats.commissionStats.totalCommission.toFixed(0)}`,
+      icon: Percent,
+      color: '#06B6D4',
+      bgColor: '#CFFAFE',
+    },
+    {
       title: 'إجمالي الديون',
       value: `${stats.totalDebts.toFixed(0)} $`,
       icon: AlertCircle,
       color: '#EF4444',
       bgColor: '#FEE2E2',
-    },
-  ];
-
-  const periodStats = [
-    {
-      title: 'حوالات اليوم',
-      transactions: stats.todayTransactions,
-      amount: stats.todayAmount,
-      color: '#4F46E5',
-    },
-    {
-      title: 'حوالات الأسبوع',
-      transactions: stats.weekTransactions,
-      amount: stats.weekAmount,
-      color: '#10B981',
-    },
-    {
-      title: 'حوالات الشهر',
-      transactions: stats.monthTransactions,
-      amount: stats.monthAmount,
-      color: '#F59E0B',
     },
   ];
 
@@ -208,46 +184,188 @@ export default function StatisticsScreen() {
         </View>
 
         <View style={styles.periodSection}>
-          <Text style={styles.sectionTitle}>إحصائيات الفترات</Text>
-          {periodStats.map((period, index) => (
-            <View key={index} style={styles.periodCard}>
-              <View style={styles.periodHeader}>
-                <Text style={styles.periodTitle}>{period.title}</Text>
-                <View style={[styles.periodBadge, { backgroundColor: `${period.color}15` }]}>
-                  <Calendar size={16} color={period.color} />
-                </View>
-              </View>
-              <View style={styles.periodStats}>
-                <View style={styles.periodStat}>
-                  <Text style={styles.periodStatLabel}>عدد الحوالات</Text>
-                  <Text style={[styles.periodStatValue, { color: period.color }]}>
-                    {period.transactions}
-                  </Text>
-                </View>
-                <View style={styles.periodDivider} />
-                <View style={styles.periodStat}>
-                  <Text style={styles.periodStatLabel}>إجمالي المبلغ</Text>
-                  <Text style={[styles.periodStatValue, { color: period.color }]}>
-                    ${period.amount.toFixed(0)}
-                  </Text>
-                </View>
+          <View style={styles.sectionHeader}>
+            <Activity size={24} color="#4F46E5" />
+            <Text style={styles.sectionTitle}>إحصائيات الفترات</Text>
+          </View>
+
+          <View style={styles.periodFilterContainer}>
+            {(['today', 'yesterday', 'week', 'month'] as PeriodFilter[]).map((period) => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.periodFilterButton,
+                  selectedPeriod === period && {
+                    backgroundColor: getPeriodColor(period),
+                  },
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text
+                  style={[
+                    styles.periodFilterText,
+                    selectedPeriod === period && styles.periodFilterTextActive,
+                  ]}
+                >
+                  {getPeriodLabel(period)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.periodCard}>
+            <View style={styles.periodHeader}>
+              <Text style={styles.periodTitle}>{getPeriodLabel(selectedPeriod)}</Text>
+              <View
+                style={[
+                  styles.periodBadge,
+                  { backgroundColor: `${getPeriodColor(selectedPeriod)}15` },
+                ]}
+              >
+                <Calendar size={16} color={getPeriodColor(selectedPeriod)} />
               </View>
             </View>
-          ))}
+
+            <View style={styles.periodStatsGrid}>
+              <View style={styles.periodStatBox}>
+                <Text style={styles.periodStatLabel}>الحوالات</Text>
+                <Text
+                  style={[
+                    styles.periodStatValue,
+                    { color: getPeriodColor(selectedPeriod) },
+                  ]}
+                >
+                  {currentPeriodStats.transactions}
+                </Text>
+                <Text style={styles.periodStatAmount}>
+                  ${currentPeriodStats.transactionAmount.toFixed(0)}
+                </Text>
+              </View>
+
+              <View style={styles.periodDivider} />
+
+              <View style={styles.periodStatBox}>
+                <Text style={styles.periodStatLabel}>الحركات</Text>
+                <Text
+                  style={[
+                    styles.periodStatValue,
+                    { color: getPeriodColor(selectedPeriod) },
+                  ]}
+                >
+                  {currentPeriodStats.movements}
+                </Text>
+                <Text style={styles.periodStatAmount}>
+                  ${currentPeriodStats.movementAmount.toFixed(0)}
+                </Text>
+              </View>
+
+              <View style={styles.periodDivider} />
+
+              <View style={styles.periodStatBox}>
+                <Text style={styles.periodStatLabel}>العمولات</Text>
+                <Text
+                  style={[
+                    styles.periodStatValue,
+                    { color: getPeriodColor(selectedPeriod) },
+                  ]}
+                >
+                  {currentPeriodStats.commissionAmount > 0 ? '✓' : '-'}
+                </Text>
+                <Text style={styles.periodStatAmount}>
+                  ${currentPeriodStats.commissionAmount.toFixed(0)}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
+        {stats.commissionStats.commissionByCurrency.length > 0 && (
+          <View style={styles.commissionSection}>
+            <View style={styles.sectionHeader}>
+              <Percent size={24} color="#06B6D4" />
+              <Text style={styles.sectionTitle}>العمولات حسب العملة</Text>
+            </View>
+
+            <View style={styles.commissionGrid}>
+              {stats.commissionStats.commissionByCurrency.map((item, index) => {
+                const currencyInfo = getCurrencyInfo(item.currency);
+                return (
+                  <View key={index} style={styles.commissionCard}>
+                    <Text style={styles.commissionCurrency}>{currencyInfo.symbol}</Text>
+                    <Text style={styles.commissionAmount}>
+                      {item.total.toFixed(2)}
+                    </Text>
+                    <Text style={styles.commissionLabel}>{currencyInfo.name}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {stats.topCustomers.length > 0 && (
+          <View style={styles.topCustomersSection}>
+            <View style={styles.sectionHeader}>
+              <Trophy size={24} color="#F59E0B" />
+              <Text style={styles.sectionTitle}>أكثر العملاء نشاطاً</Text>
+            </View>
+
+            {stats.topCustomers.map((customer, index) => (
+              <View key={customer.id} style={styles.topCustomerCard}>
+                <View style={styles.topCustomerRank}>
+                  <Text style={styles.topCustomerRankText}>{index + 1}</Text>
+                </View>
+
+                <View style={styles.topCustomerInfo}>
+                  <Text style={styles.topCustomerName}>{customer.name}</Text>
+                  <Text style={styles.topCustomerPhone}>{customer.phone}</Text>
+                </View>
+
+                <View style={styles.topCustomerStats}>
+                  <View style={styles.topCustomerStatItem}>
+                    <Text style={styles.topCustomerStatLabel}>الحركات</Text>
+                    <Text style={styles.topCustomerStatValue}>
+                      {customer.totalMovements}
+                    </Text>
+                  </View>
+                  <View style={styles.topCustomerStatDivider} />
+                  <View style={styles.topCustomerStatItem}>
+                    <Text style={styles.topCustomerStatLabel}>الرصيد</Text>
+                    <Text
+                      style={[
+                        styles.topCustomerStatValue,
+                        {
+                          color:
+                            customer.balance > 0
+                              ? '#10B981'
+                              : customer.balance < 0
+                              ? '#EF4444'
+                              : '#6B7280',
+                        },
+                      ]}
+                    >
+                      {customer.balance > 0 && '+'}
+                      {customer.balance.toFixed(0)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.balancesSection}>
-          <View style={styles.balancesSectionHeader}>
+          <View style={styles.sectionHeader}>
             <Coins size={24} color="#4F46E5" />
             <Text style={styles.sectionTitle}>مطابقة المبالغ حسب العملات</Text>
           </View>
 
-          {currencyBalances.length === 0 ? (
+          {stats.currencyBalances.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>لا توجد حركات بعد</Text>
             </View>
           ) : (
-            currencyBalances.map((balance, index) => {
+            stats.currencyBalances.map((balance, index) => {
               const currencyInfo = getCurrencyInfo(balance.currency);
               const isPositive = balance.balance > 0;
               const isNegative = balance.balance < 0;
@@ -352,6 +470,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -380,12 +508,40 @@ const styles = StyleSheet.create({
   periodSection: {
     padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 16,
     textAlign: 'right',
+  },
+  periodFilterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  periodFilterButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+  },
+  periodFilterText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  periodFilterTextActive: {
+    color: '#FFFFFF',
   },
   periodCard: {
     backgroundColor: '#FFFFFF',
@@ -402,7 +558,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   periodTitle: {
     fontSize: 18,
@@ -416,36 +572,137 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  periodStats: {
+  periodStatsGrid: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  periodStat: {
+  periodStatBox: {
     flex: 1,
     alignItems: 'center',
+    gap: 8,
   },
   periodStatLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    marginBottom: 8,
   },
   periodStatValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
   },
+  periodStatAmount: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
   periodDivider: {
+    width: 1,
+    height: 70,
+    backgroundColor: '#E5E7EB',
+  },
+  commissionSection: {
+    padding: 16,
+  },
+  commissionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  commissionCard: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  commissionCurrency: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#06B6D4',
+    marginBottom: 8,
+  },
+  commissionAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  commissionLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  topCustomersSection: {
+    padding: 16,
+  },
+  topCustomerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  topCustomerRank: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topCustomerRankText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  topCustomerInfo: {
+    flex: 1,
+  },
+  topCustomerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  topCustomerPhone: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  topCustomerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  topCustomerStatItem: {
+    alignItems: 'center',
+  },
+  topCustomerStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  topCustomerStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  topCustomerStatDivider: {
     width: 1,
     height: 40,
     backgroundColor: '#E5E7EB',
   },
   balancesSection: {
     padding: 16,
-  },
-  balancesSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
   },
   emptyState: {
     backgroundColor: '#FFFFFF',

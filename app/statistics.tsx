@@ -38,6 +38,7 @@ export default function StatisticsScreen() {
   const [stats, setStats] = useState<StatisticsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('today');
 
   useEffect(() => {
@@ -47,10 +48,12 @@ export default function StatisticsScreen() {
   const loadStats = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await StatisticsService.fetchAllStatistics();
       setStats(data);
     } catch (error) {
       console.error('Error loading stats:', error);
+      setError(error instanceof Error ? error.message : 'حدث خطأ أثناء تحميل الإحصاءات');
     } finally {
       setLoading(false);
     }
@@ -93,7 +96,7 @@ export default function StatisticsScreen() {
     }
   };
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -106,6 +109,52 @@ export default function StatisticsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text style={styles.loadingText}>جاري تحميل الإحصائيات...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowRight size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الإحصائيات</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.errorContainer}>
+          <AlertCircle size={64} color="#EF4444" />
+          <Text style={styles.errorTitle}>خطأ في تحميل الإحصاءات</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadStats}>
+            <Text style={styles.retryButtonText}>إعادة المحاولة</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowRight size={24} color="#111827" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>الإحصائيات</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.emptyStateContainer}>
+          <AlertCircle size={64} color="#9CA3AF" />
+          <Text style={styles.emptyStateTitle}>لا توجد بيانات</Text>
+          <Text style={styles.emptyStateMessage}>
+            لم يتم العثور على أي إحصاءات. يرجى المحاولة مرة أخرى.
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadStats}>
+            <Text style={styles.retryButtonText}>تحديث</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -509,6 +558,56 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4F46E5',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  emptyStateMessage: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   statsGrid: {
     flexDirection: 'row',

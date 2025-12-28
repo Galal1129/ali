@@ -104,7 +104,12 @@ export class StatisticsService {
       .order('total_movements', { ascending: false })
       .limit(limit);
 
-    if (error || !data) {
+    if (error) {
+      console.error('Error fetching top customers:', error);
+      return [];
+    }
+
+    if (!data) {
       return [];
     }
 
@@ -113,7 +118,7 @@ export class StatisticsService {
       name: customer.name,
       phone: customer.phone,
       totalMovements: customer.total_movements || 0,
-      balance: customer.balance || 0,
+      balance: Number(customer.balance) || 0,
       lastActivity: customer.updated_at || customer.created_at,
     }));
   }
@@ -125,7 +130,15 @@ export class StatisticsService {
       .not('commission', 'is', null)
       .gt('commission', 0);
 
-    if (error || !data) {
+    if (error) {
+      console.error('Error fetching commission stats:', error);
+      return {
+        totalCommission: 0,
+        commissionByCurrency: [],
+      };
+    }
+
+    if (!data || data.length === 0) {
       return {
         totalCommission: 0,
         commissionByCurrency: [],
@@ -166,7 +179,17 @@ export class StatisticsService {
       .from('customer_balances_by_currency')
       .select('*');
 
-    if (error || !balances) {
+    if (error) {
+      console.error('Error fetching debt stats:', error);
+      return {
+        totalOwedToUs: 0,
+        totalWeOwe: 0,
+        owedToUsByCurrency: [],
+        weOweByCurrency: [],
+      };
+    }
+
+    if (!balances || balances.length === 0) {
       return {
         totalOwedToUs: 0,
         totalWeOwe: 0,
@@ -214,7 +237,12 @@ export class StatisticsService {
       .from('account_movements')
       .select('amount, currency, movement_type');
 
-    if (error || !movements) {
+    if (error) {
+      console.error('Error fetching cash flow:', error);
+      return [];
+    }
+
+    if (!movements || movements.length === 0) {
       return [];
     }
 
@@ -248,62 +276,80 @@ export class StatisticsService {
   }
 
   static async fetchAllStatistics(): Promise<StatisticsData> {
-    const now = new Date();
-    const today = now;
-    const yesterday = subDays(now, 1);
-    const weekAgo = subDays(now, 7);
-    const monthAgo = subDays(now, 30);
+    try {
+      const now = new Date();
+      const today = now;
+      const yesterday = subDays(now, 1);
+      const weekAgo = subDays(now, 7);
+      const monthAgo = subDays(now, 30);
 
-    const [
-      customersResult,
-      allTransactionsResult,
-      allMovementsResult,
-      currencyBalancesResult,
-      todayStats,
-      yesterdayStats,
-      weekStats,
-      monthStats,
-      topCustomers,
-      commissionStats,
-      debtStats,
-      cashFlowByCurrency,
-    ] = await Promise.all([
-      supabase.from('customers').select('id', { count: 'exact' }),
-      supabase.from('transactions').select('amount_sent'),
-      supabase.from('account_movements').select('amount'),
-      supabase.from('total_balances_by_currency').select('*'),
-      this.fetchPeriodStats(today, today),
-      this.fetchPeriodStats(yesterday, yesterday),
-      this.fetchPeriodStats(weekAgo, today),
-      this.fetchPeriodStats(monthAgo, today),
-      this.fetchTopCustomers(5),
-      this.fetchCommissionStats(),
-      this.fetchDebtStats(),
-      this.fetchCashFlowByCurrency(),
-    ]);
+      const [
+        customersResult,
+        allTransactionsResult,
+        allMovementsResult,
+        currencyBalancesResult,
+        todayStats,
+        yesterdayStats,
+        weekStats,
+        monthStats,
+        topCustomers,
+        commissionStats,
+        debtStats,
+        cashFlowByCurrency,
+      ] = await Promise.all([
+        supabase.from('customers').select('id', { count: 'exact' }),
+        supabase.from('transactions').select('amount_sent'),
+        supabase.from('account_movements').select('amount'),
+        supabase.from('total_balances_by_currency').select('*'),
+        this.fetchPeriodStats(today, today),
+        this.fetchPeriodStats(yesterday, yesterday),
+        this.fetchPeriodStats(weekAgo, today),
+        this.fetchPeriodStats(monthAgo, today),
+        this.fetchTopCustomers(5),
+        this.fetchCommissionStats(),
+        this.fetchDebtStats(),
+        this.fetchCashFlowByCurrency(),
+      ]);
 
-    const totalAmount =
-      allMovementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      if (customersResult.error) {
+        console.error('Error fetching customers count:', customersResult.error);
+      }
+      if (allTransactionsResult.error) {
+        console.error('Error fetching transactions:', allTransactionsResult.error);
+      }
+      if (allMovementsResult.error) {
+        console.error('Error fetching movements:', allMovementsResult.error);
+      }
+      if (currencyBalancesResult.error) {
+        console.error('Error fetching currency balances:', currencyBalancesResult.error);
+      }
 
-    return {
-      totalCustomers: customersResult.count || 0,
-      totalTransactions: allTransactionsResult.data?.length || 0,
-      totalMovements: allMovementsResult.data?.length || 0,
-      totalAmount,
-      totalDebts: debtStats.totalOwedToUs,
-      totalWeOwe: debtStats.totalWeOwe,
-      periodStats: {
-        today: todayStats,
-        yesterday: yesterdayStats,
-        week: weekStats,
-        month: monthStats,
-      },
-      currencyBalances: currencyBalancesResult.data || [],
-      cashFlowByCurrency,
-      topCustomers,
-      commissionStats,
-      debtStats,
-    };
+      const totalAmount =
+        allMovementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+
+      return {
+        totalCustomers: customersResult.count || 0,
+        totalTransactions: allTransactionsResult.data?.length || 0,
+        totalMovements: allMovementsResult.data?.length || 0,
+        totalAmount,
+        totalDebts: debtStats.totalOwedToUs,
+        totalWeOwe: debtStats.totalWeOwe,
+        periodStats: {
+          today: todayStats,
+          yesterday: yesterdayStats,
+          week: weekStats,
+          month: monthStats,
+        },
+        currencyBalances: currencyBalancesResult.data || [],
+        cashFlowByCurrency,
+        topCustomers,
+        commissionStats,
+        debtStats,
+      };
+    } catch (error) {
+      console.error('Error in fetchAllStatistics:', error);
+      throw error;
+    }
   }
 
   static async fetchCustomDateRangeStats(

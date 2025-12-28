@@ -384,10 +384,10 @@ export default function StatisticsScreen() {
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
                           <TrendingDown size={18} color="#10B981" />
-                          <Text style={styles.balanceItemLabel}>عندي (وارد)</Text>
+                          <Text style={styles.balanceItemLabel}>استلمت منه (صادر)</Text>
                         </View>
                         <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
-                          {balance.total_incoming.toFixed(2)}
+                          {balance.total_outgoing.toFixed(2)}
                         </Text>
                       </View>
 
@@ -396,10 +396,10 @@ export default function StatisticsScreen() {
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
                           <TrendingUp size={18} color="#EF4444" />
-                          <Text style={styles.balanceItemLabel}>لي (صادر)</Text>
+                          <Text style={styles.balanceItemLabel}>سلمت له (وارد)</Text>
                         </View>
                         <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
-                          {balance.total_outgoing.toFixed(2)}
+                          {balance.total_incoming.toFixed(2)}
                         </Text>
                       </View>
                     </View>
@@ -423,9 +423,9 @@ export default function StatisticsScreen() {
                       </View>
                       <Text style={styles.netBalanceDescription}>
                         {isPositive
-                          ? 'لك (المبالغ الصادرة أكثر)'
+                          ? 'لك (استلمت أكثر مما سلمت)'
                           : isNegative
-                          ? 'عليك (المبالغ الواردة أكثر)'
+                          ? 'عليك (سلمت أكثر مما استلمت)'
                           : 'متوازن'}
                       </Text>
                     </View>

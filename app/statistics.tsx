@@ -417,7 +417,7 @@ export default function StatisticsScreen() {
                             },
                           ]}
                         >
-                          {isPositive && '+'}
+                          {isPositive && '+ '}
                           {balance.balance.toFixed(2)} {currencyInfo.symbol}
                         </Text>
                       </View>

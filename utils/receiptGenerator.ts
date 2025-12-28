@@ -73,6 +73,9 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
   const actionTitle = movement_type === 'outgoing' ? 'استلام حوالة' : 'إرسال حوالة';
 
+  const primaryColor = movement_type === 'outgoing' ? '#3B82F6' : '#F97316';
+  const darkColor = movement_type === 'outgoing' ? '#2563EB' : '#EA580C';
+
   return `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -125,7 +128,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       width: 900px;
       height: 634px;
       background: #ffffff;
-      border: 3px solid #2D3192;
+      border: 3px solid ${primaryColor};
       border-radius: 24px;
       padding: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -134,7 +137,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     .receipt-inner-frame {
       width: 100%;
       height: 100%;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 18px;
       background: #ffffff;
       overflow: hidden;
@@ -146,7 +149,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       position: relative;
       width: 100%;
       height: 150px;
-      background: linear-gradient(135deg, #2D3192 0%, #1E2270 100%);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%);
       border-radius: 18px 18px 0 0;
       display: flex;
       align-items: center;
@@ -227,7 +230,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .company-name-en {
       background: #ffffff;
-      color: #2D3192;
+      color: ${primaryColor};
       font-size: 15px;
       font-weight: 700;
       padding: 8px 30px;
@@ -260,7 +263,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     .date-pill,
     .document-pill {
       background: #ffffff;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 20px;
       padding: 0 16px;
       display: flex;
@@ -288,14 +291,14 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     }
 
     .action-title {
-      background: linear-gradient(135deg, #2D3192 0%, #1E2270 100%);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%);
       color: #ffffff;
       border-radius: 22px;
       padding: 0 50px;
       height: 52px;
       font-size: 20px;
       font-weight: 800;
-      box-shadow: 0 4px 12px rgba(45, 49, 146, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -314,7 +317,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     .customer-name-box,
     .customer-label-box {
       background: #ffffff;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       height: 38px;
       display: flex;
@@ -368,7 +371,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     }
 
     .notice-box {
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 6px 14px;
       text-align: center;
@@ -387,7 +390,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .info-card {
       flex: 1;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 0;
       display: flex;
@@ -431,7 +434,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     }
 
     .amount-words-box {
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 6px 14px;
       text-align: center;
@@ -449,7 +452,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .statement-box {
       flex: 1;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 0;
       font-size: 13px;
@@ -464,7 +467,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .code-box {
       width: 100px;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 0;
       font-size: 13px;
@@ -501,7 +504,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     .qr-placeholder {
       width: 100%;
       height: 100%;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       display: flex;
       align-items: center;
@@ -523,7 +526,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .transfer-details {
       flex: 1;
-      border: 2px solid #2D3192;
+      border: 2px solid ${primaryColor};
       border-radius: 16px;
       padding: 8px 14px;
       display: flex;
@@ -565,7 +568,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     .notice-bar {
       flex: 1;
-      background: linear-gradient(135deg, #2D3192 0%, #1E2270 100%);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%);
       color: #ffffff;
       border-radius: 16px;
       padding: 6px 16px;
@@ -579,7 +582,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     }
 
     .timestamp-pill {
-      background: linear-gradient(135deg, #2D3192 0%, #1E2270 100%);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%);
       color: #ffffff;
       border-radius: 16px;
       padding: 6px 14px;
@@ -713,7 +716,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       .timestamp-pill {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        background: linear-gradient(135deg, #2D3192 0%, #1E2270 100%) !important;
+        background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%) !important;
       }
 
       .date-pill,

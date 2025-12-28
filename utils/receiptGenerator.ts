@@ -850,7 +850,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
           <div class="notice-row">
             <div class="notice-box">
-              نود إشعاركم أننا ${movement_type === 'outgoing' ? 'استلمنا منكم' : 'سلمنا لكم'} حسب توجيهكم لنا بـ${actionTitle} حسب التفاصيل التالية
+              نود إشعاركم أننا ${movement_type === 'outgoing' ? 'استلمنا منكم حسب توجيهكم لنا باستلام المبلغ المذكور' : 'سلمنا لكم حسب توجيهكم لنا بتسليم المبلغ المذكور'} حسب التفاصيل التالية
             </div>
           </div>
 

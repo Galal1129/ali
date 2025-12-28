@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
-import { TotalBalanceByCurrency, CustomerBalanceByCurrency } from '@/types/database';
+import { TotalBalanceByCurrency } from '@/types/database';
 
 export interface PeriodStats {
   transactions: number;
@@ -24,12 +24,27 @@ export interface CommissionStats {
   commissionByCurrency: { currency: string; total: number }[];
 }
 
+export interface CashFlowByCurrency {
+  currency: string;
+  totalReceived: number;
+  totalPaid: number;
+  netFlow: number;
+}
+
+export interface DebtStats {
+  totalOwedToUs: number;
+  totalWeOwe: number;
+  owedToUsByCurrency: { currency: string; amount: number }[];
+  weOweByCurrency: { currency: string; amount: number }[];
+}
+
 export interface StatisticsData {
   totalCustomers: number;
   totalTransactions: number;
   totalMovements: number;
   totalAmount: number;
   totalDebts: number;
+  totalWeOwe: number;
   periodStats: {
     today: PeriodStats;
     yesterday: PeriodStats;
@@ -37,8 +52,10 @@ export interface StatisticsData {
     month: PeriodStats;
   };
   currencyBalances: TotalBalanceByCurrency[];
+  cashFlowByCurrency: CashFlowByCurrency[];
   topCustomers: TopCustomer[];
   commissionStats: CommissionStats;
+  debtStats: DebtStats;
 }
 
 export class StatisticsService {
@@ -59,20 +76,17 @@ export class StatisticsService {
         .lte('created_at', end),
     ]);
 
-    const transactionAmount = transactionsResult.data?.reduce(
-      (sum, t) => sum + Number(t.amount_sent),
-      0
-    ) || 0;
+    const transactionAmount =
+      transactionsResult.data?.reduce((sum, t) => sum + Number(t.amount_sent), 0) || 0;
 
-    const movementAmount = movementsResult.data?.reduce(
-      (sum, m) => sum + Number(m.amount),
-      0
-    ) || 0;
+    const movementAmount =
+      movementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
 
-    const commissionAmount = movementsResult.data?.reduce(
-      (sum, m) => sum + (m.commission ? Number(m.commission) : 0),
-      0
-    ) || 0;
+    const commissionAmount =
+      movementsResult.data?.reduce(
+        (sum, m) => sum + (m.commission ? Number(m.commission) : 0),
+        0
+      ) || 0;
 
     return {
       transactions: transactionsResult.data?.length || 0,
@@ -123,25 +137,114 @@ export class StatisticsService {
       0
     );
 
-    const commissionByCurrency = data.reduce((acc, m) => {
-      if (!m.commission || !m.commission_currency) return acc;
+    const commissionByCurrency = data.reduce(
+      (acc, m) => {
+        if (!m.commission || !m.commission_currency) return acc;
 
-      const existing = acc.find((item) => item.currency === m.commission_currency);
-      if (existing) {
-        existing.total += Number(m.commission);
-      } else {
-        acc.push({
-          currency: m.commission_currency,
-          total: Number(m.commission),
-        });
-      }
-      return acc;
-    }, [] as { currency: string; total: number }[]);
+        const existing = acc.find((item) => item.currency === m.commission_currency);
+        if (existing) {
+          existing.total += Number(m.commission);
+        } else {
+          acc.push({
+            currency: m.commission_currency,
+            total: Number(m.commission),
+          });
+        }
+        return acc;
+      },
+      [] as { currency: string; total: number }[]
+    );
 
     return {
       totalCommission,
       commissionByCurrency: commissionByCurrency.sort((a, b) => b.total - a.total),
     };
+  }
+
+  static async fetchDebtStats(): Promise<DebtStats> {
+    const { data: balances, error } = await supabase
+      .from('customer_balances_by_currency')
+      .select('*');
+
+    if (error || !balances) {
+      return {
+        totalOwedToUs: 0,
+        totalWeOwe: 0,
+        owedToUsByCurrency: [],
+        weOweByCurrency: [],
+      };
+    }
+
+    const owedToUsByCurrency: { [key: string]: number } = {};
+    const weOweByCurrency: { [key: string]: number } = {};
+
+    balances.forEach((balance) => {
+      const amount = Number(balance.balance);
+      const currency = balance.currency;
+
+      if (amount > 0) {
+        owedToUsByCurrency[currency] = (owedToUsByCurrency[currency] || 0) + amount;
+      } else if (amount < 0) {
+        weOweByCurrency[currency] = (weOweByCurrency[currency] || 0) + Math.abs(amount);
+      }
+    });
+
+    const totalOwedToUs = Object.values(owedToUsByCurrency).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    const totalWeOwe = Object.values(weOweByCurrency).reduce((sum, val) => sum + val, 0);
+
+    return {
+      totalOwedToUs,
+      totalWeOwe,
+      owedToUsByCurrency: Object.entries(owedToUsByCurrency).map(([currency, amount]) => ({
+        currency,
+        amount,
+      })),
+      weOweByCurrency: Object.entries(weOweByCurrency).map(([currency, amount]) => ({
+        currency,
+        amount,
+      })),
+    };
+  }
+
+  static async fetchCashFlowByCurrency(): Promise<CashFlowByCurrency[]> {
+    const { data: movements, error } = await supabase
+      .from('account_movements')
+      .select('amount, currency, movement_type');
+
+    if (error || !movements) {
+      return [];
+    }
+
+    const flowByCurrency: { [key: string]: CashFlowByCurrency } = {};
+
+    movements.forEach((movement) => {
+      const currency = movement.currency;
+      const amount = Number(movement.amount);
+
+      if (!flowByCurrency[currency]) {
+        flowByCurrency[currency] = {
+          currency,
+          totalReceived: 0,
+          totalPaid: 0,
+          netFlow: 0,
+        };
+      }
+
+      if (movement.movement_type === 'outgoing') {
+        flowByCurrency[currency].totalReceived += amount;
+      } else {
+        flowByCurrency[currency].totalPaid += amount;
+      }
+    });
+
+    Object.values(flowByCurrency).forEach((flow) => {
+      flow.netFlow = flow.totalReceived - flow.totalPaid;
+    });
+
+    return Object.values(flowByCurrency);
   }
 
   static async fetchAllStatistics(): Promise<StatisticsData> {
@@ -155,7 +258,6 @@ export class StatisticsService {
       customersResult,
       allTransactionsResult,
       allMovementsResult,
-      debtsResult,
       currencyBalancesResult,
       todayStats,
       yesterdayStats,
@@ -163,11 +265,12 @@ export class StatisticsService {
       monthStats,
       topCustomers,
       commissionStats,
+      debtStats,
+      cashFlowByCurrency,
     ] = await Promise.all([
       supabase.from('customers').select('id', { count: 'exact' }),
       supabase.from('transactions').select('amount_sent'),
-      supabase.from('account_movements').select('id'),
-      supabase.from('debts').select('amount, paid_amount').eq('status', 'pending'),
+      supabase.from('account_movements').select('amount'),
       supabase.from('total_balances_by_currency').select('*'),
       this.fetchPeriodStats(today, today),
       this.fetchPeriodStats(yesterday, yesterday),
@@ -175,24 +278,20 @@ export class StatisticsService {
       this.fetchPeriodStats(monthAgo, today),
       this.fetchTopCustomers(5),
       this.fetchCommissionStats(),
+      this.fetchDebtStats(),
+      this.fetchCashFlowByCurrency(),
     ]);
 
-    const totalAmount = allTransactionsResult.data?.reduce(
-      (sum, t) => sum + Number(t.amount_sent),
-      0
-    ) || 0;
-
-    const totalDebts = debtsResult.data?.reduce(
-      (sum, d) => sum + (Number(d.amount) - Number(d.paid_amount)),
-      0
-    ) || 0;
+    const totalAmount =
+      allMovementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
 
     return {
       totalCustomers: customersResult.count || 0,
       totalTransactions: allTransactionsResult.data?.length || 0,
       totalMovements: allMovementsResult.data?.length || 0,
       totalAmount,
-      totalDebts,
+      totalDebts: debtStats.totalOwedToUs,
+      totalWeOwe: debtStats.totalWeOwe,
       periodStats: {
         today: todayStats,
         yesterday: yesterdayStats,
@@ -200,12 +299,17 @@ export class StatisticsService {
         month: monthStats,
       },
       currencyBalances: currencyBalancesResult.data || [],
+      cashFlowByCurrency,
       topCustomers,
       commissionStats,
+      debtStats,
     };
   }
 
-  static async fetchCustomDateRangeStats(startDate: Date, endDate: Date): Promise<PeriodStats> {
+  static async fetchCustomDateRangeStats(
+    startDate: Date,
+    endDate: Date
+  ): Promise<PeriodStats> {
     return this.fetchPeriodStats(startDate, endDate);
   }
 }

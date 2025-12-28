@@ -22,11 +22,10 @@ import {
   ArrowLeftRight,
   Trophy,
   Percent,
-  Activity
+  Activity,
+  Wallet,
 } from 'lucide-react-native';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import { TotalBalanceByCurrency, CURRENCIES } from '@/types/database';
+import { CURRENCIES } from '@/types/database';
 import { StatisticsService, StatisticsData } from '@/services/statisticsService';
 
 I18nManager.allowRTL(true);
@@ -123,13 +122,6 @@ export default function StatisticsScreen() {
       bgColor: '#EEF2FF',
     },
     {
-      title: 'إجمالي الحوالات',
-      value: stats.totalTransactions.toString(),
-      icon: TrendingUp,
-      color: '#10B981',
-      bgColor: '#ECFDF5',
-    },
-    {
       title: 'إجمالي الحركات',
       value: stats.totalMovements.toString(),
       icon: ArrowLeftRight,
@@ -138,7 +130,7 @@ export default function StatisticsScreen() {
     },
     {
       title: 'إجمالي المبالغ',
-      value: `${stats.totalAmount.toFixed(0)} $`,
+      value: `${stats.totalAmount.toFixed(0)}`,
       icon: DollarSign,
       color: '#F59E0B',
       bgColor: '#FEF3C7',
@@ -151,9 +143,16 @@ export default function StatisticsScreen() {
       bgColor: '#CFFAFE',
     },
     {
-      title: 'إجمالي الديون',
-      value: `${stats.totalDebts.toFixed(0)} $`,
-      icon: AlertCircle,
+      title: 'لنا عند العملاء',
+      value: `${stats.totalDebts.toFixed(0)}`,
+      icon: TrendingUp,
+      color: '#10B981',
+      bgColor: '#ECFDF5',
+    },
+    {
+      title: 'للعملاء عندنا',
+      value: `${stats.totalWeOwe.toFixed(0)}`,
+      icon: TrendingDown,
       color: '#EF4444',
       bgColor: '#FEE2E2',
     },
@@ -230,10 +229,7 @@ export default function StatisticsScreen() {
               <View style={styles.periodStatBox}>
                 <Text style={styles.periodStatLabel}>الحوالات</Text>
                 <Text
-                  style={[
-                    styles.periodStatValue,
-                    { color: getPeriodColor(selectedPeriod) },
-                  ]}
+                  style={[styles.periodStatValue, { color: getPeriodColor(selectedPeriod) }]}
                 >
                   {currentPeriodStats.transactions}
                 </Text>
@@ -247,10 +243,7 @@ export default function StatisticsScreen() {
               <View style={styles.periodStatBox}>
                 <Text style={styles.periodStatLabel}>الحركات</Text>
                 <Text
-                  style={[
-                    styles.periodStatValue,
-                    { color: getPeriodColor(selectedPeriod) },
-                  ]}
+                  style={[styles.periodStatValue, { color: getPeriodColor(selectedPeriod) }]}
                 >
                   {currentPeriodStats.movements}
                 </Text>
@@ -264,15 +257,11 @@ export default function StatisticsScreen() {
               <View style={styles.periodStatBox}>
                 <Text style={styles.periodStatLabel}>العمولات</Text>
                 <Text
-                  style={[
-                    styles.periodStatValue,
-                    { color: getPeriodColor(selectedPeriod) },
-                  ]}
+                  style={[styles.periodStatValue, { color: getPeriodColor(selectedPeriod) }]}
                 >
-                  {currentPeriodStats.commissionAmount > 0 ? '✓' : '-'}
-                </Text>
-                <Text style={styles.periodStatAmount}>
-                  ${currentPeriodStats.commissionAmount.toFixed(0)}
+                  {currentPeriodStats.commissionAmount > 0
+                    ? currentPeriodStats.commissionAmount.toFixed(0)
+                    : '-'}
                 </Text>
               </View>
             </View>
@@ -292,9 +281,7 @@ export default function StatisticsScreen() {
                 return (
                   <View key={index} style={styles.commissionCard}>
                     <Text style={styles.commissionCurrency}>{currencyInfo.symbol}</Text>
-                    <Text style={styles.commissionAmount}>
-                      {item.total.toFixed(2)}
-                    </Text>
+                    <Text style={styles.commissionAmount}>{item.total.toFixed(2)}</Text>
                     <Text style={styles.commissionLabel}>{currencyInfo.name}</Text>
                   </View>
                 );
@@ -324,9 +311,7 @@ export default function StatisticsScreen() {
                 <View style={styles.topCustomerStats}>
                   <View style={styles.topCustomerStatItem}>
                     <Text style={styles.topCustomerStatLabel}>الحركات</Text>
-                    <Text style={styles.topCustomerStatValue}>
-                      {customer.totalMovements}
-                    </Text>
+                    <Text style={styles.topCustomerStatValue}>{customer.totalMovements}</Text>
                   </View>
                   <View style={styles.topCustomerStatDivider} />
                   <View style={styles.topCustomerStatItem}>
@@ -339,13 +324,12 @@ export default function StatisticsScreen() {
                             customer.balance > 0
                               ? '#10B981'
                               : customer.balance < 0
-                              ? '#EF4444'
-                              : '#6B7280',
+                                ? '#EF4444'
+                                : '#6B7280',
                         },
                       ]}
                     >
-                      {customer.balance > 0 && '+'}
-                      {customer.balance.toFixed(0)}
+                      {customer.balance > 0 ? 'لنا' : customer.balance < 0 ? 'له' : '-'}
                     </Text>
                   </View>
                 </View>
@@ -356,19 +340,19 @@ export default function StatisticsScreen() {
 
         <View style={styles.balancesSection}>
           <View style={styles.sectionHeader}>
-            <Coins size={24} color="#4F46E5" />
-            <Text style={styles.sectionTitle}>مطابقة المبالغ حسب العملات</Text>
+            <Wallet size={24} color="#4F46E5" />
+            <Text style={styles.sectionTitle}>التدفق النقدي حسب العملة</Text>
           </View>
 
-          {stats.currencyBalances.length === 0 ? (
+          {stats.cashFlowByCurrency.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>لا توجد حركات بعد</Text>
             </View>
           ) : (
-            stats.currencyBalances.map((balance, index) => {
-              const currencyInfo = getCurrencyInfo(balance.currency);
-              const isPositive = balance.balance > 0;
-              const isNegative = balance.balance < 0;
+            stats.cashFlowByCurrency.map((flow, index) => {
+              const currencyInfo = getCurrencyInfo(flow.currency);
+              const isPositive = flow.netFlow > 0;
+              const isNegative = flow.netFlow < 0;
 
               return (
                 <View key={index} style={styles.balanceCard}>
@@ -383,11 +367,11 @@ export default function StatisticsScreen() {
                     <View style={styles.balanceRow}>
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
-                          <TrendingUp size={18} color="#EF4444" />
-                          <Text style={styles.balanceItemLabel}>استلمت منه (صادر)</Text>
+                          <TrendingUp size={18} color="#10B981" />
+                          <Text style={styles.balanceItemLabel}>قبض (استلام)</Text>
                         </View>
-                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
-                          {balance.total_outgoing.toFixed(2)}
+                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
+                          {flow.totalReceived.toFixed(2)}
                         </Text>
                       </View>
 
@@ -395,11 +379,11 @@ export default function StatisticsScreen() {
 
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
-                          <TrendingDown size={18} color="#10B981" />
-                          <Text style={styles.balanceItemLabel}>سلمت له (وارد)</Text>
+                          <TrendingDown size={18} color="#EF4444" />
+                          <Text style={styles.balanceItemLabel}>صرف (تسليم)</Text>
                         </View>
-                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
-                          {balance.total_incoming.toFixed(2)}
+                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
+                          {flow.totalPaid.toFixed(2)}
                         </Text>
                       </View>
                     </View>
@@ -407,26 +391,26 @@ export default function StatisticsScreen() {
                     <View style={styles.balanceSeparator} />
 
                     <View style={styles.netBalanceContainer}>
-                      <Text style={styles.netBalanceLabel}>الفارق الصافي</Text>
+                      <Text style={styles.netBalanceLabel}>الصافي</Text>
                       <View style={styles.netBalanceValueContainer}>
                         <Text
                           style={[
                             styles.netBalanceValue,
                             {
-                              color: isPositive ? '#10B981' : isNegative ? '#EF4444' : '#6B7280',
+                              color: isPositive
+                                ? '#10B981'
+                                : isNegative
+                                  ? '#EF4444'
+                                  : '#6B7280',
                             },
                           ]}
                         >
                           {isPositive && '+ '}
-                          {balance.balance.toFixed(2)} {currencyInfo.symbol}
+                          {flow.netFlow.toFixed(2)} {currencyInfo.symbol}
                         </Text>
                       </View>
                       <Text style={styles.netBalanceDescription}>
-                        {isPositive
-                          ? 'لك عندهم (استلمت أكثر مما سلمت)'
-                          : isNegative
-                          ? 'عليك (سلمت أكثر مما استلمت)'
-                          : 'متوازن'}
+                        {isPositive ? 'صافي قبض' : isNegative ? 'صافي صرف' : 'متوازن'}
                       </Text>
                     </View>
                   </View>
@@ -435,6 +419,52 @@ export default function StatisticsScreen() {
             })
           )}
         </View>
+
+        {(stats.debtStats.owedToUsByCurrency.length > 0 ||
+          stats.debtStats.weOweByCurrency.length > 0) && (
+          <View style={styles.debtSection}>
+            <View style={styles.sectionHeader}>
+              <AlertCircle size={24} color="#EF4444" />
+              <Text style={styles.sectionTitle}>ملخص الديون</Text>
+            </View>
+
+            {stats.debtStats.owedToUsByCurrency.length > 0 && (
+              <View style={styles.debtCard}>
+                <Text style={styles.debtCardTitle}>لنا عند العملاء</Text>
+                {stats.debtStats.owedToUsByCurrency.map((item, index) => {
+                  const currencyInfo = getCurrencyInfo(item.currency);
+                  return (
+                    <View key={index} style={styles.debtRow}>
+                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
+                      <Text style={[styles.debtAmount, { color: '#10B981' }]}>
+                        {item.amount.toFixed(2)} {currencyInfo.symbol}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {stats.debtStats.weOweByCurrency.length > 0 && (
+              <View style={styles.debtCard}>
+                <Text style={styles.debtCardTitle}>للعملاء عندنا</Text>
+                {stats.debtStats.weOweByCurrency.map((item, index) => {
+                  const currencyInfo = getCurrencyInfo(item.currency);
+                  return (
+                    <View key={index} style={styles.debtRow}>
+                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
+                      <Text style={[styles.debtAmount, { color: '#EF4444' }]}>
+                        {item.amount.toFixed(2)} {currencyInfo.symbol}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -806,5 +836,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     textAlign: 'center',
+  },
+  debtSection: {
+    padding: 16,
+  },
+  debtCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  debtCardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  debtRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  debtCurrency: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  debtAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

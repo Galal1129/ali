@@ -1,32 +1,12 @@
-import { Platform, Image } from 'react-native';
+import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
 import { supabase } from '@/lib/supabase';
 
+const DEFAULT_LOGO_PLACEHOLDER =
+  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNFNUU3RUIiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzZCNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TG9nbzwvdGV4dD48L3N2Zz4=';
+
 async function getDefaultLogoBase64(): Promise<string> {
-  try {
-    if (Platform.OS === 'web') {
-      const resolveAssetSource = Image.resolveAssetSource(
-        require('@/assets/images/logo.jpg')
-      );
-      return resolveAssetSource.uri;
-    }
-
-    const asset = Asset.fromModule(require('@/assets/images/logo.jpg'));
-    await asset.downloadAsync();
-
-    if (!asset.localUri) {
-      throw new Error('Asset localUri is null');
-    }
-
-    const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-      encoding: 'base64' as any,
-    });
-    return `data:image/jpeg;base64,${base64}`;
-  } catch (error) {
-    console.error('Error loading default logo:', error);
-    return '';
-  }
+  return DEFAULT_LOGO_PLACEHOLDER;
 }
 
 async function getLogoFromDatabase(): Promise<string | null> {
@@ -102,15 +82,9 @@ export async function getLogoUrl(): Promise<string> {
       return dbLogoUrl;
     }
 
-    const resolveAssetSource = Image.resolveAssetSource(
-      require('@/assets/images/logo.jpg')
-    );
-    return resolveAssetSource.uri;
+    return DEFAULT_LOGO_PLACEHOLDER;
   } catch (error) {
     console.error('Error loading logo URL:', error);
-    const resolveAssetSource = Image.resolveAssetSource(
-      require('@/assets/images/logo.jpg')
-    );
-    return resolveAssetSource.uri;
+    return DEFAULT_LOGO_PLACEHOLDER;
   }
 }

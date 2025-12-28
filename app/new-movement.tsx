@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
@@ -540,65 +542,80 @@ export default function NewMovementScreen() {
           setSearchQuery('');
         }}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>اختر عميل</Text>
+        <TouchableOpacity
+          style={styles.modalContainer}
+          activeOpacity={1}
+          onPress={() => {
+            setShowCustomerPicker(false);
+            setSearchQuery('');
+            Keyboard.dismiss();
+          }}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalKeyboardView}
+          >
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>اختر عميل</Text>
 
-            <View style={styles.searchContainer}>
-              <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="ابحث بالاسم، الهاتف، أو رقم الحساب"
-                placeholderTextColor="#9CA3AF"
-                textAlign="right"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setSearchQuery('')}
-                  style={styles.clearSearchButton}
-                >
-                  <X size={18} color="#6B7280" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <ScrollView style={styles.modalList}>
-              {filteredCustomers.length > 0 ? (
-                filteredCustomers.map((customer) => (
-                  <TouchableOpacity
-                    key={customer.id}
-                    style={styles.modalItem}
-                    onPress={() => selectCustomer(customer)}
-                  >
-                    <Text style={styles.modalItemText}>{customer.name}</Text>
-                    <View style={styles.modalItemInfo}>
-                      <Text style={styles.modalItemSubtext}>{customer.phone}</Text>
-                      <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
-                        رقم الحساب: {customer.account_number}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={styles.emptySearchResult}>
-                  <Text style={styles.emptySearchText}>لا توجد نتائج مطابقة</Text>
-                  <Text style={styles.emptySearchSubtext}>جرب البحث بكلمات أخرى</Text>
+                <View style={styles.searchContainer}>
+                  <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="ابحث بالاسم، الهاتف، أو رقم الحساب"
+                    placeholderTextColor="#9CA3AF"
+                    textAlign="right"
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery('')}
+                      style={styles.clearSearchButton}
+                    >
+                      <X size={18} color="#6B7280" />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => {
-                setShowCustomerPicker(false);
-                setSearchQuery('');
-              }}
-            >
-              <Text style={styles.modalCloseButtonText}>إغلاق</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
+                <ScrollView style={styles.modalList} keyboardShouldPersistTaps="handled">
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map((customer) => (
+                      <TouchableOpacity
+                        key={customer.id}
+                        style={styles.modalItem}
+                        onPress={() => selectCustomer(customer)}
+                      >
+                        <Text style={styles.modalItemText}>{customer.name}</Text>
+                        <View style={styles.modalItemInfo}>
+                          <Text style={styles.modalItemSubtext}>{customer.phone}</Text>
+                          <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
+                            رقم الحساب: {customer.account_number}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptySearchResult}>
+                      <Text style={styles.emptySearchText}>لا توجد نتائج مطابقة</Text>
+                      <Text style={styles.emptySearchSubtext}>جرب البحث بكلمات أخرى</Text>
+                    </View>
+                  )}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    setShowCustomerPicker(false);
+                    setSearchQuery('');
+                  }}
+                >
+                  <Text style={styles.modalCloseButtonText}>إغلاق</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
       </Modal>
 
       <Modal
@@ -971,12 +988,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  modalKeyboardView: {
+    width: '100%',
+  },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '75%',
   },
   modalTitle: {
     fontSize: 20,

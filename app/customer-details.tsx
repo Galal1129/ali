@@ -243,6 +243,130 @@ export default function CustomerDetailsScreen() {
     Alert.alert('تسوية الحساب', 'ميزة تسوية الحساب قيد التطوير');
   };
 
+  const handleResetAccount = () => {
+    if (!customer) return;
+
+    Alert.alert(
+      'تصفير الحساب',
+      `هل أنت متأكد من تصفير حساب ${customer.name}?\n\nسيتم حذف جميع الحركات (${movements.length} حركة) مع الاحتفاظ ببيانات العميل.\n\nلا يمكن التراجع عن هذه العملية!`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'تصفير',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data, error } = await supabase.rpc('reset_customer_account', {
+                p_customer_id: id,
+              });
+
+              if (error) {
+                Alert.alert('خطأ', 'حدث خطأ أثناء تصفير الحساب');
+                console.error('Error resetting account:', error);
+                return;
+              }
+
+              const result = data as { success: boolean; message: string; movements_deleted: number };
+
+              if (result.success) {
+                Alert.alert('نجح', `تم تصفير الحساب بنجاح\nتم حذف ${result.movements_deleted} حركة`, [
+                  {
+                    text: 'حسناً',
+                    onPress: () => {
+                      loadCustomerData();
+                    },
+                  },
+                ]);
+              } else {
+                Alert.alert('خطأ', result.message);
+              }
+            } catch (error) {
+              console.error('Error resetting account:', error);
+              Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteCustomer = () => {
+    if (!customer) return;
+
+    const balances = calculateBalanceByCurrency(movements);
+    const hasBalance = balances.length > 0 && balances.some((b) => b.balance !== 0);
+
+    let warningMessage = `هل أنت متأكد من حذف ${customer.name} نهائياً؟\n\n`;
+
+    if (hasBalance) {
+      warningMessage += 'تحذير: العميل لديه رصيد غير صفري!\n';
+      balances.forEach((currBalance) => {
+        const symbol = getCurrencySymbol(currBalance.currency);
+        if (currBalance.balance > 0) {
+          warningMessage += `• لنا عنده ${Math.round(currBalance.balance)} ${symbol}\n`;
+        } else {
+          warningMessage += `• له عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+        }
+      });
+      warningMessage += '\n';
+    }
+
+    warningMessage += `سيتم حذف:\n`;
+    warningMessage += `• جميع بيانات العميل\n`;
+    warningMessage += `• جميع الحركات (${movements.length} حركة)\n\n`;
+    warningMessage += `لا يمكن التراجع عن هذه العملية!`;
+
+    Alert.alert('حذف العميل', warningMessage, [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'حذف',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(
+            'تأكيد نهائي',
+            'هل أنت متأكد تماماً من حذف هذا العميل؟',
+            [
+              { text: 'إلغاء', style: 'cancel' },
+              {
+                text: 'نعم، احذف',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    const { data, error } = await supabase.rpc('delete_customer_completely', {
+                      p_customer_id: id,
+                    });
+
+                    if (error) {
+                      Alert.alert('خطأ', 'حدث خطأ أثناء حذف العميل');
+                      console.error('Error deleting customer:', error);
+                      return;
+                    }
+
+                    const result = data as { success: boolean; message: string; movements_deleted: number };
+
+                    if (result.success) {
+                      Alert.alert('تم الحذف', `تم حذف العميل بنجاح\nتم حذف ${result.movements_deleted} حركة`, [
+                        {
+                          text: 'حسناً',
+                          onPress: () => router.back(),
+                        },
+                      ]);
+                    } else {
+                      Alert.alert('خطأ', result.message);
+                    }
+                  } catch (error) {
+                    console.error('Error deleting customer:', error);
+                    Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+                  }
+                },
+              },
+            ]
+          );
+        },
+      },
+    ]);
+  };
+
   const handleShareAccount = async () => {
     if (!customer) return;
 
@@ -342,11 +466,21 @@ export default function CustomerDetailsScreen() {
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() =>
-              Alert.alert('الإعدادات', 'خيارات إضافية:\n\n• تعديل بيانات العميل\n• طباعة كشف الحساب\n• إرسال واتساب\n• اتصال هاتفي', [
+              Alert.alert('إدارة العميل', `اختر العملية المطلوبة لـ ${customer.name}:`, [
                 { text: 'إلغاء', style: 'cancel' },
-                { text: 'تعديل', onPress: () => Alert.alert('قيد التطوير') },
+                { text: 'تعديل البيانات', onPress: () => Alert.alert('قيد التطوير') },
                 { text: 'واتساب', onPress: handleWhatsApp },
                 { text: 'اتصال', onPress: handleCall },
+                {
+                  text: 'تصفير الحساب',
+                  onPress: handleResetAccount,
+                  style: 'destructive'
+                },
+                {
+                  text: 'حذف العميل',
+                  onPress: handleDeleteCustomer,
+                  style: 'destructive'
+                },
               ])
             }
           >

@@ -8,6 +8,7 @@ import {
   TextInput,
   RefreshControl,
   I18nManager,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Search } from 'lucide-react-native';
@@ -108,6 +109,118 @@ export default function CustomersScreen() {
     return currency?.symbol || code;
   };
 
+  const handleDeleteCustomer = async (customer: CustomerWithBalances) => {
+    const hasBalances = customer.balances.length > 0;
+    let message = `هل تريد حذف ${customer.name}؟\n\n`;
+
+    if (hasBalances) {
+      message += 'تحذير: العميل لديه رصيد!\n';
+      customer.balances.forEach((balance) => {
+        const balanceAmount = Number(balance.balance);
+        const symbol = getCurrencySymbol(balance.currency);
+        if (balanceAmount > 0) {
+          message += `• لنا عنده ${Math.round(balanceAmount)} ${symbol}\n`;
+        } else {
+          message += `• له عندنا ${Math.round(Math.abs(balanceAmount))} ${symbol}\n`;
+        }
+      });
+      message += '\n';
+    }
+
+    message += 'سيتم حذف جميع بيانات وحركات العميل!\nلا يمكن التراجع عن هذه العملية.';
+
+    Alert.alert('حذف العميل', message, [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'حذف',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { data, error } = await supabase.rpc('delete_customer_completely', {
+              p_customer_id: customer.id,
+            });
+
+            if (error) {
+              Alert.alert('خطأ', 'حدث خطأ أثناء حذف العميل');
+              console.error('Error deleting customer:', error);
+              return;
+            }
+
+            const result = data as { success: boolean; message: string };
+
+            if (result.success) {
+              Alert.alert('تم الحذف', 'تم حذف العميل بنجاح');
+              await loadCustomers();
+            } else {
+              Alert.alert('خطأ', result.message);
+            }
+          } catch (error) {
+            console.error('Error deleting customer:', error);
+            Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleResetCustomerAccount = async (customer: CustomerWithBalances) => {
+    Alert.alert(
+      'تصفير الحساب',
+      `هل تريد تصفير حساب ${customer.name}؟\n\nسيتم حذف جميع الحركات مع الاحتفاظ ببيانات العميل.`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'تصفير',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { data, error } = await supabase.rpc('reset_customer_account', {
+                p_customer_id: customer.id,
+              });
+
+              if (error) {
+                Alert.alert('خطأ', 'حدث خطأ أثناء تصفير الحساب');
+                console.error('Error resetting account:', error);
+                return;
+              }
+
+              const result = data as { success: boolean; message: string };
+
+              if (result.success) {
+                Alert.alert('تم التصفير', 'تم تصفير الحساب بنجاح');
+                await loadCustomers();
+              } else {
+                Alert.alert('خطأ', result.message);
+              }
+            } catch (error) {
+              console.error('Error resetting account:', error);
+              Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCustomerLongPress = (customer: CustomerWithBalances) => {
+    Alert.alert('خيارات العميل', `اختر العملية لـ ${customer.name}:`, [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'فتح',
+        onPress: () => router.push(`/customer-details?id=${customer.id}` as any),
+      },
+      {
+        text: 'تصفير الحساب',
+        onPress: () => handleResetCustomerAccount(customer),
+      },
+      {
+        text: 'حذف العميل',
+        onPress: () => handleDeleteCustomer(customer),
+        style: 'destructive',
+      },
+    ]);
+  };
+
   const renderCustomer = ({ item, index }: { item: CustomerWithBalances; index: number }) => {
     const hasBalances = item.balances.length > 0;
     const displayBalances = item.balances.slice(0, 2);
@@ -116,6 +229,7 @@ export default function CustomersScreen() {
       <TouchableOpacity
         style={styles.customerCard}
         onPress={() => router.push(`/customer-details?id=${item.id}` as any)}
+        onLongPress={() => handleCustomerLongPress(item)}
       >
         <View style={[styles.avatar, { backgroundColor: getAvatarColor(index) }]}>
           <Text style={styles.avatarText}>{getInitials(item.name)}</Text>

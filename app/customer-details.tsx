@@ -180,7 +180,11 @@ export default function CustomerDetailsScreen() {
     if (customer?.phone) {
       const cleanPhone = customer.phone.replace(/[^0-9]/g, '');
       const balances = calculateBalanceByCurrency(movements);
-      let message = `مرحباً ${customer.name}،\n\n`;
+      const currentDate = format(new Date(), 'EEEE، dd MMMM yyyy', { locale: ar });
+
+      let message = `مرحباً ${customer.name}،\n`;
+      message += `رقم الحساب: ${customer.account_number}\n`;
+      message += `التاريخ: ${currentDate}\n\n`;
 
       if (balances.length === 0) {
         message += `رصيدك الحالي: متساوي`;
@@ -195,6 +199,8 @@ export default function CustomerDetailsScreen() {
           }
         });
       }
+
+      message += `\nشكراً`;
 
       const encodedMessage = encodeURIComponent(message);
       Linking.openURL(`whatsapp://send?phone=${cleanPhone}&text=${encodedMessage}`);

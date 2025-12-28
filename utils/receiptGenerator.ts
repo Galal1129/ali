@@ -61,15 +61,17 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
   const receiptTime = format(new Date(created_at), 'HH:mm:ss', { locale: ar });
   const receiptDateTime = format(new Date(created_at), 'dd/MM/yyyy', { locale: ar });
   const receiptType = movement_type === 'outgoing' ? 'دائن' : 'مدين';
-  const amountInWords = numberToArabicTextWithCurrency(Number(amount), currency as Currency);
 
   const currencyName = getCurrencyName(currency);
   const commissionCurrencyName = getCurrencyName(commission_currency);
+
   const totalAmount = currency === commission_currency
     ? Number(amount) + Number(commission)
     : Number(amount);
 
-  const actionTitle = movement_type === 'outgoing' ? 'إرسال حوالة' : 'استلام حوالة';
+  const amountInWords = numberToArabicTextWithCurrency(totalAmount, currency as Currency);
+
+  const actionTitle = movement_type === 'outgoing' ? 'استلام حوالة' : 'إرسال حوالة';
 
   return `
 <!DOCTYPE html>

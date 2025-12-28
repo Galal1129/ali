@@ -40,7 +40,7 @@ export default function NewMovementScreen() {
     commission_currency: 'YER' as Currency,
     currency: 'USD' as Currency,
     notes: '',
-    sender_name: 'علي هادي علي الرازحي',
+    sender_name: '',
     beneficiary_name: '',
     transfer_number: '',
   });
@@ -67,10 +67,27 @@ export default function NewMovementScreen() {
         ...prev,
         customer_id: customerId as string,
         customer_name: customerName as string,
-        beneficiary_name: customerName as string,
       }));
     }
   }, [customerId, customerName]);
+
+  useEffect(() => {
+    if (formData.movement_type && formData.customer_name) {
+      if (formData.movement_type === 'outgoing') {
+        setFormData((prev) => ({
+          ...prev,
+          sender_name: prev.customer_name,
+          beneficiary_name: 'علي هادي علي الرازحي',
+        }));
+      } else if (formData.movement_type === 'incoming') {
+        setFormData((prev) => ({
+          ...prev,
+          sender_name: 'علي هادي علي الرازحي',
+          beneficiary_name: prev.customer_name,
+        }));
+      }
+    }
+  }, [formData.movement_type, formData.customer_name]);
 
   const loadCustomers = async () => {
     try {
@@ -148,12 +165,23 @@ export default function NewMovementScreen() {
   };
 
   const selectCustomer = (customer: Customer) => {
-    setFormData({
-      ...formData,
-      customer_id: customer.id,
-      customer_name: customer.name,
-      customer_account_number: customer.account_number,
-      beneficiary_name: customer.name,
+    setFormData((prev) => {
+      const newFormData = {
+        ...prev,
+        customer_id: customer.id,
+        customer_name: customer.name,
+        customer_account_number: customer.account_number,
+      };
+
+      if (prev.movement_type === 'outgoing') {
+        newFormData.sender_name = customer.name;
+        newFormData.beneficiary_name = 'علي هادي علي الرازحي';
+      } else if (prev.movement_type === 'incoming') {
+        newFormData.sender_name = 'علي هادي علي الرازحي';
+        newFormData.beneficiary_name = customer.name;
+      }
+
+      return newFormData;
     });
     setShowCustomerPicker(false);
   };
@@ -233,7 +261,7 @@ export default function NewMovementScreen() {
               style={[
                 styles.movementTypeButton,
                 formData.movement_type === 'outgoing' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'outgoing' ? '#10B981' : '#F3F4F6' },
+                { backgroundColor: formData.movement_type === 'outgoing' ? '#3B82F6' : '#F3F4F6' },
               ]}
               onPress={() => setFormData({ ...formData, movement_type: 'outgoing' })}
             >
@@ -252,7 +280,7 @@ export default function NewMovementScreen() {
               <Text
                 style={[
                   styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'outgoing' ? '#D1FAE5' : '#9CA3AF' },
+                  { color: formData.movement_type === 'outgoing' ? '#DBEAFE' : '#9CA3AF' },
                 ]}
               >
                 العميل دفع لك
@@ -263,7 +291,7 @@ export default function NewMovementScreen() {
               style={[
                 styles.movementTypeButton,
                 formData.movement_type === 'incoming' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'incoming' ? '#EF4444' : '#F3F4F6' },
+                { backgroundColor: formData.movement_type === 'incoming' ? '#F97316' : '#F3F4F6' },
               ]}
               onPress={() => setFormData({ ...formData, movement_type: 'incoming' })}
             >
@@ -282,7 +310,7 @@ export default function NewMovementScreen() {
               <Text
                 style={[
                   styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'incoming' ? '#FEE2E2' : '#9CA3AF' },
+                  { color: formData.movement_type === 'incoming' ? '#FFEDD5' : '#9CA3AF' },
                 ]}
               >
                 أنت أرسلت له

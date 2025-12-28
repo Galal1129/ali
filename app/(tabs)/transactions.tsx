@@ -1,0 +1,271 @@
+import { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  I18nManager,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
+import { AccountMovement } from '@/types/database';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+
+I18nManager.allowRTL(true);
+I18nManager.forceRTL(true);
+
+interface MovementWithCustomer extends AccountMovement {
+  customer_name: string;
+}
+
+export default function TransactionsScreen() {
+  const router = useRouter();
+  const [movements, setMovements] = useState<MovementWithCustomer[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadMovements();
+  }, []);
+
+  const loadMovements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('account_movements')
+        .select(
+          `
+          *,
+          customers!inner(name)
+        `
+        )
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const movementsWithCustomers = data.map((m: any) => ({
+          ...m,
+          customer_name: m.customers?.name || 'غير معروف',
+        }));
+        setMovements(movementsWithCustomers);
+      }
+    } catch (error) {
+      console.error('Error loading movements:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadMovements();
+    setRefreshing(false);
+  };
+
+  const renderMovement = ({ item }: { item: MovementWithCustomer }) => (
+    <TouchableOpacity
+      style={styles.movementCard}
+      onPress={() => router.push(`/customer-details?id=${item.customer_id}` as any)}
+    >
+      <View style={styles.movementHeader}>
+        <View style={styles.movementInfo}>
+          <Text style={styles.movementNumber}>#{item.movement_number}</Text>
+          <Text style={styles.customerName}>{item.customer_name}</Text>
+        </View>
+        <View
+          style={[
+            styles.movementIcon,
+            {
+              backgroundColor:
+                item.movement_type === 'incoming' ? '#10B98115' : '#EF444415',
+            },
+          ]}
+        >
+          {item.movement_type === 'incoming' ? (
+            <ArrowDownCircle size={24} color="#10B981" />
+          ) : (
+            <ArrowUpCircle size={24} color="#EF4444" />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.movementBody}>
+        <View style={styles.amountRow}>
+          <Text
+            style={[
+              styles.amountValue,
+              { color: item.movement_type === 'incoming' ? '#10B981' : '#EF4444' },
+            ]}
+          >
+            {item.movement_type === 'incoming' ? '+' : '-'}
+            {Number(item.amount).toFixed(2)} {item.currency}
+          </Text>
+        </View>
+        <Text style={styles.movementType}>
+          {item.movement_type === 'incoming' ? 'استلمت منه (وارد)' : 'أرسلت له (صادر)'}
+        </Text>
+        {item.notes && (
+          <Text style={styles.movementNotes} numberOfLines={1}>
+            {item.notes}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.movementFooter}>
+        <Calendar size={14} color="#9CA3AF" />
+        <Text style={styles.dateText}>
+          {format(new Date(item.created_at), 'dd MMMM yyyy - HH:mm', { locale: ar })}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>الحركات المالية</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push('/new-movement' as any)}
+        >
+          <Plus size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={movements}
+        renderItem={renderMovement}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {isLoading ? 'جاري التحميل...' : 'لا توجد حركات مالية'}
+            </Text>
+          </View>
+        }
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 56,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#4F46E5',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContent: {
+    padding: 16,
+  },
+  movementCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  movementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  movementInfo: {
+    flex: 1,
+  },
+  movementNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4F46E5',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  customerName: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'right',
+  },
+  movementIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  movementBody: {
+    marginBottom: 12,
+  },
+  amountRow: {
+    marginBottom: 4,
+  },
+  amountValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
+  movementType: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'right',
+    marginBottom: 4,
+  },
+  movementNotes: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  movementFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 64,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+  },
+});

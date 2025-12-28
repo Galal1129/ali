@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   ArrowRight,
@@ -120,13 +121,7 @@ export default function CustomerDetailsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadCustomerData();
-    }
-  }, [id]);
-
-  const loadCustomerData = async () => {
+  const loadCustomerData = useCallback(async () => {
     try {
       const [customerResult, movementsResult] = await Promise.all([
         supabase.from('customers').select('*').eq('id', id).maybeSingle(),
@@ -162,7 +157,16 @@ export default function CustomerDetailsScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        setIsLoading(true);
+        loadCustomerData();
+      }
+    }, [id, loadCustomerData])
+  );
 
   const handleCall = () => {
     if (customer?.phone) {

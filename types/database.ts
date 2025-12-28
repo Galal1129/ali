@@ -115,7 +115,7 @@ export interface CustomerBalanceByCurrency {
   balance: number;
 }
 
-export type Currency = 'USD' | 'SAR' | 'TRY' | 'EUR' | 'YER';
+export type Currency = 'USD' | 'SAR' | 'TRY' | 'EUR' | 'YER' | 'GBP' | 'AED';
 
 export const CURRENCIES: { code: Currency; name: string; symbol: string }[] = [
   { code: 'USD', name: 'دولار أمريكي', symbol: '$' },
@@ -123,4 +123,6 @@ export const CURRENCIES: { code: Currency; name: string; symbol: string }[] = [
   { code: 'TRY', name: 'ليرة تركية', symbol: '₺' },
   { code: 'EUR', name: 'يورو', symbol: '€' },
   { code: 'YER', name: 'ريال يمني', symbol: '﷼' },
+  { code: 'GBP', name: 'جنيه إسترليني', symbol: '£' },
+  { code: 'AED', name: 'درهم إماراتي', symbol: 'د.إ' },
 ];

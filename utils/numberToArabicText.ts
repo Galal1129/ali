@@ -128,6 +128,7 @@ function getCurrencyNameInArabic(currency: Currency): string {
     TRY: 'ليرة تركية',
     SAR: 'ريال سعودي',
     EUR: 'يورو',
+    YER: 'ريال يمني',
     GBP: 'جنيه إسترليني',
     AED: 'درهم إماراتي',
   };

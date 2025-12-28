@@ -29,6 +29,10 @@ export default function ReceiptPreviewScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [movement, setMovement] = useState<AccountMovement | null>(null);
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [pdfUri, setPdfUri] = useState<string>('');
+  const [isPdfReady, setIsPdfReady] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const qrRef = useRef<any>(null);
 
   useEffect(() => {
@@ -60,6 +64,7 @@ export default function ReceiptPreviewScreen() {
 
   const generateReceipt = async (movementData: any) => {
     try {
+      setIsPdfReady(false);
       const customerData = movementData.customers;
       const receiptData = {
         ...movementData,
@@ -87,27 +92,13 @@ export default function ReceiptPreviewScreen() {
       const html = generateReceiptHTML(receiptData, qrCodeDataUrl, logoDataUrl);
 
       setHtmlContent(html);
-    } catch (error) {
-      console.error('Error generating receipt:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء إنشاء السند');
-    }
-  };
-
-  const handleShare = async () => {
-    if (!movement || !htmlContent) {
-      Alert.alert('خطأ', 'لم يتم تحميل بيانات السند بعد');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
 
       const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
+        html: html,
         base64: false,
       });
 
-      const pdfName = `receipt_${movement.receipt_number || movement.movement_number}.pdf`;
+      const pdfName = `receipt_${movementData.receipt_number || movementData.movement_number}.pdf`;
       const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
 
       await FileSystem.moveAsync({
@@ -115,9 +106,27 @@ export default function ReceiptPreviewScreen() {
         to: pdfPath,
       });
 
+      setPdfUri(pdfPath);
+      setIsPdfReady(true);
+    } catch (error) {
+      console.error('Error generating receipt:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء إنشاء السند');
+      setHtmlContent('');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!movement || !pdfUri) {
+      Alert.alert('خطأ', 'لم يتم تحميل بيانات السند بعد');
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(pdfPath, {
+        await Sharing.shareAsync(pdfUri, {
           mimeType: 'application/pdf',
           dialogTitle: 'مشاركة السند',
           UTI: 'com.adobe.pdf',
@@ -129,34 +138,23 @@ export default function ReceiptPreviewScreen() {
       console.error('Error sharing receipt:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء مشاركة السند');
     } finally {
-      setIsLoading(false);
+      setIsSharing(false);
     }
   };
 
   const handleDownload = async () => {
-    if (!movement || !htmlContent) {
+    if (!movement || !pdfUri) {
       Alert.alert('خطأ', 'لم يتم تحميل بيانات السند بعد');
       return;
     }
 
     try {
-      setIsLoading(true);
-
-      const { uri } = await Print.printToFileAsync({
-        html: htmlContent,
-        base64: false,
-      });
+      setIsDownloading(true);
 
       const pdfName = `receipt_${movement.receipt_number || movement.movement_number}.pdf`;
-      const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
-
-      await FileSystem.moveAsync({
-        from: uri,
-        to: pdfPath,
-      });
 
       if (Platform.OS === 'web') {
-        const content = await FileSystem.readAsStringAsync(pdfPath, {
+        const content = await FileSystem.readAsStringAsync(pdfUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
         const link = document.createElement('a');
@@ -164,17 +162,17 @@ export default function ReceiptPreviewScreen() {
         link.download = pdfName;
         link.click();
       } else {
-        Alert.alert('نجح', `تم حفظ الملف: ${pdfName}`);
+        Alert.alert('نجح', `تم حفظ الملف:\n${pdfName}\n\nالمسار:\n${pdfUri}`);
       }
     } catch (error) {
       console.error('Error downloading receipt:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء تنزيل السند');
     } finally {
-      setIsLoading(false);
+      setIsDownloading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !isPdfReady) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -186,7 +184,9 @@ export default function ReceiptPreviewScreen() {
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>جاري تحميل السند...</Text>
+          <Text style={styles.loadingText}>
+            {isLoading ? 'جاري تحميل البيانات...' : 'جاري إنشاء السند...'}
+          </Text>
         </View>
       </View>
     );
@@ -200,11 +200,27 @@ export default function ReceiptPreviewScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>معاينة السند</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDownload}>
-            <Download size={20} color="#4F46E5" />
+          <TouchableOpacity
+            style={[styles.actionButton, isDownloading && styles.actionButtonDisabled]}
+            onPress={handleDownload}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <ActivityIndicator size="small" color="#4F46E5" />
+            ) : (
+              <Download size={20} color="#4F46E5" />
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Share2 size={20} color="#4F46E5" />
+          <TouchableOpacity
+            style={[styles.actionButton, isSharing && styles.actionButtonDisabled]}
+            onPress={handleShare}
+            disabled={isSharing}
+          >
+            {isSharing ? (
+              <ActivityIndicator size="small" color="#4F46E5" />
+            ) : (
+              <Share2 size={20} color="#4F46E5" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -223,8 +239,17 @@ export default function ReceiptPreviewScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.content}>
-        {htmlContent ? (
+      <View style={styles.content}>
+        {pdfUri ? (
+          <WebView
+            style={styles.webView}
+            source={{ uri: Platform.OS === 'android' ? `file://${pdfUri}` : pdfUri }}
+            originWhitelist={['*']}
+            scalesPageToFit={true}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+          />
+        ) : htmlContent ? (
           <WebView
             style={styles.webView}
             source={{ html: htmlContent }}
@@ -238,17 +263,17 @@ export default function ReceiptPreviewScreen() {
             <Text style={styles.errorText}>لم يتم تحميل السند</Text>
           </View>
         )}
-      </ScrollView>
+      </View>
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.shareButton, isLoading && styles.shareButtonDisabled]}
+          style={[styles.shareButton, isSharing && styles.shareButtonDisabled]}
           onPress={handleShare}
-          disabled={isLoading}
+          disabled={isSharing}
         >
           <Share2 size={20} color="#FFFFFF" />
           <Text style={styles.shareButtonText}>
-            {isLoading ? 'جاري المشاركة...' : 'مشاركة السند'}
+            {isSharing ? 'جاري المشاركة...' : 'مشاركة السند'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -294,6 +319,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#EEF2FF',
     borderRadius: 8,
+  },
+  actionButtonDisabled: {
+    opacity: 0.6,
   },
   content: {
     flex: 1,

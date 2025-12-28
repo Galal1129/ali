@@ -47,7 +47,7 @@ export default function SettingsScreen() {
       title: 'إعدادات المحل',
       subtitle: 'اسم المحل والشعار',
       color: '#4F46E5',
-      onPress: () => Alert.alert('قريباً', 'هذه الميزة قيد التطوير'),
+      onPress: () => router.push('/shop-settings' as any),
     },
     {
       icon: Lock,

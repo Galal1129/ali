@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   settings: AppSettings | null;
   refreshSettings: () => Promise<void>;
+  updateSettings: (settings: Partial<AppSettings>) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -94,6 +95,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await loadSettings();
   };
 
+  const updateSettings = async (newSettings: Partial<AppSettings>): Promise<boolean> => {
+    try {
+      const { data: currentSettings, error: fetchError } = await supabase
+        .from('app_settings')
+        .select('id')
+        .maybeSingle();
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (currentSettings) {
+        const { error: updateError } = await supabase
+          .from('app_settings')
+          .update(newSettings)
+          .eq('id', currentSettings.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('app_settings')
+          .insert({ ...newSettings, pin_code: '1234' });
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+
+      await loadSettings();
+      return true;
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -103,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         settings,
         refreshSettings,
+        updateSettings,
       }}
     >
       {children}

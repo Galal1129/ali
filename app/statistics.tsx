@@ -9,10 +9,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, TrendingUp, Users, DollarSign, AlertCircle, Calendar } from 'lucide-react-native';
+import { ArrowRight, TrendingUp, Users, DollarSign, AlertCircle, Calendar, TrendingDown, Coins } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { format, subDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { TotalBalanceByCurrency, CURRENCIES } from '@/types/database';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -44,6 +45,7 @@ export default function StatisticsScreen() {
     monthTransactions: 0,
     monthAmount: 0,
   });
+  const [currencyBalances, setCurrencyBalances] = useState<TotalBalanceByCurrency[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function StatisticsScreen() {
         weekTransactionsResult,
         monthTransactionsResult,
         debtsResult,
+        currencyBalancesResult,
       ] = await Promise.all([
         supabase.from('customers').select('id', { count: 'exact' }),
         supabase.from('transactions').select('amount_sent'),
@@ -70,6 +73,7 @@ export default function StatisticsScreen() {
         supabase.from('transactions').select('amount_sent').gte('created_at', weekAgo),
         supabase.from('transactions').select('amount_sent').gte('created_at', monthAgo),
         supabase.from('debts').select('amount, paid_amount').eq('status', 'pending'),
+        supabase.from('total_balances_by_currency').select('*'),
       ]);
 
       const totalAmount = allTransactionsResult.data?.reduce(
@@ -109,6 +113,8 @@ export default function StatisticsScreen() {
         monthTransactions: monthTransactionsResult.data?.length || 0,
         monthAmount,
       });
+
+      setCurrencyBalances(currencyBalancesResult.data || []);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -118,6 +124,11 @@ export default function StatisticsScreen() {
     setRefreshing(true);
     await loadStats();
     setRefreshing(false);
+  };
+
+  const getCurrencyInfo = (code: string) => {
+    const currency = CURRENCIES.find((c) => c.code === code);
+    return currency || { code, name: code, symbol: code };
   };
 
   const statCards = [
@@ -223,6 +234,88 @@ export default function StatisticsScreen() {
               </View>
             </View>
           ))}
+        </View>
+
+        <View style={styles.balancesSection}>
+          <View style={styles.balancesSectionHeader}>
+            <Coins size={24} color="#4F46E5" />
+            <Text style={styles.sectionTitle}>مطابقة المبالغ حسب العملات</Text>
+          </View>
+
+          {currencyBalances.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>لا توجد حركات بعد</Text>
+            </View>
+          ) : (
+            currencyBalances.map((balance, index) => {
+              const currencyInfo = getCurrencyInfo(balance.currency);
+              const isPositive = balance.balance > 0;
+              const isNegative = balance.balance < 0;
+
+              return (
+                <View key={index} style={styles.balanceCard}>
+                  <View style={styles.balanceCardHeader}>
+                    <View style={styles.currencyInfo}>
+                      <Text style={styles.currencySymbol}>{currencyInfo.symbol}</Text>
+                      <Text style={styles.currencyName}>{currencyInfo.name}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.balanceDetails}>
+                    <View style={styles.balanceRow}>
+                      <View style={styles.balanceItem}>
+                        <View style={styles.balanceItemHeader}>
+                          <TrendingDown size={18} color="#10B981" />
+                          <Text style={styles.balanceItemLabel}>عندي (وارد)</Text>
+                        </View>
+                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
+                          {balance.total_incoming.toFixed(2)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.balanceDivider} />
+
+                      <View style={styles.balanceItem}>
+                        <View style={styles.balanceItemHeader}>
+                          <TrendingUp size={18} color="#EF4444" />
+                          <Text style={styles.balanceItemLabel}>لي (صادر)</Text>
+                        </View>
+                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
+                          {balance.total_outgoing.toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.balanceSeparator} />
+
+                    <View style={styles.netBalanceContainer}>
+                      <Text style={styles.netBalanceLabel}>الفارق الصافي</Text>
+                      <View style={styles.netBalanceValueContainer}>
+                        <Text
+                          style={[
+                            styles.netBalanceValue,
+                            {
+                              color: isPositive ? '#10B981' : isNegative ? '#EF4444' : '#6B7280',
+                            },
+                          ]}
+                        >
+                          {isPositive && '+'}
+                          {balance.balance.toFixed(2)} {currencyInfo.symbol}
+                        </Text>
+                      </View>
+                      <Text style={styles.netBalanceDescription}>
+                        {isPositive
+                          ? 'لك (المبالغ الصادرة أكثر)'
+                          : isNegative
+                          ? 'عليك (المبالغ الواردة أكثر)'
+                          : 'متوازن'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
       </ScrollView>
     </View>
@@ -344,5 +437,117 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: '#E5E7EB',
+  },
+  balancesSection: {
+    padding: 16,
+  },
+  balancesSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  balanceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  balanceCardHeader: {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  currencyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  currencySymbol: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4F46E5',
+  },
+  currencyName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  balanceDetails: {
+    gap: 16,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  balanceItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  balanceItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  balanceItemLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  balanceItemValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  balanceDivider: {
+    width: 1,
+    height: 60,
+    backgroundColor: '#E5E7EB',
+  },
+  balanceSeparator: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
+  },
+  netBalanceContainer: {
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+  },
+  netBalanceLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  netBalanceValueContainer: {
+    marginBottom: 4,
+  },
+  netBalanceValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  netBalanceDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });

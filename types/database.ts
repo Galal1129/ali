@@ -115,6 +115,13 @@ export interface CustomerBalanceByCurrency {
   balance: number;
 }
 
+export interface TotalBalanceByCurrency {
+  currency: string;
+  total_incoming: number;
+  total_outgoing: number;
+  balance: number;
+}
+
 export type Currency = 'USD' | 'SAR' | 'TRY' | 'EUR' | 'YER' | 'GBP' | 'AED';
 
 export const CURRENCIES: { code: Currency; name: string; symbol: string }[] = [

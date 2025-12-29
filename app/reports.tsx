@@ -1,14 +1,12 @@
-import { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, FileText, Calendar, TrendingUp, Users, Download } from 'lucide-react-native';
+import { ArrowRight, FileText, Download } from 'lucide-react-native';
 
 export default function ReportsScreen() {
   const router = useRouter();
@@ -21,35 +19,10 @@ export default function ReportsScreen() {
       color: '#4F46E5',
       route: '/debt-summary',
     },
-    {
-      title: 'تقرير الحوالات اليومية',
-      description: 'عرض جميع الحوالات المنفذة اليوم',
-      icon: Calendar,
-      color: '#10B981',
-      route: null,
-    },
-    {
-      title: 'تقرير الحوالات الشهرية',
-      description: 'إحصائيات الشهر الحالي',
-      icon: TrendingUp,
-      color: '#F59E0B',
-      route: null,
-    },
-    {
-      title: 'تقرير العملاء',
-      description: 'معلومات وإحصائيات العملاء',
-      icon: Users,
-      color: '#8B5CF6',
-      route: null,
-    },
   ];
 
   const handleGenerateReport = (report: typeof reportTypes[0]) => {
-    if (report.route) {
-      router.push(report.route as any);
-    } else {
-      Alert.alert('قريباً', `${report.title}\n\nهذه الميزة قيد التطوير`);
-    }
+    router.push(report.route as any);
   };
 
   return (

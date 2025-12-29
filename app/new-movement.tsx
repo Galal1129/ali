@@ -876,9 +876,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 12,
     marginBottom: 4,
+    textAlign: 'center',
   },
   movementTypeButtonSubtext: {
     fontSize: 14,
+    textAlign: 'center',
   },
   amountSection: {
     marginBottom: 20,

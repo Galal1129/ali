@@ -64,9 +64,14 @@ export default function PartySelector({
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Loaded customers:', data?.length || 0);
       const filteredData = data?.filter(c => c.id !== excludeCustomerId) || [];
+      console.log('Filtered customers:', filteredData.length);
       setCustomers(filteredData);
       setFilteredCustomers(filteredData);
     } catch (error) {
@@ -198,6 +203,7 @@ export default function PartySelector({
                   </View>
                 }
                 style={styles.customerList}
+                contentContainerStyle={styles.customerListContent}
               />
             )}
           </View>
@@ -254,7 +260,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 20,
-    maxHeight: '80%',
+    height: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -323,6 +329,10 @@ const styles = StyleSheet.create({
   },
   customerList: {
     flex: 1,
+  },
+  customerListContent: {
+    paddingBottom: 20,
+    flexGrow: 1,
   },
   customerItem: {
     flexDirection: 'row',

@@ -12,13 +12,9 @@ import { useRouter } from 'expo-router';
 import {
   ArrowRight,
   TrendingUp,
-  Users,
-  DollarSign,
   AlertCircle,
   Calendar,
   TrendingDown,
-  Coins,
-  ArrowLeftRight,
   Trophy,
   Percent,
   Activity,
@@ -158,51 +154,6 @@ export default function StatisticsScreen() {
 
   const currentPeriodStats = stats.periodStats[selectedPeriod];
 
-  const statCards = [
-    {
-      title: 'إجمالي العملاء',
-      value: stats.totalCustomers.toString(),
-      icon: Users,
-      color: '#4F46E5',
-      bgColor: '#EEF2FF',
-    },
-    {
-      title: 'إجمالي الحركات',
-      value: stats.totalMovements.toString(),
-      icon: ArrowLeftRight,
-      color: '#8B5CF6',
-      bgColor: '#F3E8FF',
-    },
-    {
-      title: 'إجمالي المبالغ',
-      value: `${stats.totalAmount.toFixed(0)}`,
-      icon: DollarSign,
-      color: '#F59E0B',
-      bgColor: '#FEF3C7',
-    },
-    {
-      title: 'إجمالي العمولات',
-      value: `${stats.commissionStats.totalCommission.toFixed(0)}`,
-      icon: Percent,
-      color: '#06B6D4',
-      bgColor: '#CFFAFE',
-    },
-    {
-      title: 'لنا عند العملاء',
-      value: `${stats.totalDebts.toFixed(0)}`,
-      icon: TrendingUp,
-      color: '#10B981',
-      bgColor: '#ECFDF5',
-    },
-    {
-      title: 'للعملاء عندنا',
-      value: `${stats.totalWeOwe.toFixed(0)}`,
-      icon: TrendingDown,
-      color: '#EF4444',
-      bgColor: '#FEE2E2',
-    },
-  ];
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -298,6 +249,50 @@ export default function StatisticsScreen() {
             })
           )}
         </View>
+
+        {(stats.debtStats.owedToUsByCurrency.length > 0 ||
+          stats.debtStats.weOweByCurrency.length > 0) && (
+          <View style={styles.debtSection}>
+            <View style={styles.sectionHeader}>
+              <AlertCircle size={24} color="#EF4444" />
+              <Text style={styles.sectionTitle}>ملخص الديون</Text>
+            </View>
+
+            {stats.debtStats.owedToUsByCurrency.length > 0 && (
+              <View style={styles.debtCard}>
+                <Text style={styles.debtCardTitle}>لنا عند العملاء</Text>
+                {stats.debtStats.owedToUsByCurrency.map((item, index) => {
+                  const currencyInfo = getCurrencyInfo(item.currency);
+                  return (
+                    <View key={index} style={styles.debtRow}>
+                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
+                      <Text style={[styles.debtAmount, { color: '#10B981' }]}>
+                        {item.amount.toFixed(2)} {currencyInfo.symbol}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {stats.debtStats.weOweByCurrency.length > 0 && (
+              <View style={styles.debtCard}>
+                <Text style={styles.debtCardTitle}>للعملاء عندنا</Text>
+                {stats.debtStats.weOweByCurrency.map((item, index) => {
+                  const currencyInfo = getCurrencyInfo(item.currency);
+                  return (
+                    <View key={index} style={styles.debtRow}>
+                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
+                      <Text style={[styles.debtAmount, { color: '#EF4444' }]}>
+                        {item.amount.toFixed(2)} {currencyInfo.symbol}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
 
         {stats.topCustomers.length > 0 && (
           <View style={styles.topCustomersSection}>
@@ -433,16 +428,6 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
-        <View style={styles.statsGrid}>
-          {statCards.map((card, index) => (
-            <View key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
-              <card.icon size={32} color={card.color} />
-              <Text style={styles.statValue}>{card.value}</Text>
-              <Text style={styles.statLabel}>{card.title}</Text>
-            </View>
-          ))}
-        </View>
-
         {stats.commissionStats.commissionByCurrency.length > 0 && (
           <View style={styles.commissionSection}>
             <View style={styles.sectionHeader}>
@@ -462,50 +447,6 @@ export default function StatisticsScreen() {
                 );
               })}
             </View>
-          </View>
-        )}
-
-        {(stats.debtStats.owedToUsByCurrency.length > 0 ||
-          stats.debtStats.weOweByCurrency.length > 0) && (
-          <View style={styles.debtSection}>
-            <View style={styles.sectionHeader}>
-              <AlertCircle size={24} color="#EF4444" />
-              <Text style={styles.sectionTitle}>ملخص الديون</Text>
-            </View>
-
-            {stats.debtStats.owedToUsByCurrency.length > 0 && (
-              <View style={styles.debtCard}>
-                <Text style={styles.debtCardTitle}>لنا عند العملاء</Text>
-                {stats.debtStats.owedToUsByCurrency.map((item, index) => {
-                  const currencyInfo = getCurrencyInfo(item.currency);
-                  return (
-                    <View key={index} style={styles.debtRow}>
-                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
-                      <Text style={[styles.debtAmount, { color: '#10B981' }]}>
-                        {item.amount.toFixed(2)} {currencyInfo.symbol}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {stats.debtStats.weOweByCurrency.length > 0 && (
-              <View style={styles.debtCard}>
-                <Text style={styles.debtCardTitle}>للعملاء عندنا</Text>
-                {stats.debtStats.weOweByCurrency.map((item, index) => {
-                  const currencyInfo = getCurrencyInfo(item.currency);
-                  return (
-                    <View key={index} style={styles.debtRow}>
-                      <Text style={styles.debtCurrency}>{currencyInfo.name}</Text>
-                      <Text style={[styles.debtAmount, { color: '#EF4444' }]}>
-                        {item.amount.toFixed(2)} {currencyInfo.symbol}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
           </View>
         )}
 
@@ -604,31 +545,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     paddingHorizontal: 20,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: '47%',
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
   },
   periodSection: {
     padding: 16,

@@ -13,9 +13,10 @@ import {
   ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
+  FlatList,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
+import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search, ArrowRightLeft } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import QRCode from 'react-native-qrcode-svg';
@@ -24,6 +25,8 @@ import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getLogoBase64 } from '@/utils/logoHelper';
 
+type OperationType = 'shop_to_customer' | 'customer_to_shop' | 'customer_to_customer' | '';
+
 export default function NewMovementScreen() {
   const router = useRouter();
   const { customerId, customerName } = useLocalSearchParams();
@@ -31,7 +34,8 @@ export default function NewMovementScreen() {
   const qrRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
+  const [showFromCustomerPicker, setShowFromCustomerPicker] = useState(false);
+  const [showToCustomerPicker, setShowToCustomerPicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [showCommissionCurrencyPicker, setShowCommissionCurrencyPicker] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -40,10 +44,13 @@ export default function NewMovementScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [formData, setFormData] = useState({
-    customer_id: '',
-    customer_name: '',
-    customer_account_number: '',
-    movement_type: '' as 'incoming' | 'outgoing' | '',
+    operation_type: '' as OperationType,
+    from_customer_id: '',
+    from_customer_name: '',
+    from_customer_account: '',
+    to_customer_id: '',
+    to_customer_name: '',
+    to_customer_account: '',
     amount: '',
     commission: '',
     commission_currency: 'YER' as Currency,
@@ -74,29 +81,36 @@ export default function NewMovementScreen() {
     if (customerId && customerName) {
       setFormData((prev) => ({
         ...prev,
-        customer_id: customerId as string,
-        customer_name: customerName as string,
+        from_customer_id: customerId as string,
+        from_customer_name: customerName as string,
+        operation_type: 'customer_to_shop',
       }));
     }
   }, [customerId, customerName]);
 
   useEffect(() => {
-    if (formData.movement_type && formData.customer_name) {
-      if (formData.movement_type === 'outgoing') {
-        setFormData((prev) => ({
-          ...prev,
-          sender_name: prev.customer_name,
-          beneficiary_name: 'علي هادي علي الرازحي',
-        }));
-      } else if (formData.movement_type === 'incoming') {
-        setFormData((prev) => ({
-          ...prev,
-          sender_name: 'علي هادي علي الرازحي',
-          beneficiary_name: prev.customer_name,
-        }));
-      }
+    const shopName = 'علي هادي علي الرازحي';
+
+    if (formData.operation_type === 'customer_to_shop') {
+      setFormData((prev) => ({
+        ...prev,
+        sender_name: prev.from_customer_name,
+        beneficiary_name: shopName,
+      }));
+    } else if (formData.operation_type === 'shop_to_customer') {
+      setFormData((prev) => ({
+        ...prev,
+        sender_name: shopName,
+        beneficiary_name: prev.to_customer_name,
+      }));
+    } else if (formData.operation_type === 'customer_to_customer') {
+      setFormData((prev) => ({
+        ...prev,
+        sender_name: prev.from_customer_name,
+        beneficiary_name: prev.to_customer_name,
+      }));
     }
-  }, [formData.movement_type, formData.customer_name]);
+  }, [formData.operation_type, formData.from_customer_name, formData.to_customer_name]);
 
   const loadCustomers = async () => {
     try {
@@ -114,43 +128,145 @@ export default function NewMovementScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.customer_id || !formData.movement_type || !formData.amount) {
-      Alert.alert('خطأ', 'الرجاء إدخال جميع البيانات المطلوبة');
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      Alert.alert('خطأ', 'الرجاء إدخال مبلغ صحيح');
+      return;
+    }
+
+    if (formData.operation_type === 'customer_to_shop' && !formData.from_customer_id) {
+      Alert.alert('خطأ', 'الرجاء اختيار العميل المُرسل');
+      return;
+    }
+
+    if (formData.operation_type === 'shop_to_customer' && !formData.to_customer_id) {
+      Alert.alert('خطأ', 'الرجاء اختيار العميل المُستفيد');
+      return;
+    }
+
+    if (formData.operation_type === 'customer_to_customer') {
+      if (!formData.from_customer_id) {
+        Alert.alert('خطأ', 'الرجاء اختيار العميل المُرسل');
+        return;
+      }
+      if (!formData.to_customer_id) {
+        Alert.alert('خطأ', 'الرجاء اختيار العميل المُستفيد');
+        return;
+      }
+      if (formData.from_customer_id === formData.to_customer_id) {
+        Alert.alert('خطأ', 'لا يمكن التحويل لنفس العميل');
+        return;
+      }
+    }
+
+    if (!formData.operation_type) {
+      Alert.alert('خطأ', 'الرجاء اختيار نوع العملية');
       return;
     }
 
     setIsLoading(true);
     try {
-      const { data: movementNumber } = await supabase.rpc('generate_movement_number');
+      if (formData.operation_type === 'customer_to_customer') {
+        const transferGroupId = crypto.randomUUID();
+        const { data: movementNumber1 } = await supabase.rpc('generate_movement_number');
+        const { data: movementNumber2 } = await supabase.rpc('generate_movement_number');
 
-      const { data: insertedData, error } = await supabase
-        .from('account_movements')
-        .insert([
-          {
-            movement_number: movementNumber || `MOV-${Date.now()}`,
-            customer_id: formData.customer_id,
-            movement_type: formData.movement_type,
-            amount: Number(formData.amount),
-            currency: formData.currency,
-            commission: formData.commission ? Number(formData.commission) : null,
-            commission_currency: formData.commission_currency,
-            notes: formData.notes.trim() || null,
-            sender_name: formData.sender_name.trim() || null,
-            beneficiary_name: formData.beneficiary_name.trim() || null,
-            transfer_number: formData.transfer_number.trim() || null,
-          },
-        ])
-        .select()
-        .single();
+        const movement1 = {
+          movement_number: movementNumber1 || `MOV-${Date.now()}-1`,
+          customer_id: formData.from_customer_id,
+          movement_type: 'outgoing',
+          amount: Number(formData.amount),
+          currency: formData.currency,
+          commission: formData.commission ? Number(formData.commission) : null,
+          commission_currency: formData.commission_currency,
+          notes: formData.notes.trim() || `تحويل إلى ${formData.to_customer_name}`,
+          sender_name: formData.sender_name.trim() || formData.from_customer_name,
+          beneficiary_name: formData.beneficiary_name.trim() || formData.to_customer_name,
+          transfer_number: formData.transfer_number.trim() || null,
+          transfer_group_id: transferGroupId,
+          is_internal_transfer: true,
+        };
 
-      if (error) throw error;
+        const movement2 = {
+          movement_number: movementNumber2 || `MOV-${Date.now()}-2`,
+          customer_id: formData.to_customer_id,
+          movement_type: 'incoming',
+          amount: Number(formData.amount),
+          currency: formData.currency,
+          commission: formData.commission ? Number(formData.commission) : null,
+          commission_currency: formData.commission_currency,
+          notes: formData.notes.trim() || `تحويل من ${formData.from_customer_name}`,
+          sender_name: formData.sender_name.trim() || formData.from_customer_name,
+          beneficiary_name: formData.beneficiary_name.trim() || formData.to_customer_name,
+          transfer_number: formData.transfer_number.trim() || null,
+          transfer_group_id: transferGroupId,
+          is_internal_transfer: true,
+        };
 
-      setSavedMovementData({
-        ...insertedData,
-        customerName: formData.customer_name,
-        customerAccountNumber: formData.customer_account_number,
-      });
-      setShowSuccessModal(true);
+        const { error: error1 } = await supabase.from('account_movements').insert([movement1]);
+        if (error1) throw error1;
+
+        const { data: insertedData, error: error2 } = await supabase
+          .from('account_movements')
+          .insert([movement2])
+          .select()
+          .single();
+        if (error2) throw error2;
+
+        setSavedMovementData({
+          ...insertedData,
+          customerName: formData.to_customer_name,
+          customerAccountNumber: formData.to_customer_account,
+        });
+        setShowSuccessModal(true);
+      } else {
+        const { data: movementNumber } = await supabase.rpc('generate_movement_number');
+
+        const customerId = formData.operation_type === 'customer_to_shop'
+          ? formData.from_customer_id
+          : formData.to_customer_id;
+
+        const movementType = formData.operation_type === 'customer_to_shop'
+          ? 'outgoing'
+          : 'incoming';
+
+        const { data: insertedData, error } = await supabase
+          .from('account_movements')
+          .insert([
+            {
+              movement_number: movementNumber || `MOV-${Date.now()}`,
+              customer_id: customerId,
+              movement_type: movementType,
+              amount: Number(formData.amount),
+              currency: formData.currency,
+              commission: formData.commission ? Number(formData.commission) : null,
+              commission_currency: formData.commission_currency,
+              notes: formData.notes.trim() || null,
+              sender_name: formData.sender_name.trim() || null,
+              beneficiary_name: formData.beneficiary_name.trim() || null,
+              transfer_number: formData.transfer_number.trim() || null,
+              is_internal_transfer: false,
+            },
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const customerName = formData.operation_type === 'customer_to_shop'
+          ? formData.from_customer_name
+          : formData.to_customer_name;
+
+        const customerAccountNumber = formData.operation_type === 'customer_to_shop'
+          ? formData.from_customer_account
+          : formData.to_customer_account;
+
+        setSavedMovementData({
+          ...insertedData,
+          customerName: customerName,
+          customerAccountNumber: customerAccountNumber,
+        });
+        setShowSuccessModal(true);
+      }
     } catch (error) {
       console.error('Error adding movement:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إضافة الحركة');
@@ -225,26 +341,25 @@ export default function NewMovementScreen() {
     router.back();
   };
 
-  const selectCustomer = (customer: Customer) => {
-    setFormData((prev) => {
-      const newFormData = {
-        ...prev,
-        customer_id: customer.id,
-        customer_name: customer.name,
-        customer_account_number: customer.account_number,
-      };
+  const selectFromCustomer = (customer: Customer) => {
+    setFormData((prev) => ({
+      ...prev,
+      from_customer_id: customer.id,
+      from_customer_name: customer.name,
+      from_customer_account: customer.account_number,
+    }));
+    setShowFromCustomerPicker(false);
+    setSearchQuery('');
+  };
 
-      if (prev.movement_type === 'outgoing') {
-        newFormData.sender_name = customer.name;
-        newFormData.beneficiary_name = 'علي هادي علي الرازحي';
-      } else if (prev.movement_type === 'incoming') {
-        newFormData.sender_name = 'علي هادي علي الرازحي';
-        newFormData.beneficiary_name = customer.name;
-      }
-
-      return newFormData;
-    });
-    setShowCustomerPicker(false);
+  const selectToCustomer = (customer: Customer) => {
+    setFormData((prev) => ({
+      ...prev,
+      to_customer_id: customer.id,
+      to_customer_name: customer.name,
+      to_customer_account: customer.account_number,
+    }));
+    setShowToCustomerPicker(false);
     setSearchQuery('');
   };
 
@@ -258,6 +373,14 @@ export default function NewMovementScreen() {
       customer.account_number.toLowerCase().includes(query)
     );
   });
+
+  const filteredFromCustomers = filteredCustomers.filter(
+    (c) => c.id !== formData.to_customer_id
+  );
+
+  const filteredToCustomers = filteredCustomers.filter(
+    (c) => c.id !== formData.from_customer_id
+  );
 
   const selectCurrency = (currency: Currency) => {
     setFormData({ ...formData, currency });
@@ -274,6 +397,21 @@ export default function NewMovementScreen() {
     return currency?.symbol || code;
   };
 
+  const renderCustomerItem = ({ item, onSelect }: { item: Customer; onSelect: (customer: Customer) => void }) => (
+    <TouchableOpacity
+      style={styles.modalItem}
+      onPress={() => onSelect(item)}
+    >
+      <Text style={styles.modalItemText}>{item.name}</Text>
+      <View style={styles.modalItemInfo}>
+        <Text style={styles.modalItemSubtext}>{item.phone}</Text>
+        <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
+          رقم الحساب: {item.account_number}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -286,9 +424,8 @@ export default function NewMovementScreen() {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
-        enabled
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -298,263 +435,317 @@ export default function NewMovementScreen() {
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
-        <TouchableOpacity
-          style={[
-            styles.customerSelector,
-            customerId && styles.customerSelectorSelected,
-          ]}
-          onPress={() => setShowCustomerPicker(true)}
-        >
-          <View style={styles.customerLabelRow}>
-            <Text style={styles.customerLabel}>
-              العميل <Text style={styles.required}>*</Text>
+          <View style={styles.operationTypeSection}>
+            <Text style={styles.sectionTitle}>
+              نوع العملية <Text style={styles.required}>*</Text>
             </Text>
-            {customerId && (
-              <View style={styles.autoBadge}>
-                <Text style={styles.autoBadgeText}>تم الاختيار تلقائياً</Text>
+            <View style={styles.operationTypeButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.operationTypeButton,
+                  formData.operation_type === 'shop_to_customer' && styles.operationTypeButtonActive,
+                  { backgroundColor: formData.operation_type === 'shop_to_customer' ? '#3B82F6' : '#F3F4F6' },
+                ]}
+                onPress={() => setFormData({ ...formData, operation_type: 'shop_to_customer' })}
+              >
+                <ArrowUpCircle
+                  size={28}
+                  color={formData.operation_type === 'shop_to_customer' ? '#FFFFFF' : '#6B7280'}
+                />
+                <Text
+                  style={[
+                    styles.operationTypeButtonText,
+                    { color: formData.operation_type === 'shop_to_customer' ? '#FFFFFF' : '#6B7280' },
+                  ]}
+                >
+                  من المحل إلى عميل
+                </Text>
+                <Text
+                  style={[
+                    styles.operationTypeButtonSubtext,
+                    { color: formData.operation_type === 'shop_to_customer' ? '#DBEAFE' : '#9CA3AF' },
+                  ]}
+                >
+                  تسليم للعميل
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.operationTypeButton,
+                  formData.operation_type === 'customer_to_shop' && styles.operationTypeButtonActive,
+                  { backgroundColor: formData.operation_type === 'customer_to_shop' ? '#10B981' : '#F3F4F6' },
+                ]}
+                onPress={() => setFormData({ ...formData, operation_type: 'customer_to_shop' })}
+              >
+                <ArrowDownCircle
+                  size={28}
+                  color={formData.operation_type === 'customer_to_shop' ? '#FFFFFF' : '#6B7280'}
+                />
+                <Text
+                  style={[
+                    styles.operationTypeButtonText,
+                    { color: formData.operation_type === 'customer_to_shop' ? '#FFFFFF' : '#6B7280' },
+                  ]}
+                >
+                  من عميل إلى المحل
+                </Text>
+                <Text
+                  style={[
+                    styles.operationTypeButtonSubtext,
+                    { color: formData.operation_type === 'customer_to_shop' ? '#D1FAE5' : '#9CA3AF' },
+                  ]}
+                >
+                  استلام من العميل
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.operationTypeButton,
+                  formData.operation_type === 'customer_to_customer' && styles.operationTypeButtonActive,
+                  { backgroundColor: formData.operation_type === 'customer_to_customer' ? '#8B5CF6' : '#F3F4F6' },
+                ]}
+                onPress={() => setFormData({ ...formData, operation_type: 'customer_to_customer' })}
+              >
+                <ArrowRightLeft
+                  size={28}
+                  color={formData.operation_type === 'customer_to_customer' ? '#FFFFFF' : '#6B7280'}
+                />
+                <Text
+                  style={[
+                    styles.operationTypeButtonText,
+                    { color: formData.operation_type === 'customer_to_customer' ? '#FFFFFF' : '#6B7280' },
+                  ]}
+                >
+                  من عميل إلى عميل
+                </Text>
+                <Text
+                  style={[
+                    styles.operationTypeButtonSubtext,
+                    { color: formData.operation_type === 'customer_to_customer' ? '#EDE9FE' : '#9CA3AF' },
+                  ]}
+                >
+                  تحويل داخلي
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {(formData.operation_type === 'customer_to_shop' || formData.operation_type === 'customer_to_customer') && (
+            <TouchableOpacity
+              style={[
+                styles.customerSelector,
+                formData.from_customer_id && styles.customerSelectorSelected,
+              ]}
+              onPress={() => setShowFromCustomerPicker(true)}
+            >
+              <View style={styles.customerLabelRow}>
+                <Text style={styles.customerLabel}>
+                  {formData.operation_type === 'customer_to_customer' ? 'المُرسل (من)' : 'العميل'} <Text style={styles.required}>*</Text>
+                </Text>
+                {customerId && formData.operation_type === 'customer_to_shop' && (
+                  <View style={styles.autoBadge}>
+                    <Text style={styles.autoBadgeText}>تم الاختيار تلقائياً</Text>
+                  </View>
+                )}
               </View>
-            )}
-          </View>
-          <Text style={styles.customerValue}>
-            {formData.customer_name || 'اختر عميل'}
-          </Text>
-          {formData.customer_account_number && (
-            <Text style={styles.customerAccountText}>
-              رقم الحساب: {formData.customer_account_number}
-            </Text>
+              <Text style={styles.customerValue}>
+                {formData.from_customer_name || 'اختر عميل'}
+              </Text>
+              {formData.from_customer_account && (
+                <Text style={styles.customerAccountText}>
+                  رقم الحساب: {formData.from_customer_account}
+                </Text>
+              )}
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
 
-        <View style={styles.movementTypeSection}>
-          <Text style={styles.sectionTitle}>
-            نوع الحركة <Text style={styles.required}>*</Text>
-          </Text>
-          <View style={styles.movementTypeButtons}>
+          {(formData.operation_type === 'shop_to_customer' || formData.operation_type === 'customer_to_customer') && (
             <TouchableOpacity
               style={[
-                styles.movementTypeButton,
-                formData.movement_type === 'outgoing' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'outgoing' ? '#10B981' : '#F3F4F6' },
+                styles.customerSelector,
+                formData.to_customer_id && styles.customerSelectorSelected,
               ]}
-              onPress={() => setFormData({ ...formData, movement_type: 'outgoing' })}
+              onPress={() => setShowToCustomerPicker(true)}
             >
-              <ArrowDownCircle
-                size={32}
-                color={formData.movement_type === 'outgoing' ? '#FFFFFF' : '#6B7280'}
+              <Text style={styles.customerLabel}>
+                {formData.operation_type === 'customer_to_customer' ? 'المُستفيد (إلى)' : 'العميل'} <Text style={styles.required}>*</Text>
+              </Text>
+              <Text style={styles.customerValue}>
+                {formData.to_customer_name || 'اختر عميل'}
+              </Text>
+              {formData.to_customer_account && (
+                <Text style={styles.customerAccountText}>
+                  رقم الحساب: {formData.to_customer_account}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.amountSection}>
+            <Text style={styles.sectionTitle}>
+              المبلغ <Text style={styles.required}>*</Text>
+            </Text>
+            <View style={styles.amountRow}>
+              <TouchableOpacity
+                style={styles.currencyButton}
+                onPress={() => setShowCurrencyPicker(true)}
+              >
+                <Text style={styles.currencyButtonText}>{formData.currency}</Text>
+                <Text style={styles.currencySymbol}>{getCurrencySymbol(formData.currency)}</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.amountInput}
+                value={formData.amount}
+                onChangeText={(text) => setFormData({ ...formData, amount: text })}
+                placeholder="0.00"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="decimal-pad"
+                textAlign="center"
               />
-              <Text
-                style={[
-                  styles.movementTypeButtonText,
-                  { color: formData.movement_type === 'outgoing' ? '#FFFFFF' : '#6B7280' },
-                ]}
-              >
-                استلام من العميل
-              </Text>
-              <Text
-                style={[
-                  styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'outgoing' ? '#D1FAE5' : '#9CA3AF' },
-                ]}
-              >
-                قبض من العميل
-              </Text>
-            </TouchableOpacity>
+            </View>
+          </View>
 
-            <TouchableOpacity
-              style={[
-                styles.movementTypeButton,
-                formData.movement_type === 'incoming' && styles.movementTypeButtonActive,
-                { backgroundColor: formData.movement_type === 'incoming' ? '#3B82F6' : '#F3F4F6' },
-              ]}
-              onPress={() => setFormData({ ...formData, movement_type: 'incoming' })}
-            >
-              <ArrowUpCircle
-                size={32}
-                color={formData.movement_type === 'incoming' ? '#FFFFFF' : '#6B7280'}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
+            <View style={styles.commissionRow}>
+              <TouchableOpacity
+                style={styles.commissionCurrencyButton}
+                onPress={() => setShowCommissionCurrencyPicker(true)}
+              >
+                <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
+                <Text style={styles.commissionCurrencySymbol}>
+                  {getCurrencySymbol(formData.commission_currency)}
+                </Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.commissionInput}
+                value={formData.commission}
+                onChangeText={(text) => setFormData({ ...formData, commission: text })}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
+                placeholder="0.00"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="decimal-pad"
+                textAlign="right"
               />
-              <Text
-                style={[
-                  styles.movementTypeButtonText,
-                  { color: formData.movement_type === 'incoming' ? '#FFFFFF' : '#6B7280' },
-                ]}
-              >
-                تسليم للعميل
-              </Text>
-              <Text
-                style={[
-                  styles.movementTypeButtonSubtext,
-                  { color: formData.movement_type === 'incoming' ? '#DBEAFE' : '#9CA3AF' },
-                ]}
-              >
-                صرف للعميل
-              </Text>
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.amountSection}>
-          <Text style={styles.sectionTitle}>
-            المبلغ <Text style={styles.required}>*</Text>
-          </Text>
-          <View style={styles.amountRow}>
-            <TouchableOpacity
-              style={styles.currencyButton}
-              onPress={() => setShowCurrencyPicker(true)}
-            >
-              <Text style={styles.currencyButtonText}>{formData.currency}</Text>
-              <Text style={styles.currencySymbol}>{getCurrencySymbol(formData.currency)}</Text>
-            </TouchableOpacity>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>اسم المرسل</Text>
             <TextInput
-              style={styles.amountInput}
-              value={formData.amount}
-              onChangeText={(text) => setFormData({ ...formData, amount: text })}
-              placeholder="0.00"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="decimal-pad"
-              textAlign="center"
-            />
-          </View>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
-          <View style={styles.commissionRow}>
-            <TouchableOpacity
-              style={styles.commissionCurrencyButton}
-              onPress={() => setShowCommissionCurrencyPicker(true)}
-            >
-              <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
-              <Text style={styles.commissionCurrencySymbol}>
-                {getCurrencySymbol(formData.commission_currency)}
-              </Text>
-            </TouchableOpacity>
-            <TextInput
-              style={styles.commissionInput}
-              value={formData.commission}
-              onChangeText={(text) => setFormData({ ...formData, commission: text })}
+              style={styles.input}
+              value={formData.sender_name}
+              onChangeText={(text) => setFormData({ ...formData, sender_name: text })}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
                 }, 100);
               }}
-              placeholder="0.00"
+              placeholder="اسم المرسل"
               placeholderTextColor="#9CA3AF"
-              keyboardType="decimal-pad"
               textAlign="right"
             />
           </View>
-        </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>اسم المرسل</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.sender_name}
-            onChangeText={(text) => setFormData({ ...formData, sender_name: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
-            placeholder="اسم المرسل"
-            placeholderTextColor="#9CA3AF"
-            textAlign="right"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>اسم المستفيد</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.beneficiary_name}
+              onChangeText={(text) => setFormData({ ...formData, beneficiary_name: text })}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
+              placeholder="اسم المستفيد (اختياري)"
+              placeholderTextColor="#9CA3AF"
+              textAlign="right"
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>اسم المستفيد</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.beneficiary_name}
-            onChangeText={(text) => setFormData({ ...formData, beneficiary_name: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
-            placeholder="اسم المستفيد (اختياري)"
-            placeholderTextColor="#9CA3AF"
-            textAlign="right"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>رقم الحوالة</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.transfer_number}
+              onChangeText={(text) => setFormData({ ...formData, transfer_number: text })}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
+              placeholder="رقم الحوالة (اختياري)"
+              placeholderTextColor="#9CA3AF"
+              textAlign="right"
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>رقم الحوالة</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.transfer_number}
-            onChangeText={(text) => setFormData({ ...formData, transfer_number: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
-            placeholder="رقم الحوالة (اختياري)"
-            placeholderTextColor="#9CA3AF"
-            textAlign="right"
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>ملاحظات</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={formData.notes}
+              onChangeText={(text) => setFormData({ ...formData, notes: text })}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+              }}
+              placeholder="أدخل ملاحظات إضافية"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+              textAlign="right"
+              textAlignVertical="top"
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>ملاحظات</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={formData.notes}
-            onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
-            placeholder="أدخل ملاحظات إضافية"
-            placeholderTextColor="#9CA3AF"
-            multiline
-            numberOfLines={3}
-            textAlign="right"
-            textAlignVertical="top"
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={isLoading}
-        >
-          <Save size={20} color="#FFFFFF" />
-          <Text style={styles.submitButtonText}>
-            {isLoading ? 'جاري الحفظ...' : 'حفظ الحركة'}
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            <Save size={20} color="#FFFFFF" />
+            <Text style={styles.submitButtonText}>
+              {isLoading ? 'جاري الحفظ...' : 'حفظ الحركة'}
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <Modal
-        visible={showCustomerPicker}
+        visible={showFromCustomerPicker}
         animationType="slide"
         transparent={true}
         onRequestClose={() => {
-          setShowCustomerPicker(false);
+          setShowFromCustomerPicker(false);
           setSearchQuery('');
         }}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
-          keyboardVerticalOffset={0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
         >
           <TouchableOpacity
-            style={styles.modalTouchableOverlay}
+            style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => {
-              setShowCustomerPicker(false);
-              setSearchQuery('');
               Keyboard.dismiss();
+              setShowFromCustomerPicker(false);
+              setSearchQuery('');
             }}
           >
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>اختر عميل</Text>
+                <Text style={styles.modalTitle}>اختر العميل المُرسل</Text>
 
                 <View style={styles.searchContainer}>
                   <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
@@ -565,6 +756,7 @@ export default function NewMovementScreen() {
                     placeholder="ابحث بالاسم، الهاتف، أو رقم الحساب"
                     placeholderTextColor="#9CA3AF"
                     textAlign="right"
+                    autoFocus={false}
                   />
                   {searchQuery.length > 0 && (
                     <TouchableOpacity
@@ -576,40 +768,105 @@ export default function NewMovementScreen() {
                   )}
                 </View>
 
-                <ScrollView
+                <FlatList
+                  data={filteredFromCustomers}
+                  renderItem={({ item }) => renderCustomerItem({ item, onSelect: selectFromCustomer })}
+                  keyExtractor={(item) => item.id}
                   style={styles.modalList}
                   contentContainerStyle={styles.modalListContent}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={true}
-                >
-                  {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => (
-                      <TouchableOpacity
-                        key={customer.id}
-                        style={styles.modalItem}
-                        onPress={() => selectCustomer(customer)}
-                      >
-                        <Text style={styles.modalItemText}>{customer.name}</Text>
-                        <View style={styles.modalItemInfo}>
-                          <Text style={styles.modalItemSubtext}>{customer.phone}</Text>
-                          <Text style={[styles.modalItemSubtext, { color: '#4F46E5', fontWeight: '600' }]}>
-                            رقم الحساب: {customer.account_number}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))
-                  ) : (
+                  ListEmptyComponent={
                     <View style={styles.emptySearchResult}>
                       <Text style={styles.emptySearchText}>لا توجد نتائج مطابقة</Text>
                       <Text style={styles.emptySearchSubtext}>جرب البحث بكلمات أخرى</Text>
                     </View>
-                  )}
-                </ScrollView>
+                  }
+                />
 
                 <TouchableOpacity
                   style={styles.modalCloseButton}
                   onPress={() => {
-                    setShowCustomerPicker(false);
+                    setShowFromCustomerPicker(false);
+                    setSearchQuery('');
+                  }}
+                >
+                  <Text style={styles.modalCloseButtonText}>إغلاق</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal
+        visible={showToCustomerPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowToCustomerPicker(false);
+          setSearchQuery('');
+        }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => {
+              Keyboard.dismiss();
+              setShowToCustomerPicker(false);
+              setSearchQuery('');
+            }}
+          >
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>اختر العميل المُستفيد</Text>
+
+                <View style={styles.searchContainer}>
+                  <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="ابحث بالاسم، الهاتف، أو رقم الحساب"
+                    placeholderTextColor="#9CA3AF"
+                    textAlign="right"
+                    autoFocus={false}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery('')}
+                      style={styles.clearSearchButton}
+                    >
+                      <X size={18} color="#6B7280" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <FlatList
+                  data={filteredToCustomers}
+                  renderItem={({ item }) => renderCustomerItem({ item, onSelect: selectToCustomer })}
+                  keyExtractor={(item) => item.id}
+                  style={styles.modalList}
+                  contentContainerStyle={styles.modalListContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={true}
+                  ListEmptyComponent={
+                    <View style={styles.emptySearchResult}>
+                      <Text style={styles.emptySearchText}>لا توجد نتائج مطابقة</Text>
+                      <Text style={styles.emptySearchSubtext}>جرب البحث بكلمات أخرى</Text>
+                    </View>
+                  }
+                />
+
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => {
+                    setShowToCustomerPicker(false);
                     setSearchQuery('');
                   }}
                 >
@@ -787,11 +1044,49 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 150,
   },
+  operationTypeSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  operationTypeButtons: {
+    gap: 10,
+  },
+  operationTypeButton: {
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+  },
+  operationTypeButtonActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  operationTypeButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  operationTypeButtonSubtext: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
   customerSelector: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 2,
     borderColor: '#4F46E5',
   },
@@ -837,46 +1132,6 @@ const styles = StyleSheet.create({
   },
   required: {
     color: '#EF4444',
-  },
-  movementTypeSection: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-    textAlign: 'right',
-  },
-  movementTypeButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  movementTypeButton: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 120,
-  },
-  movementTypeButtonActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  movementTypeButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 12,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  movementTypeButtonSubtext: {
-    fontSize: 14,
-    textAlign: 'center',
   },
   amountSection: {
     marginBottom: 20,
@@ -993,7 +1248,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  modalTouchableOverlay: {
+  modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
   },
@@ -1014,6 +1269,7 @@ const styles = StyleSheet.create({
   modalList: {
     flexGrow: 0,
     flexShrink: 1,
+    maxHeight: 400,
   },
   modalListContent: {
     paddingBottom: 20,

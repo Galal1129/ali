@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
 import { Asset } from 'expo-asset';
 
@@ -53,17 +53,24 @@ async function convertUrlToBase64(url: string): Promise<string> {
       return url;
     }
 
-    const response = await fetch(url);
-    const blob = await response.blob();
+    const cacheFileName = `logo_${Date.now()}.png`;
+    const cachePath = `${FileSystem.cacheDirectory}${cacheFileName}`;
 
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+    const downloadResult = await FileSystem.downloadAsync(url, cachePath);
+
+    if (downloadResult.status !== 200) {
+      throw new Error(`Failed to download logo: ${downloadResult.status}`);
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(downloadResult.uri, {
+      encoding: 'base64' as any,
     });
+
+    const mimeType = url.endsWith('.png') ? 'image/png' :
+                      url.endsWith('.jpg') || url.endsWith('.jpeg') ? 'image/jpeg' :
+                      'image/png';
+
+    return `data:${mimeType};base64,${base64}`;
   } catch (error) {
     console.error('Error converting URL to base64:', error);
     return url;

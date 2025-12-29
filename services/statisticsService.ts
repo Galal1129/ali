@@ -235,7 +235,8 @@ export class StatisticsService {
   static async fetchCashFlowByCurrency(): Promise<CashFlowByCurrency[]> {
     const { data: movements, error } = await supabase
       .from('account_movements')
-      .select('amount, currency, movement_type');
+      .select('amount, currency, movement_type, is_internal_transfer')
+      .or('is_internal_transfer.is.null,is_internal_transfer.eq.false');
 
     if (error) {
       console.error('Error fetching cash flow:', error);
@@ -263,7 +264,7 @@ export class StatisticsService {
 
       if (movement.movement_type === 'outgoing') {
         flowByCurrency[currency].totalReceived += amount;
-      } else {
+      } else if (movement.movement_type === 'incoming') {
         flowByCurrency[currency].totalPaid += amount;
       }
     });

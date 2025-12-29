@@ -33,6 +33,12 @@ function RootLayoutNav() {
       <Stack.Screen name="customer-details" />
       <Stack.Screen name="new-transaction" />
       <Stack.Screen name="transaction-details" />
+      <Stack.Screen name="new-movement" />
+      <Stack.Screen name="edit-movement" />
+      <Stack.Screen name="movement-details" />
+      <Stack.Screen name="receipt-preview" />
+      <Stack.Screen name="debt-summary" />
+      <Stack.Screen name="shop-settings" />
       <Stack.Screen name="exchange-rates" />
       <Stack.Screen name="calculator" />
       <Stack.Screen name="debts" />

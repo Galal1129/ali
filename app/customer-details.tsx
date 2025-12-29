@@ -464,6 +464,94 @@ export default function CustomerDetailsScreen() {
     });
   };
 
+  const handleMovementPress = (movement: AccountMovement) => {
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const currencySymbol = getCurrencySymbol(movement.currency);
+    const amount = Math.round(Number(movement.amount));
+
+    Alert.alert(
+      `${movementTypeText} - ${movement.movement_number}`,
+      `${amount} ${currencySymbol}`,
+      [
+        {
+          text: 'طباعة السند',
+          onPress: () => handlePrintMovementReceipt(movement),
+        },
+        {
+          text: 'تعديل',
+          onPress: () => handleEditMovement(movement),
+        },
+        {
+          text: 'حذف',
+          onPress: () => handleDeleteMovement(movement),
+          style: 'destructive',
+        },
+        {
+          text: 'إلغاء',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const handleEditMovement = (movement: AccountMovement) => {
+    router.push({
+      pathname: '/edit-movement',
+      params: {
+        movementId: movement.id,
+        customerName: customer?.name,
+        customerAccountNumber: customer?.account_number,
+      },
+    });
+  };
+
+  const handleDeleteMovement = (movement: AccountMovement) => {
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const currencySymbol = getCurrencySymbol(movement.currency);
+    const amount = Math.round(Number(movement.amount));
+
+    Alert.alert(
+      'تأكيد الحذف',
+      `هل أنت متأكد من حذف هذه الحركة؟\n\n${movementTypeText} - ${movement.movement_number}\nالمبلغ: ${amount} ${currencySymbol}\n\nلا يمكن التراجع.`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حذف',
+          style: 'destructive',
+          onPress: () => confirmDeleteMovement(movement),
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteMovement = async (movement: AccountMovement) => {
+    try {
+      const { error } = await supabase
+        .from('account_movements')
+        .delete()
+        .eq('id', movement.id);
+
+      if (error) throw error;
+
+      Alert.alert('نجح', 'تم حذف الحركة بنجاح');
+      loadCustomerData();
+    } catch (error) {
+      console.error('Error deleting movement:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء حذف الحركة');
+    }
+  };
+
+  const handlePrintMovementReceipt = (movement: AccountMovement) => {
+    router.push({
+      pathname: '/receipt-preview',
+      params: {
+        movementId: movement.id,
+        customerName: customer?.name,
+        customerAccountNumber: customer?.account_number,
+      },
+    });
+  };
+
   const balance = customer?.balance || 0;
   const groupedMovements = groupMovementsByMonth(movements);
   const currencyBalances = calculateBalanceByCurrency(movements);
@@ -640,10 +728,7 @@ export default function CustomerDetailsScreen() {
                     key={movement.id}
                     style={styles.movementRow}
                     activeOpacity={0.7}
-                    onPress={() => router.push({
-                      pathname: '/movement-details',
-                      params: { movementId: movement.id }
-                    })}
+                    onPress={() => handleMovementPress(movement)}
                   >
                     <View style={styles.movementDate}>
                       <Text style={styles.movementDateMonth}>

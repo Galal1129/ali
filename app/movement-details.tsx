@@ -22,6 +22,7 @@ import {
   MessageSquare,
   ArrowDownCircle,
   ArrowUpCircle,
+  ArrowLeftRight,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { AccountMovement, CURRENCIES } from '@/types/database';
@@ -173,9 +174,16 @@ export default function MovementDetailsScreen() {
 
   if (!movement) return null;
 
-  const movementTypeText = movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
-  const movementTypeColor = movement.movement_type === 'incoming' ? '#F97316' : '#3B82F6';
-  const movementTypeIcon = movement.movement_type === 'incoming' ? ArrowUpCircle : ArrowDownCircle;
+  const isTransfer = Boolean(movement.transfer_direction);
+  const movementTypeText = isTransfer
+    ? 'تحويل داخلي'
+    : movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
+  const movementTypeColor = isTransfer
+    ? '#F59E0B'
+    : movement.movement_type === 'incoming' ? '#F97316' : '#3B82F6';
+  const movementTypeIcon = isTransfer
+    ? ArrowLeftRight
+    : movement.movement_type === 'incoming' ? ArrowUpCircle : ArrowDownCircle;
 
   return (
     <View style={styles.container}>
@@ -195,7 +203,9 @@ export default function MovementDetailsScreen() {
       <ScrollView style={styles.content}>
         <View style={[styles.typeCard, { backgroundColor: `${movementTypeColor}15` }]}>
           <View style={[styles.typeIconContainer, { backgroundColor: movementTypeColor }]}>
-            {movement.movement_type === 'incoming' ? (
+            {isTransfer ? (
+              <ArrowLeftRight size={32} color="#FFFFFF" />
+            ) : movement.movement_type === 'incoming' ? (
               <ArrowUpCircle size={32} color="#FFFFFF" />
             ) : (
               <ArrowDownCircle size={32} color="#FFFFFF" />
@@ -203,7 +213,15 @@ export default function MovementDetailsScreen() {
           </View>
           <Text style={[styles.typeText, { color: movementTypeColor }]}>{movementTypeText}</Text>
           <Text style={styles.typeDescription}>
-            {movement.movement_type === 'incoming' ? 'أنت أرسلت للعميل' : 'العميل دفع لك'}
+            {isTransfer
+              ? movement.transfer_direction === 'customer_to_customer'
+                ? 'تحويل بين عميلين'
+                : movement.transfer_direction === 'shop_to_customer'
+                ? 'تحويل من المحل للعميل'
+                : 'تحويل من العميل للمحل'
+              : movement.movement_type === 'incoming'
+              ? 'أنت أرسلت للعميل'
+              : 'العميل دفع لك'}
           </Text>
         </View>
 

@@ -8,7 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar } from 'lucide-react-native';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar, ArrowLeftRight } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { AccountMovement } from '@/types/database';
 import { format } from 'date-fns';
@@ -74,12 +74,15 @@ export default function TransactionsScreen() {
           style={[
             styles.movementIcon,
             {
-              backgroundColor:
-                item.movement_type === 'incoming' ? '#10B98115' : '#EF444415',
+              backgroundColor: item.transfer_direction
+                ? '#FEF3C7'
+                : item.movement_type === 'incoming' ? '#10B98115' : '#EF444415',
             },
           ]}
         >
-          {item.movement_type === 'incoming' ? (
+          {item.transfer_direction ? (
+            <ArrowLeftRight size={24} color="#F59E0B" />
+          ) : item.movement_type === 'incoming' ? (
             <ArrowDownCircle size={24} color="#10B981" />
           ) : (
             <ArrowUpCircle size={24} color="#EF4444" />
@@ -92,17 +95,34 @@ export default function TransactionsScreen() {
           <Text
             style={[
               styles.amountValue,
-              { color: item.movement_type === 'incoming' ? '#10B981' : '#EF4444' },
+              {
+                color: item.transfer_direction
+                  ? '#F59E0B'
+                  : item.movement_type === 'incoming' ? '#10B981' : '#EF4444',
+              },
             ]}
           >
-            {item.movement_type === 'incoming' ? '+' : '-'}
+            {item.transfer_direction
+              ? ''
+              : item.movement_type === 'incoming' ? '+' : '-'}
             {Number(item.amount).toFixed(2)} {item.currency}
           </Text>
         </View>
         <Text style={styles.movementType}>
-          {item.movement_type === 'incoming' ? 'استلمت منه (وارد)' : 'أرسلت له (صادر)'}
+          {item.transfer_direction
+            ? 'تحويل داخلي'
+            : item.movement_type === 'incoming' ? 'استلمت منه (وارد)' : 'أرسلت له (صادر)'}
         </Text>
-        {item.notes && (
+        {item.transfer_direction && (
+          <Text style={styles.movementNotes} numberOfLines={1}>
+            {item.transfer_direction === 'customer_to_customer'
+              ? `من: ${item.sender_name || 'عميل'} → إلى: ${item.beneficiary_name || 'عميل'}`
+              : item.transfer_direction === 'shop_to_customer'
+              ? 'من المحل'
+              : 'إلى المحل'}
+          </Text>
+        )}
+        {!item.transfer_direction && item.notes && (
           <Text style={styles.movementNotes} numberOfLines={1}>
             {item.notes}
           </Text>

@@ -79,6 +79,10 @@ export interface AccountMovement {
   beneficiary_name?: string;
   transfer_number?: string;
   receipt_number?: string;
+  from_customer_id?: string;
+  to_customer_id?: string;
+  transfer_direction?: 'shop_to_customer' | 'customer_to_shop' | 'customer_to_customer';
+  related_transfer_id?: string;
   created_at: string;
 }
 
@@ -133,3 +137,26 @@ export const CURRENCIES: { code: Currency; name: string; symbol: string }[] = [
   { code: 'GBP', name: 'جنيه إسترليني', symbol: '£' },
   { code: 'AED', name: 'درهم إماراتي', symbol: 'د.إ' },
 ];
+
+export type TransferPartyType = 'shop' | 'customer';
+
+export interface TransferParty {
+  type: TransferPartyType;
+  customerId?: string;
+  customerName?: string;
+}
+
+export interface InternalTransferRequest {
+  from: TransferParty;
+  to: TransferParty;
+  amount: number;
+  currency: Currency;
+  notes?: string;
+}
+
+export interface InternalTransferResponse {
+  from_movement_id?: string;
+  to_movement_id?: string;
+  success: boolean;
+  message: string;
+}

@@ -60,7 +60,11 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
   const receiptDate = format(new Date(created_at), 'yyyy-MM-dd', { locale: ar });
   const receiptTime = format(new Date(created_at), 'HH:mm:ss', { locale: ar });
   const receiptDateTime = format(new Date(created_at), 'dd/MM/yyyy', { locale: ar });
-  const receiptType = movement_type === 'outgoing' ? 'دائن' : 'مدين';
+
+  const isTransfer = Boolean(receiptData.transfer_direction);
+  const receiptType = isTransfer
+    ? 'تحويل'
+    : movement_type === 'outgoing' ? 'دائن' : 'مدين';
 
   const currencyName = getCurrencyName(currency);
   const commissionCurrencyName = getCurrencyName(commission_currency);
@@ -71,10 +75,16 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
   const amountInWords = numberToArabicTextWithCurrency(totalAmount, currency as Currency);
 
-  const actionTitle = movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+  const actionTitle = isTransfer
+    ? receiptData.transfer_direction === 'customer_to_customer'
+      ? 'تحويل داخلي بين عميلين'
+      : receiptData.transfer_direction === 'shop_to_customer'
+      ? 'تحويل من المحل للعميل'
+      : 'تحويل من العميل للمحل'
+    : movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
 
-  const primaryColor = '#3B82F6';
-  const darkColor = '#2563EB';
+  const primaryColor = isTransfer ? '#F59E0B' : '#3B82F6';
+  const darkColor = isTransfer ? '#D97706' : '#2563EB';
 
   return `
 <!DOCTYPE html>
@@ -850,7 +860,13 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
           <div class="notice-row">
             <div class="notice-box">
-              نود إشعاركم أننا ${movement_type === 'outgoing' ? 'استلمنا منكم حسب توجيهكم لنا باستلام المبلغ المذكور' : 'سلمنا لكم حسب توجيهكم لنا بتسليم المبلغ المذكور'} حسب التفاصيل التالية
+              نود إشعاركم ${isTransfer
+                ? receiptData.transfer_direction === 'customer_to_customer'
+                  ? `بتحويل المبلغ المذكور من ${sender_name || 'العميل الأول'} إلى ${beneficiary_name || 'العميل الثاني'}`
+                  : receiptData.transfer_direction === 'shop_to_customer'
+                  ? 'بتحويل المبلغ المذكور من المحل إليكم'
+                  : 'باستلام المبلغ المذكور منكم وتحويله للمحل'
+                : `أننا ${movement_type === 'outgoing' ? 'استلمنا منكم حسب توجيهكم لنا باستلام المبلغ المذكور' : 'سلمنا لكم حسب توجيهكم لنا بتسليم المبلغ المذكور'}`} حسب التفاصيل التالية
             </div>
           </div>
 

@@ -13,6 +13,7 @@ import {
   Receipt,
   BarChart3,
   FileText,
+  ArrowLeftRight,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -41,6 +42,13 @@ export default function DashboardScreen() {
       subtitle: 'إضافة حركة جديدة',
       color: '#3B82F6',
       route: '/new-movement',
+    },
+    {
+      icon: ArrowLeftRight,
+      title: 'تحويل داخلي',
+      subtitle: 'تحويل بين الحسابات',
+      color: '#F59E0B',
+      route: '/internal-transfer',
     },
     {
       icon: FileText,

@@ -747,13 +747,28 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementType,
                           {
-                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
+                            color: movement.transfer_direction
+                              ? '#F59E0B'
+                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
-                        {movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم'}
+                        {movement.transfer_direction
+                          ? 'تحويل داخلي'
+                          : movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم'}
                       </Text>
-                      {movement.notes && (
+                      {movement.transfer_direction && (
+                        <Text style={styles.movementNotes} numberOfLines={1}>
+                          {movement.transfer_direction === 'customer_to_customer'
+                            ? movement.from_customer_id === customer?.id
+                              ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
+                              : `من: ${movement.sender_name || 'عميل آخر'}`
+                            : movement.transfer_direction === 'shop_to_customer'
+                            ? 'من المحل'
+                            : 'إلى المحل'}
+                        </Text>
+                      )}
+                      {!movement.transfer_direction && movement.notes && (
                         <Text style={styles.movementNotes} numberOfLines={1}>
                           {movement.notes}
                         </Text>
@@ -766,8 +781,9 @@ export default function CustomerDetailsScreen() {
                       style={[
                         styles.movementIcon,
                         {
-                          backgroundColor:
-                            movement.movement_type === 'outgoing' ? '#ECFDF5' : '#EFF6FF',
+                          backgroundColor: movement.transfer_direction
+                            ? '#FEF3C7'
+                            : movement.movement_type === 'outgoing' ? '#ECFDF5' : '#EFF6FF',
                         },
                       ]}
                     >
@@ -775,7 +791,9 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.currencySymbolText,
                           {
-                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
+                            color: movement.transfer_direction
+                              ? '#F59E0B'
+                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
@@ -788,14 +806,18 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementAmountText,
                           {
-                            color: movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
+                            color: movement.transfer_direction
+                              ? '#F59E0B'
+                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
                         {Math.round(Number(movement.amount))}
                       </Text>
                       <Text style={styles.movementLabel}>
-                        {movement.movement_type === 'outgoing' ? 'من العميل' : 'للعميل'}
+                        {movement.transfer_direction
+                          ? 'تحويل'
+                          : movement.movement_type === 'outgoing' ? 'من العميل' : 'للعميل'}
                       </Text>
                     </View>
                   </TouchableOpacity>

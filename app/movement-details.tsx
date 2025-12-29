@@ -49,7 +49,7 @@ export default function MovementDetailsScreen() {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('account_movements')
-        .select('*, customers(name, account_number)')
+        .select('*, customers!customer_id(name, account_number)')
         .eq('id', movementId)
         .maybeSingle();
 

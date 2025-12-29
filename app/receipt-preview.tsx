@@ -45,7 +45,7 @@ export default function ReceiptPreviewScreen() {
       setIsLoading(true);
       const { data: movementData, error: movementError } = await supabase
         .from('account_movements')
-        .select('*, customers(name, account_number, phone)')
+        .select('*, customers!customer_id(name, account_number, phone)')
         .eq('id', movementId)
         .single();
 

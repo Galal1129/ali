@@ -35,7 +35,7 @@ export default function TransactionsScreen() {
         .select(
           `
           *,
-          customers!inner(name)
+          customers!customer_id!inner(name)
         `
         )
         .order('created_at', { ascending: false });

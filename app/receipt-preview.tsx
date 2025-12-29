@@ -41,6 +41,7 @@ export default function ReceiptPreviewScreen() {
 
   const loadMovement = async () => {
     try {
+      console.log('[ReceiptPreview] Loading movement with ID:', movementId);
       setIsLoading(true);
       const { data: movementData, error: movementError } = await supabase
         .from('account_movements')
@@ -48,15 +49,25 @@ export default function ReceiptPreviewScreen() {
         .eq('id', movementId)
         .single();
 
-      if (movementError) throw movementError;
+      if (movementError) {
+        console.error('[ReceiptPreview] Error from Supabase:', movementError);
+        throw movementError;
+      }
 
       if (movementData) {
+        console.log('[ReceiptPreview] Movement data loaded successfully');
         setMovement(movementData);
         await generateReceipt(movementData);
+      } else {
+        console.warn('[ReceiptPreview] No movement data found');
+        Alert.alert('تنبيه', 'لم يتم العثور على بيانات السند');
       }
-    } catch (error) {
-      console.error('Error loading movement:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء تحميل بيانات السند');
+    } catch (error: any) {
+      console.error('[ReceiptPreview] Error loading movement:', error);
+      Alert.alert(
+        'خطأ في تحميل البيانات',
+        `حدث خطأ أثناء تحميل بيانات السند:\n${error?.message || 'خطأ غير معروف'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -64,6 +75,7 @@ export default function ReceiptPreviewScreen() {
 
   const generateReceipt = async (movementData: any) => {
     try {
+      console.log('[ReceiptPreview] Starting receipt generation...');
       setIsPdfReady(false);
       const customerData = movementData.customers;
       const receiptData = {
@@ -73,45 +85,70 @@ export default function ReceiptPreviewScreen() {
         customerPhone: customerData?.phone,
       };
 
-      const qrData = generateQRCodeData(receiptData);
+      console.log('[ReceiptPreview] Receipt data prepared:', receiptData);
 
+      const qrData = generateQRCodeData(receiptData);
+      console.log('[ReceiptPreview] QR data generated:', qrData);
+
+      console.log('[ReceiptPreview] Waiting for QR code to render...');
       const qrCodeDataUrl = await new Promise<string>((resolve) => {
         setTimeout(async () => {
           if (qrRef.current) {
-            qrRef.current.toDataURL((dataUrl: string) => {
-              resolve(`data:image/png;base64,${dataUrl}`);
-            });
+            console.log('[ReceiptPreview] QR ref found, converting to data URL...');
+            try {
+              qrRef.current.toDataURL((dataUrl: string) => {
+                console.log('[ReceiptPreview] QR code converted successfully. Length:', dataUrl?.length);
+                resolve(`data:image/png;base64,${dataUrl}`);
+              });
+            } catch (error) {
+              console.error('[ReceiptPreview] Error converting QR code:', error);
+              resolve('');
+            }
           } else {
+            console.warn('[ReceiptPreview] QR ref not found, skipping QR code');
             resolve('');
           }
-        }, 100);
+        }, 500);
       });
 
+      console.log('[ReceiptPreview] Loading logo...');
       const logoDataUrl = await getLogoBase64();
+      console.log('[ReceiptPreview] Logo loaded. Type:', logoDataUrl?.substring(0, 30));
 
+      console.log('[ReceiptPreview] Generating HTML...');
       const html = generateReceiptHTML(receiptData, qrCodeDataUrl, logoDataUrl);
+      console.log('[ReceiptPreview] HTML generated. Length:', html.length);
 
       setHtmlContent(html);
 
+      console.log('[ReceiptPreview] Converting to PDF...');
       const { uri } = await Print.printToFileAsync({
         html: html,
         base64: false,
       });
+      console.log('[ReceiptPreview] PDF created at:', uri);
 
       const pdfName = `receipt_${movementData.receipt_number || movementData.movement_number}.pdf`;
       const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
 
+      console.log('[ReceiptPreview] Moving PDF to:', pdfPath);
       await FileSystem.moveAsync({
         from: uri,
         to: pdfPath,
       });
 
+      console.log('[ReceiptPreview] PDF ready!');
       setPdfUri(pdfPath);
       setIsPdfReady(true);
-    } catch (error) {
-      console.error('Error generating receipt:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء إنشاء السند');
+    } catch (error: any) {
+      console.error('[ReceiptPreview] Error generating receipt:', error);
+      console.error('[ReceiptPreview] Error stack:', error?.stack);
+      Alert.alert(
+        'خطأ في إنشاء السند',
+        `حدث خطأ أثناء إنشاء السند:\n${error?.message || 'خطأ غير معروف'}\n\nيرجى المحاولة مرة أخرى.`
+      );
       setHtmlContent('');
+      setIsPdfReady(false);
     }
   };
 
@@ -122,21 +159,29 @@ export default function ReceiptPreviewScreen() {
     }
 
     try {
+      console.log('[ReceiptPreview] Starting share process...');
       setIsSharing(true);
 
       const canShare = await Sharing.isAvailableAsync();
+      console.log('[ReceiptPreview] Can share:', canShare);
+
       if (canShare) {
+        console.log('[ReceiptPreview] Sharing PDF:', pdfUri);
         await Sharing.shareAsync(pdfUri, {
           mimeType: 'application/pdf',
           dialogTitle: 'مشاركة السند',
           UTI: 'com.adobe.pdf',
         });
+        console.log('[ReceiptPreview] Share completed successfully');
       } else {
         Alert.alert('تنبيه', 'المشاركة غير متاحة على هذا الجهاز');
       }
-    } catch (error) {
-      console.error('Error sharing receipt:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء مشاركة السند');
+    } catch (error: any) {
+      console.error('[ReceiptPreview] Error sharing receipt:', error);
+      Alert.alert(
+        'خطأ في المشاركة',
+        `حدث خطأ أثناء مشاركة السند:\n${error?.message || 'خطأ غير معروف'}`
+      );
     } finally {
       setIsSharing(false);
     }
@@ -149,24 +194,33 @@ export default function ReceiptPreviewScreen() {
     }
 
     try {
+      console.log('[ReceiptPreview] Starting download process...');
       setIsDownloading(true);
 
       const pdfName = `receipt_${movement.receipt_number || movement.movement_number}.pdf`;
+      console.log('[ReceiptPreview] PDF name:', pdfName);
 
       if (Platform.OS === 'web') {
+        console.log('[ReceiptPreview] Platform is web, reading as base64...');
         const content = await FileSystem.readAsStringAsync(pdfUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
+        console.log('[ReceiptPreview] Creating download link...');
         const link = document.createElement('a');
         link.href = `data:application/pdf;base64,${content}`;
         link.download = pdfName;
         link.click();
+        console.log('[ReceiptPreview] Download triggered');
       } else {
+        console.log('[ReceiptPreview] File saved at:', pdfUri);
         Alert.alert('نجح', `تم حفظ الملف:\n${pdfName}\n\nالمسار:\n${pdfUri}`);
       }
-    } catch (error) {
-      console.error('Error downloading receipt:', error);
-      Alert.alert('خطأ', 'حدث خطأ أثناء تنزيل السند');
+    } catch (error: any) {
+      console.error('[ReceiptPreview] Error downloading receipt:', error);
+      Alert.alert(
+        'خطأ في التنزيل',
+        `حدث خطأ أثناء تنزيل السند:\n${error?.message || 'خطأ غير معروف'}`
+      );
     } finally {
       setIsDownloading(false);
     }

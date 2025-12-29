@@ -8,23 +8,37 @@ const DEFAULT_LOGO_PLACEHOLDER =
 
 async function getDefaultLogoBase64(): Promise<string> {
   try {
+    console.log('[logoHelper] Starting to load default logo...');
     const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
-    await asset.downloadAsync();
+
+    if (!asset.downloaded) {
+      console.log('[logoHelper] Downloading asset...');
+      await asset.downloadAsync();
+    }
+
+    console.log('[logoHelper] Asset downloaded. URI:', asset.uri, 'LocalURI:', asset.localUri);
 
     if (Platform.OS === 'web') {
+      console.log('[logoHelper] Platform is web, returning URI directly');
       return asset.uri;
     }
 
-    if (asset.localUri) {
-      const base64 = await FileSystem.readAsStringAsync(asset.localUri, {
-        encoding: 'base64' as any,
-      });
-      return `data:image/png;base64,${base64}`;
+    const uriToUse = asset.localUri || asset.uri;
+
+    if (!uriToUse) {
+      console.error('[logoHelper] No URI available for asset');
+      return DEFAULT_LOGO_PLACEHOLDER;
     }
 
-    return DEFAULT_LOGO_PLACEHOLDER;
+    console.log('[logoHelper] Reading file as base64...');
+    const base64 = await FileSystem.readAsStringAsync(uriToUse, {
+      encoding: 'base64' as any,
+    });
+
+    console.log('[logoHelper] Successfully converted to base64. Length:', base64.length);
+    return `data:image/png;base64,${base64}`;
   } catch (error) {
-    console.error('Error loading default logo:', error);
+    console.error('[logoHelper] Error loading default logo:', error);
     return DEFAULT_LOGO_PLACEHOLDER;
   }
 }
@@ -79,24 +93,33 @@ async function convertUrlToBase64(url: string): Promise<string> {
 
 export async function getLogoBase64(): Promise<string> {
   try {
+    console.log('[logoHelper] Getting logo base64...');
     const dbLogoUrl = await getLogoFromDatabase();
 
     if (dbLogoUrl) {
+      console.log('[logoHelper] Database logo URL found:', dbLogoUrl);
+
       if (Platform.OS === 'web') {
+        console.log('[logoHelper] Returning database URL for web');
         return dbLogoUrl;
       }
 
       try {
+        console.log('[logoHelper] Converting database logo to base64...');
         const base64 = await convertUrlToBase64(dbLogoUrl);
+        console.log('[logoHelper] Successfully converted database logo');
         return base64;
       } catch (error) {
-        console.error('Error converting database logo to base64:', error);
+        console.error('[logoHelper] Error converting database logo to base64:', error);
       }
+    } else {
+      console.log('[logoHelper] No database logo found, using default');
     }
 
     return await getDefaultLogoBase64();
   } catch (error) {
-    console.error('Error loading logo:', error);
+    console.error('[logoHelper] Error loading logo:', error);
+    console.error('[logoHelper] Falling back to default logo');
     return await getDefaultLogoBase64();
   }
 }

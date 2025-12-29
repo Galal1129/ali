@@ -63,6 +63,41 @@ function getCurrencySymbol(code: string): string {
   return currency?.symbol || code;
 }
 
+function getCurrencyName(code: string): string {
+  const currency = CURRENCIES.find((c) => c.code === code);
+  return currency?.name || code;
+}
+
+interface CurrencyTotals {
+  currency: string;
+  incoming: number;
+  outgoing: number;
+}
+
+function calculateCurrencyTotals(movements: AccountMovement[]): CurrencyTotals[] {
+  const currencyMap: { [key: string]: CurrencyTotals } = {};
+
+  movements.forEach((movement) => {
+    const currency = movement.currency;
+    if (!currencyMap[currency]) {
+      currencyMap[currency] = {
+        currency,
+        incoming: 0,
+        outgoing: 0,
+      };
+    }
+
+    const amount = Number(movement.amount);
+    if (movement.movement_type === 'incoming') {
+      currencyMap[currency].incoming += amount;
+    } else {
+      currencyMap[currency].outgoing += amount;
+    }
+  });
+
+  return Object.values(currencyMap);
+}
+
 function calculateBalanceByCurrency(movements: AccountMovement[]): CurrencyBalance[] {
   const currencyMap: { [key: string]: CurrencyBalance } = {};
 
@@ -429,6 +464,7 @@ export default function CustomerDetailsScreen() {
   const balance = customer?.balance || 0;
   const groupedMovements = groupMovementsByMonth(movements);
   const currencyBalances = calculateBalanceByCurrency(movements);
+  const currencyTotals = calculateCurrencyTotals(movements);
 
   if (isLoading) {
     return (
@@ -520,6 +556,29 @@ export default function CustomerDetailsScreen() {
             ))
           )}
         </View>
+
+        {currencyTotals.length > 0 && (
+          <View style={styles.currencyDetailsSection}>
+            <Text style={styles.currencyDetailsTitle}>ملخص الحركات</Text>
+            {currencyTotals.map((total) => (
+              <View key={total.currency} style={styles.currencyDetailsCard}>
+                <Text style={styles.currencyDetailsName}>{getCurrencyName(total.currency)}:</Text>
+                <View style={styles.currencyDetailsRow}>
+                  <Text style={styles.currencyDetailsLabel}>وارد:</Text>
+                  <Text style={styles.currencyDetailsValue}>
+                    {total.incoming.toFixed(2)} {getCurrencySymbol(total.currency)}
+                  </Text>
+                </View>
+                <View style={styles.currencyDetailsRow}>
+                  <Text style={styles.currencyDetailsLabel}>صادر:</Text>
+                  <Text style={styles.currencyDetailsValue}>
+                    {total.outgoing.toFixed(2)} {getCurrencySymbol(total.currency)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.tabButtons}>
           <TouchableOpacity style={styles.tabButtonPrimary} onPress={handleShareAccount}>
@@ -759,6 +818,49 @@ const styles = StyleSheet.create({
   },
   currencyBalanceContainer: {
     marginBottom: 8,
+  },
+  currencyDetailsSection: {
+    backgroundColor: '#FFFFFF',
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  currencyDetailsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  currencyDetailsCard: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  currencyDetailsName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 6,
+    textAlign: 'right',
+  },
+  currencyDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  currencyDetailsLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'right',
+  },
+  currencyDetailsValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'left',
   },
   tabButtons: {
     flexDirection: 'row',

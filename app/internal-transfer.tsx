@@ -8,9 +8,10 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ArrowLeftRight, ArrowLeft, AlertCircle } from 'lucide-react-native';
+import { ArrowLeftRight, ArrowLeft, AlertCircle, Plus, X, Printer, Save } from 'lucide-react-native';
 import PartySelector from '@/components/PartySelector';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES } from '@/types/database';
@@ -25,6 +26,8 @@ interface TransferFormData {
   amount: string;
   currency: Currency;
   notes: string;
+  commission: string;
+  commissionCurrency: Currency;
 }
 
 export default function InternalTransferScreen() {
@@ -34,9 +37,14 @@ export default function InternalTransferScreen() {
     amount: '',
     currency: 'USD',
     notes: '',
+    commission: '',
+    commissionCurrency: 'YER',
   });
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showCommission, setShowCommission] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [showCommissionCurrencyPicker, setShowCommissionCurrencyPicker] = useState(false);
 
   const validateTransfer = (): string | null => {
     if (!formData.fromType) {
@@ -66,10 +74,14 @@ export default function InternalTransferScreen() {
       return 'يرجى إدخال مبلغ صحيح';
     }
 
+    if (formData.commission && parseFloat(formData.commission) < 0) {
+      return 'العمولة يجب أن تكون صفر أو أكبر';
+    }
+
     return null;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (withPrint: boolean = false) => {
     const error = validateTransfer();
     if (error) {
       setValidationError(error);
@@ -88,6 +100,8 @@ export default function InternalTransferScreen() {
           p_amount: parseFloat(formData.amount),
           p_currency: formData.currency,
           p_notes: formData.notes || null,
+          p_commission: formData.commission && parseFloat(formData.commission) > 0 ? parseFloat(formData.commission) : null,
+          p_commission_currency: formData.commission && parseFloat(formData.commission) > 0 ? formData.commissionCurrency : null,
         }
       );
 
@@ -96,16 +110,29 @@ export default function InternalTransferScreen() {
       if (data && data.length > 0) {
         const result = data[0];
         if (result.success) {
-          Alert.alert(
-            'نجح التحويل',
-            result.message,
-            [
-              {
-                text: 'حسناً',
-                onPress: () => router.back(),
+          const movementId = result.to_movement_id || result.from_movement_id;
+
+          if (withPrint && movementId) {
+            router.push({
+              pathname: '/receipt-preview',
+              params: {
+                movementId: movementId,
+                customerName: formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName,
+                customerAccountNumber: '000000',
               },
-            ]
-          );
+            });
+          } else {
+            Alert.alert(
+              'نجح التحويل',
+              result.message,
+              [
+                {
+                  text: 'حسناً',
+                  onPress: () => router.back(),
+                },
+              ]
+            );
+          }
         } else {
           Alert.alert('خطأ', result.message);
         }
@@ -283,6 +310,49 @@ export default function InternalTransferScreen() {
             </ScrollView>
           </View>
 
+          {!showCommission ? (
+            <TouchableOpacity
+              style={styles.addCommissionButton}
+              onPress={() => setShowCommission(true)}
+            >
+              <Plus size={16} color="#3B82F6" />
+              <Text style={styles.addCommissionText}>إضافة عمولة</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.commissionSection}>
+              <View style={styles.commissionHeader}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowCommission(false);
+                    setFormData({ ...formData, commission: '' });
+                  }}
+                >
+                  <X size={20} color="#EF4444" />
+                </TouchableOpacity>
+                <Text style={styles.label}>عمولة (اختياري)</Text>
+              </View>
+              <View style={styles.commissionRow}>
+                <TouchableOpacity
+                  style={styles.commissionCurrencyButton}
+                  onPress={() => setShowCommissionCurrencyPicker(true)}
+                >
+                  <Text style={styles.commissionCurrencyText}>{formData.commissionCurrency}</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.commissionInput}
+                  placeholder="0.00"
+                  keyboardType="decimal-pad"
+                  value={formData.commission}
+                  onChangeText={(text) => {
+                    setFormData({ ...formData, commission: text });
+                    setValidationError(null);
+                  }}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+          )}
+
           <View style={styles.notesSection}>
             <Text style={styles.label}>ملاحظات (اختياري)</Text>
             <TextInput
@@ -312,22 +382,69 @@ export default function InternalTransferScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <ArrowLeftRight size={20} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>تنفيذ التحويل</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={styles.buttonsContainer}>
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={() => handleSubmit(false)}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Save size={20} color="#FFFFFF" />
+                  <Text style={styles.submitButtonText}>حفظ فقط</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.printButton, loading && styles.submitButtonDisabled]}
+              onPress={() => handleSubmit(true)}
+              disabled={loading}
+            >
+              <Printer size={18} color="#3B82F6" />
+              <Text style={styles.printButtonText}>حفظ + طباعة</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showCommissionCurrencyPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCommissionCurrencyPicker(false)}
+      >
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerContent}>
+            <Text style={styles.pickerTitle}>اختر عملة العمولة</Text>
+            <ScrollView style={styles.pickerList}>
+              {CURRENCIES.map((curr) => (
+                <TouchableOpacity
+                  key={curr.code}
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setFormData({ ...formData, commissionCurrency: curr.code });
+                    setShowCommissionCurrencyPicker(false);
+                  }}
+                >
+                  <Text style={styles.pickerItemText}>
+                    {curr.code} - {curr.name}
+                  </Text>
+                  <Text style={styles.pickerItemSymbol}>{curr.symbol}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.pickerCloseButton}
+              onPress={() => setShowCommissionCurrencyPicker(false)}
+            >
+              <Text style={styles.pickerCloseButtonText}>إغلاق</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -490,8 +607,62 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'right',
   },
+  addCommissionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  addCommissionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  commissionSection: {
+    marginBottom: 20,
+  },
+  commissionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  commissionRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  commissionCurrencyButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 12,
+    padding: 14,
+    width: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commissionCurrencyText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  commissionInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    textAlign: 'center',
+  },
+  buttonsContainer: {
+    gap: 10,
+  },
   submitButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#10B981',
     padding: 16,
     borderRadius: 12,
     flexDirection: 'row',
@@ -506,5 +677,74 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
+  },
+  printButton: {
+    backgroundColor: '#EFF6FF',
+    padding: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  printButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  pickerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '60%',
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  pickerList: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  pickerItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerItemText: {
+    fontSize: 15,
+    color: '#111827',
+    textAlign: 'right',
+  },
+  pickerItemSymbol: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  pickerCloseButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 16,
+  },
+  pickerCloseButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
   },
 });

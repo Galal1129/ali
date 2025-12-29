@@ -559,21 +559,20 @@ export default function CustomerDetailsScreen() {
 
         {currencyTotals.length > 0 && (
           <View style={styles.currencyDetailsSection}>
-            <Text style={styles.currencyDetailsTitle}>ملخص الحركات</Text>
             {currencyTotals.map((total) => (
               <View key={total.currency} style={styles.currencyDetailsCard}>
                 <Text style={styles.currencyDetailsName}>{getCurrencyName(total.currency)}:</Text>
                 <View style={styles.currencyDetailsRow}>
-                  <Text style={styles.currencyDetailsLabel}>وارد:</Text>
-                  <Text style={styles.currencyDetailsValue}>
+                  <Text style={styles.currencyDetailsValueGreen}>
                     {total.incoming.toFixed(2)} {getCurrencySymbol(total.currency)}
                   </Text>
+                  <Text style={styles.currencyDetailsLabelGreen}>وارد:</Text>
                 </View>
                 <View style={styles.currencyDetailsRow}>
-                  <Text style={styles.currencyDetailsLabel}>صادر:</Text>
-                  <Text style={styles.currencyDetailsValue}>
+                  <Text style={styles.currencyDetailsValueRed}>
                     {total.outgoing.toFixed(2)} {getCurrencySymbol(total.currency)}
                   </Text>
+                  <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
                 </View>
               </View>
             ))}
@@ -823,43 +822,44 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginTop: 8,
     paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  currencyDetailsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 12,
-    textAlign: 'right',
+    paddingVertical: 12,
   },
   currencyDetailsCard: {
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    marginBottom: 8,
   },
   currencyDetailsName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
+    marginBottom: 4,
     textAlign: 'right',
   },
   currencyDetailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  currencyDetailsLabel: {
+  currencyDetailsLabelGreen: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#10B981',
     textAlign: 'right',
   },
-  currencyDetailsValue: {
+  currencyDetailsLabelRed: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#374151',
+    color: '#EF4444',
+    textAlign: 'right',
+  },
+  currencyDetailsValueGreen: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#10B981',
+    textAlign: 'left',
+  },
+  currencyDetailsValueRed: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#EF4444',
     textAlign: 'left',
   },
   tabButtons: {

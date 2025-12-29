@@ -165,7 +165,7 @@ export default function CustomerDetailsScreen() {
         supabase.from('customers').select('*').eq('id', id).maybeSingle(),
         supabase
           .from('account_movements')
-          .select('*')
+          .select('*, is_internal_transfer, transfer_group_id')
           .eq('customer_id', id)
           .order('created_at', { ascending: false }),
       ]);
@@ -747,28 +747,24 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementType,
                           {
-                            color: movement.transfer_direction
+                            color: (movement as any).is_internal_transfer
                               ? '#F59E0B'
                               : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
                         ]}
                       >
-                        {movement.transfer_direction
+                        {(movement as any).is_internal_transfer
                           ? 'تحويل داخلي'
                           : movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم'}
                       </Text>
-                      {movement.transfer_direction && (
+                      {(movement as any).is_internal_transfer && (
                         <Text style={styles.movementNotes} numberOfLines={1}>
-                          {movement.transfer_direction === 'customer_to_customer'
-                            ? movement.from_customer_id === customer?.id
-                              ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
-                              : `من: ${movement.sender_name || 'عميل آخر'}`
-                            : movement.transfer_direction === 'shop_to_customer'
-                            ? 'من المحل'
-                            : 'إلى المحل'}
+                          {movement.movement_type === 'outgoing'
+                            ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
+                            : `من: ${movement.sender_name || 'عميل آخر'}`}
                         </Text>
                       )}
-                      {!movement.transfer_direction && movement.notes && (
+                      {!(movement as any).is_internal_transfer && movement.notes && (
                         <Text style={styles.movementNotes} numberOfLines={1}>
                           {movement.notes}
                         </Text>
@@ -781,7 +777,7 @@ export default function CustomerDetailsScreen() {
                       style={[
                         styles.movementIcon,
                         {
-                          backgroundColor: movement.transfer_direction
+                          backgroundColor: (movement as any).is_internal_transfer
                             ? '#FEF3C7'
                             : movement.movement_type === 'outgoing' ? '#ECFDF5' : '#EFF6FF',
                         },
@@ -791,7 +787,7 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.currencySymbolText,
                           {
-                            color: movement.transfer_direction
+                            color: (movement as any).is_internal_transfer
                               ? '#F59E0B'
                               : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
@@ -806,7 +802,7 @@ export default function CustomerDetailsScreen() {
                         style={[
                           styles.movementAmountText,
                           {
-                            color: movement.transfer_direction
+                            color: (movement as any).is_internal_transfer
                               ? '#F59E0B'
                               : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
                           },
@@ -815,7 +811,7 @@ export default function CustomerDetailsScreen() {
                         {Math.round(Number(movement.amount))}
                       </Text>
                       <Text style={styles.movementLabel}>
-                        {movement.transfer_direction
+                        {(movement as any).is_internal_transfer
                           ? 'تحويل'
                           : movement.movement_type === 'outgoing' ? 'من العميل' : 'للعميل'}
                       </Text>

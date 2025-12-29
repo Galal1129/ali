@@ -154,6 +154,7 @@ export default function QuickAddMovementSheet({
                 ? 'علي هادي علي الرازحي'
                 : customerName,
             transfer_number: transferNumber || null,
+            is_internal_transfer: false,
           },
         ])
         .select()

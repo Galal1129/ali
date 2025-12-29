@@ -32,6 +32,7 @@ import { ar } from 'date-fns/locale';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateAccountStatementHTML } from '@/utils/accountStatementGenerator';
+import QuickAddMovementSheet from '@/components/QuickAddMovementSheet';
 
 interface GroupedMovements {
   [key: string]: AccountMovement[];
@@ -156,6 +157,7 @@ export default function CustomerDetailsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
   const [showCurrencyDetails, setShowCurrencyDetails] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const loadCustomerData = useCallback(async () => {
     try {
@@ -458,10 +460,7 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleAddMovement = () => {
-    router.push({
-      pathname: '/new-movement',
-      params: { customerId: id, customerName: customer?.name },
-    });
+    setShowQuickAdd(true);
   };
 
   const handleMovementPress = (movement: AccountMovement) => {
@@ -810,6 +809,20 @@ export default function CustomerDetailsScreen() {
       <TouchableOpacity style={styles.fab} onPress={handleAddMovement}>
         <Plus size={28} color="#FFFFFF" />
       </TouchableOpacity>
+
+      {customer && (
+        <QuickAddMovementSheet
+          visible={showQuickAdd}
+          onClose={() => setShowQuickAdd(false)}
+          customerId={customer.id}
+          customerName={customer.name}
+          customerAccountNumber={customer.account_number}
+          currentBalances={currencyBalances}
+          onSuccess={() => {
+            loadCustomerData();
+          }}
+        />
+      )}
     </View>
   );
 }

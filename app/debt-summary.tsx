@@ -321,14 +321,20 @@ export default function DebtSummaryScreen() {
 
         <View style={styles.customerFooter}>
           {customer.balances.map((balance) => (
-            <View key={`footer-${balance.currency}`} style={styles.currencyFooterRow}>
+            <View key={`footer-${balance.currency}`} style={styles.currencySection}>
               <Text style={styles.footerCurrency}>{getCurrencyName(balance.currency)}:</Text>
-              <Text style={styles.totalIncoming}>
-                وارد: {Number(balance.total_incoming).toFixed(2)} {getCurrencySymbol(balance.currency)}
-              </Text>
-              <Text style={styles.totalOutgoing}>
-                صادر: {Number(balance.total_outgoing).toFixed(2)} {getCurrencySymbol(balance.currency)}
-              </Text>
+              <View style={styles.currencyFooterRow}>
+                <Text style={styles.totalIncomingLabel}>وارد:</Text>
+                <Text style={styles.totalIncoming}>
+                  {Number(balance.total_incoming).toFixed(2)} {getCurrencySymbol(balance.currency)}
+                </Text>
+              </View>
+              <View style={styles.currencyFooterRow}>
+                <Text style={styles.totalOutgoingLabel}>صادر:</Text>
+                <Text style={styles.totalOutgoing}>
+                  {Number(balance.total_outgoing).toFixed(2)} {getCurrencySymbol(balance.currency)}
+                </Text>
+              </View>
             </View>
           ))}
         </View>
@@ -576,19 +582,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statCurrencyRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 4,
+    justifyContent: 'flex-end',
   },
   statCurrencyLabelSmall: {
     fontSize: 11,
     color: '#6B7280',
+    textAlign: 'right',
   },
   statCurrencyValue: {
     fontSize: 14,
     fontWeight: 'bold',
     flex: 1,
-    textAlign: 'right',
+    textAlign: 'left',
   },
   statLabel: {
     fontSize: 12,
@@ -712,7 +720,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   balanceRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
@@ -725,10 +733,12 @@ const styles = StyleSheet.create({
   currencyName: {
     fontSize: 14,
     color: '#6B7280',
+    textAlign: 'right',
   },
   currencyCode: {
     fontSize: 12,
     color: '#9CA3AF',
+    textAlign: 'right',
   },
   amountContainer: {
     flexDirection: 'row',
@@ -738,6 +748,7 @@ const styles = StyleSheet.create({
   balanceAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'left',
   },
   customerFooter: {
     marginTop: 12,
@@ -746,26 +757,46 @@ const styles = StyleSheet.create({
     borderTopColor: '#F3F4F6',
     gap: 8,
   },
+  currencySection: {
+    gap: 4,
+  },
   currencyFooterRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   footerCurrency: {
     fontSize: 12,
     color: '#6B7280',
     fontWeight: 'bold',
-    minWidth: 60,
+    textAlign: 'right',
+    marginBottom: 4,
+  },
+  totalIncomingLabel: {
+    fontSize: 11,
+    color: '#10B981',
+    fontWeight: '600',
+    textAlign: 'right',
+    minWidth: 50,
   },
   totalIncoming: {
     fontSize: 11,
     color: '#10B981',
+    textAlign: 'left',
     flex: 1,
+  },
+  totalOutgoingLabel: {
+    fontSize: 11,
+    color: '#EF4444',
+    fontWeight: '600',
+    textAlign: 'right',
+    minWidth: 50,
   },
   totalOutgoing: {
     fontSize: 11,
     color: '#EF4444',
+    textAlign: 'left',
     flex: 1,
   },
   emptyContainer: {

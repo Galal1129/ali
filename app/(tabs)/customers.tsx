@@ -7,16 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
-  I18nManager,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Search } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, CustomerBalanceByCurrency, CURRENCIES } from '@/types/database';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 interface CustomerWithBalances extends Customer {
   balances: CustomerBalanceByCurrency[];

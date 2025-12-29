@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -17,9 +16,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES, AccountMovement } from '@/types/database';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function EditMovementScreen() {
   const router = useRouter();

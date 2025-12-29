@@ -6,14 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Download, Upload, Database, Calendar } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function BackupScreen() {
   const router = useRouter();

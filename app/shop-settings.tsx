@@ -9,7 +9,6 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Camera, ImageIcon, Trash2, Save } from 'lucide-react-native';
@@ -21,9 +20,6 @@ import {
   updateShopLogo,
 } from '@/services/logoService';
 import { getLogoUrl } from '@/utils/logoHelper';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function ShopSettingsScreen() {
   const router = useRouter();

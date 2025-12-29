@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  I18nManager,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -28,9 +27,6 @@ import { supabase } from '@/lib/supabase';
 import { AccountMovement, CURRENCIES } from '@/types/database';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function MovementDetailsScreen() {
   const router = useRouter();

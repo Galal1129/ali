@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -16,9 +15,6 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function DashboardScreen() {
   const router = useRouter();

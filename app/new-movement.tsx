@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -24,9 +23,6 @@ import { supabase } from '@/lib/supabase';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getLogoBase64 } from '@/utils/logoHelper';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function NewMovementScreen() {
   const router = useRouter();

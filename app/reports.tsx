@@ -6,13 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, FileText, Calendar, TrendingUp, Users, Download } from 'lucide-react-native';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function ReportsScreen() {
   const router = useRouter();

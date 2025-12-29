@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  I18nManager,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
@@ -27,9 +26,6 @@ import {
 } from 'lucide-react-native';
 import { CURRENCIES } from '@/types/database';
 import { StatisticsService, StatisticsData } from '@/services/statisticsService';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 type PeriodFilter = 'today' | 'yesterday' | 'week' | 'month';
 

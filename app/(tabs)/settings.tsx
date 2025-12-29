@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -19,9 +18,6 @@ import {
   Building2,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function SettingsScreen() {
   const router = useRouter();

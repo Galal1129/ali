@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
   Modal,
   KeyboardAvoidingView,
   Platform,
@@ -17,9 +16,6 @@ import { ArrowRight, Save, ArrowRightLeft, DollarSign } from 'lucide-react-nativ
 import { supabase } from '@/lib/supabase';
 import { getExchangeRate } from '@/services/exchangeRateService';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function NewTransactionScreen() {
   const router = useRouter();

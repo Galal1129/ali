@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
-  I18nManager,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -24,9 +23,6 @@ import { supabase } from '@/lib/supabase';
 import { CustomerBalanceByCurrency, CURRENCIES, Currency } from '@/types/database';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 type SortType = 'name' | 'balance' | 'currency';
 type FilterCurrency = 'all' | Currency;

@@ -7,13 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Send, MessageSquare } from 'lucide-react-native';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 interface Message {
   id: string;

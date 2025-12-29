@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  I18nManager,
   Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -24,9 +23,6 @@ import { Transaction, Customer } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function TransactionDetailsScreen() {
   const router = useRouter();

@@ -1,8 +1,12 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { I18nManager } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+
+I18nManager.allowRTL(true);
+I18nManager.forceRTL(true);
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  I18nManager,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,9 +13,6 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock } from 'lucide-react-native';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function LoginScreen() {
   const [pin, setPin] = useState('');

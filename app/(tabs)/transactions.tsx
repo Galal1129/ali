@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar } from 'lucide-react-native';
@@ -14,9 +13,6 @@ import { supabase } from '@/lib/supabase';
 import { AccountMovement } from '@/types/database';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 interface MovementWithCustomer extends AccountMovement {
   customer_name: string;

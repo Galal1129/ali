@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  I18nManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Plus, AlertCircle, CheckCircle } from 'lucide-react-native';
@@ -15,9 +14,6 @@ import { supabase } from '@/lib/supabase';
 import { Debt } from '@/types/database';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 interface DebtWithCustomer extends Debt {
   customer_name: string;

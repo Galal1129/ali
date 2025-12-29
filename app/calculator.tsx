@@ -5,16 +5,12 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  I18nManager,
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, ArrowRightLeft } from 'lucide-react-native';
 import { getExchangeRate } from '@/services/exchangeRateService';
 import { Currency, CURRENCIES } from '@/types/database';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function CalculatorScreen() {
   const router = useRouter();

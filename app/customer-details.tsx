@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  I18nManager,
   Linking,
   ActivityIndicator,
 } from 'react-native';
@@ -31,9 +30,6 @@ import { ar } from 'date-fns/locale';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateAccountStatementHTML } from '@/utils/accountStatementGenerator';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 interface GroupedMovements {
   [key: string]: AccountMovement[];

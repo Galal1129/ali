@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  I18nManager,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,9 +14,6 @@ import { updateExchangeRates, getAllExchangeRates } from '@/services/exchangeRat
 import { ExchangeRate, CURRENCIES } from '@/types/database';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-I18nManager.allowRTL(true);
-I18nManager.forceRTL(true);
 
 export default function ExchangeRatesScreen() {
   const router = useRouter();

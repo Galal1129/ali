@@ -22,6 +22,8 @@ import {
   BarChart3,
   Calculator,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, AccountMovement, CURRENCIES } from '@/types/database';
@@ -153,6 +155,7 @@ export default function CustomerDetailsScreen() {
   const [totalOutgoing, setTotalOutgoing] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showCurrencyDetails, setShowCurrencyDetails] = useState(false);
 
   const loadCustomerData = useCallback(async () => {
     try {
@@ -559,23 +562,41 @@ export default function CustomerDetailsScreen() {
 
         {currencyTotals.length > 0 && (
           <View style={styles.currencyDetailsSection}>
-            {currencyTotals.map((total) => (
-              <View key={total.currency} style={styles.currencyDetailsCard}>
-                <Text style={styles.currencyDetailsName}>{getCurrencyName(total.currency)}:</Text>
-                <View style={styles.currencyDetailsRow}>
-                  <Text style={styles.currencyDetailsValueGreen}>
-                    {total.incoming.toFixed(2)} {getCurrencySymbol(total.currency)}
-                  </Text>
-                  <Text style={styles.currencyDetailsLabelGreen}>وارد:</Text>
-                </View>
-                <View style={styles.currencyDetailsRow}>
-                  <Text style={styles.currencyDetailsValueRed}>
-                    {total.outgoing.toFixed(2)} {getCurrencySymbol(total.currency)}
-                  </Text>
-                  <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
-                </View>
+            <TouchableOpacity
+              style={styles.currencyDetailsToggle}
+              onPress={() => setShowCurrencyDetails(!showCurrencyDetails)}
+            >
+              <View style={styles.currencyDetailsToggleContent}>
+                {showCurrencyDetails ? (
+                  <ChevronUp size={20} color="#6B7280" />
+                ) : (
+                  <ChevronDown size={20} color="#6B7280" />
+                )}
+                <Text style={styles.currencyDetailsToggleText}>ملخص الحركات</Text>
               </View>
-            ))}
+            </TouchableOpacity>
+
+            {showCurrencyDetails && (
+              <View style={styles.currencyDetailsContent}>
+                {currencyTotals.map((total) => (
+                  <View key={total.currency} style={styles.currencyDetailsCard}>
+                    <Text style={styles.currencyDetailsName}>{getCurrencyName(total.currency)}:</Text>
+                    <View style={styles.currencyDetailsRow}>
+                      <Text style={styles.currencyDetailsValueGreen}>
+                        {total.incoming.toFixed(2)} {getCurrencySymbol(total.currency)}
+                      </Text>
+                      <Text style={styles.currencyDetailsLabelGreen}>وارد:</Text>
+                    </View>
+                    <View style={styles.currencyDetailsRow}>
+                      <Text style={styles.currencyDetailsValueRed}>
+                        {total.outgoing.toFixed(2)} {getCurrencySymbol(total.currency)}
+                      </Text>
+                      <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -821,8 +842,28 @@ const styles = StyleSheet.create({
   currencyDetailsSection: {
     backgroundColor: '#FFFFFF',
     marginTop: 8,
+    paddingVertical: 12,
+  },
+  currencyDetailsToggle: {
     paddingHorizontal: 20,
     paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  currencyDetailsToggleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  currencyDetailsToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginLeft: 8,
+  },
+  currencyDetailsContent: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
   currencyDetailsCard: {
     marginBottom: 8,

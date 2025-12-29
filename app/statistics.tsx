@@ -221,15 +221,135 @@ export default function StatisticsScreen() {
         style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.statsGrid}>
-          {statCards.map((card, index) => (
-            <View key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
-              <card.icon size={32} color={card.color} />
-              <Text style={styles.statValue}>{card.value}</Text>
-              <Text style={styles.statLabel}>{card.title}</Text>
+        <View style={styles.balancesSection}>
+          <View style={styles.sectionHeader}>
+            <Wallet size={24} color="#4F46E5" />
+            <Text style={styles.sectionTitle}>التدفق النقدي حسب العملة</Text>
+          </View>
+
+          {stats.cashFlowByCurrency.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>لا توجد حركات بعد</Text>
             </View>
-          ))}
+          ) : (
+            stats.cashFlowByCurrency.map((flow, index) => {
+              const currencyInfo = getCurrencyInfo(flow.currency);
+              const isPositive = flow.netFlow > 0;
+              const isNegative = flow.netFlow < 0;
+
+              return (
+                <View key={index} style={styles.balanceCard}>
+                  <View style={styles.balanceCardHeader}>
+                    <View style={styles.currencyInfo}>
+                      <Text style={styles.currencySymbol}>{currencyInfo.symbol}</Text>
+                      <Text style={styles.currencyName}>{currencyInfo.name}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.balanceDetails}>
+                    <View style={styles.balanceRow}>
+                      <View style={styles.balanceItem}>
+                        <View style={styles.balanceItemHeader}>
+                          <TrendingUp size={18} color="#10B981" />
+                          <Text style={styles.balanceItemLabel}>قبض (استلام)</Text>
+                        </View>
+                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
+                          {flow.totalReceived.toFixed(2)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.balanceDivider} />
+
+                      <View style={styles.balanceItem}>
+                        <View style={styles.balanceItemHeader}>
+                          <TrendingDown size={18} color="#EF4444" />
+                          <Text style={styles.balanceItemLabel}>صرف (تسليم)</Text>
+                        </View>
+                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
+                          {flow.totalPaid.toFixed(2)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.balanceSeparator} />
+
+                    <View style={styles.netBalanceContainer}>
+                      <Text style={styles.netBalanceLabel}>الصافي</Text>
+                      <View style={styles.netBalanceValueContainer}>
+                        <Text
+                          style={[
+                            styles.netBalanceValue,
+                            {
+                              color: isPositive
+                                ? '#10B981'
+                                : isNegative
+                                  ? '#EF4444'
+                                  : '#6B7280',
+                            },
+                          ]}
+                        >
+                          {isPositive && '+ '}
+                          {flow.netFlow.toFixed(2)} {currencyInfo.symbol}
+                        </Text>
+                      </View>
+                      <Text style={styles.netBalanceDescription}>
+                        {isPositive ? 'صافي قبض' : isNegative ? 'صافي صرف' : 'متوازن'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
+
+        {stats.topCustomers.length > 0 && (
+          <View style={styles.topCustomersSection}>
+            <View style={styles.sectionHeader}>
+              <Trophy size={24} color="#F59E0B" />
+              <Text style={styles.sectionTitle}>أكثر العملاء نشاطاً</Text>
+            </View>
+
+            {stats.topCustomers.map((customer, index) => (
+              <View key={customer.id} style={styles.topCustomerCard}>
+                <View style={styles.topCustomerRank}>
+                  <Text style={styles.topCustomerRankText}>{index + 1}</Text>
+                </View>
+
+                <View style={styles.topCustomerInfo}>
+                  <Text style={styles.topCustomerName}>{customer.name}</Text>
+                  <Text style={styles.topCustomerPhone}>{customer.phone}</Text>
+                </View>
+
+                <View style={styles.topCustomerStats}>
+                  <View style={styles.topCustomerStatItem}>
+                    <Text style={styles.topCustomerStatLabel}>الحركات</Text>
+                    <Text style={styles.topCustomerStatValue}>{customer.totalMovements}</Text>
+                  </View>
+                  <View style={styles.topCustomerStatDivider} />
+                  <View style={styles.topCustomerStatItem}>
+                    <Text style={styles.topCustomerStatLabel}>الرصيد</Text>
+                    <Text
+                      style={[
+                        styles.topCustomerStatValue,
+                        {
+                          color:
+                            customer.balance > 0
+                              ? '#10B981'
+                              : customer.balance < 0
+                                ? '#EF4444'
+                                : '#6B7280',
+                        },
+                      ]}
+                    >
+                      {customer.balance > 0 ? 'لنا' : customer.balance < 0 ? 'له' : '-'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         <View style={styles.periodSection}>
           <View style={styles.sectionHeader}>
@@ -317,6 +437,16 @@ export default function StatisticsScreen() {
           </View>
         </View>
 
+        <View style={styles.statsGrid}>
+          {statCards.map((card, index) => (
+            <View key={index} style={[styles.statCard, { backgroundColor: card.bgColor }]}>
+              <card.icon size={32} color={card.color} />
+              <Text style={styles.statValue}>{card.value}</Text>
+              <Text style={styles.statLabel}>{card.title}</Text>
+            </View>
+          ))}
+        </View>
+
         {stats.commissionStats.commissionByCurrency.length > 0 && (
           <View style={styles.commissionSection}>
             <View style={styles.sectionHeader}>
@@ -338,136 +468,6 @@ export default function StatisticsScreen() {
             </View>
           </View>
         )}
-
-        {stats.topCustomers.length > 0 && (
-          <View style={styles.topCustomersSection}>
-            <View style={styles.sectionHeader}>
-              <Trophy size={24} color="#F59E0B" />
-              <Text style={styles.sectionTitle}>أكثر العملاء نشاطاً</Text>
-            </View>
-
-            {stats.topCustomers.map((customer, index) => (
-              <View key={customer.id} style={styles.topCustomerCard}>
-                <View style={styles.topCustomerRank}>
-                  <Text style={styles.topCustomerRankText}>{index + 1}</Text>
-                </View>
-
-                <View style={styles.topCustomerInfo}>
-                  <Text style={styles.topCustomerName}>{customer.name}</Text>
-                  <Text style={styles.topCustomerPhone}>{customer.phone}</Text>
-                </View>
-
-                <View style={styles.topCustomerStats}>
-                  <View style={styles.topCustomerStatItem}>
-                    <Text style={styles.topCustomerStatLabel}>الحركات</Text>
-                    <Text style={styles.topCustomerStatValue}>{customer.totalMovements}</Text>
-                  </View>
-                  <View style={styles.topCustomerStatDivider} />
-                  <View style={styles.topCustomerStatItem}>
-                    <Text style={styles.topCustomerStatLabel}>الرصيد</Text>
-                    <Text
-                      style={[
-                        styles.topCustomerStatValue,
-                        {
-                          color:
-                            customer.balance > 0
-                              ? '#10B981'
-                              : customer.balance < 0
-                                ? '#EF4444'
-                                : '#6B7280',
-                        },
-                      ]}
-                    >
-                      {customer.balance > 0 ? 'لنا' : customer.balance < 0 ? 'له' : '-'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.balancesSection}>
-          <View style={styles.sectionHeader}>
-            <Wallet size={24} color="#4F46E5" />
-            <Text style={styles.sectionTitle}>التدفق النقدي حسب العملة</Text>
-          </View>
-
-          {stats.cashFlowByCurrency.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>لا توجد حركات بعد</Text>
-            </View>
-          ) : (
-            stats.cashFlowByCurrency.map((flow, index) => {
-              const currencyInfo = getCurrencyInfo(flow.currency);
-              const isPositive = flow.netFlow > 0;
-              const isNegative = flow.netFlow < 0;
-
-              return (
-                <View key={index} style={styles.balanceCard}>
-                  <View style={styles.balanceCardHeader}>
-                    <View style={styles.currencyInfo}>
-                      <Text style={styles.currencySymbol}>{currencyInfo.symbol}</Text>
-                      <Text style={styles.currencyName}>{currencyInfo.name}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.balanceDetails}>
-                    <View style={styles.balanceRow}>
-                      <View style={styles.balanceItem}>
-                        <View style={styles.balanceItemHeader}>
-                          <TrendingUp size={18} color="#10B981" />
-                          <Text style={styles.balanceItemLabel}>قبض (استلام)</Text>
-                        </View>
-                        <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
-                          {flow.totalReceived.toFixed(2)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.balanceDivider} />
-
-                      <View style={styles.balanceItem}>
-                        <View style={styles.balanceItemHeader}>
-                          <TrendingDown size={18} color="#EF4444" />
-                          <Text style={styles.balanceItemLabel}>صرف (تسليم)</Text>
-                        </View>
-                        <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
-                          {flow.totalPaid.toFixed(2)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.balanceSeparator} />
-
-                    <View style={styles.netBalanceContainer}>
-                      <Text style={styles.netBalanceLabel}>الصافي</Text>
-                      <View style={styles.netBalanceValueContainer}>
-                        <Text
-                          style={[
-                            styles.netBalanceValue,
-                            {
-                              color: isPositive
-                                ? '#10B981'
-                                : isNegative
-                                  ? '#EF4444'
-                                  : '#6B7280',
-                            },
-                          ]}
-                        >
-                          {isPositive && '+ '}
-                          {flow.netFlow.toFixed(2)} {currencyInfo.symbol}
-                        </Text>
-                      </View>
-                      <Text style={styles.netBalanceDescription}>
-                        {isPositive ? 'صافي قبض' : isNegative ? 'صافي صرف' : 'متوازن'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              );
-            })
-          )}
-        </View>
 
         {(stats.debtStats.owedToUsByCurrency.length > 0 ||
           stats.debtStats.weOweByCurrency.length > 0) && (

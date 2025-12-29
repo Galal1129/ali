@@ -32,6 +32,7 @@ import { ar } from 'date-fns/locale';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateAccountStatementHTML } from '@/utils/accountStatementGenerator';
+import { getLogoBase64 } from '@/utils/logoHelper';
 import QuickAddMovementSheet from '@/components/QuickAddMovementSheet';
 
 interface GroupedMovements {
@@ -254,7 +255,15 @@ export default function CustomerDetailsScreen() {
     setIsPrinting(true);
 
     try {
-      const html = generateAccountStatementHTML(customer.name, movements);
+      let logoDataUrl: string | undefined;
+      try {
+        logoDataUrl = await getLogoBase64();
+        console.log('[CustomerDetails] Logo loaded successfully for PDF');
+      } catch (logoError) {
+        console.warn('[CustomerDetails] Could not load logo, continuing without it:', logoError);
+      }
+
+      const html = generateAccountStatementHTML(customer.name, movements, logoDataUrl);
       const { uri } = await Print.printToFileAsync({ html });
 
       const canShare = await Sharing.isAvailableAsync();
@@ -268,7 +277,7 @@ export default function CustomerDetailsScreen() {
         Alert.alert('نجح', 'تم إنشاء كشف الحساب بنجاح');
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('[CustomerDetails] Error generating PDF:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إنشاء كشف الحساب');
     } finally {
       setIsPrinting(false);

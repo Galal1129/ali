@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AccountMovement, CURRENCIES } from '@/types/database';
+import { generatePDFHeaderHTML, generatePDFHeaderStyles } from './pdfHeaderGenerator';
 
 interface MovementWithBalance extends AccountMovement {
   runningBalance: number;
@@ -18,7 +19,8 @@ function getCurrencyName(code: string): string {
 
 export function generateAccountStatementHTML(
   customerName: string,
-  movements: AccountMovement[]
+  movements: AccountMovement[],
+  logoDataUrl?: string
 ): string {
   const sortedMovements = [...movements].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -148,6 +150,15 @@ export function generateAccountStatementHTML(
     `;
   }).join('');
 
+  const headerHTML = generatePDFHeaderHTML({
+    title: `كشف حساب العميل: ${customerName}`,
+    logoDataUrl,
+    primaryColor: '#10B981',
+    darkColor: '#059669',
+    height: 150,
+    showPhones: true,
+  });
+
   return `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -164,14 +175,14 @@ export function generateAccountStatementHTML(
 
     body {
       font-family: 'Arial', 'Tahoma', sans-serif;
-      padding: 30px;
+      padding: 20px;
       background: #fff;
       color: #000;
       direction: rtl;
     }
 
     .currency-section {
-      margin-bottom: 50px;
+      margin-bottom: 30px;
       page-break-after: always;
     }
 
@@ -239,6 +250,8 @@ export function generateAccountStatementHTML(
       padding: 10px 0;
     }
 
+    ${generatePDFHeaderStyles()}
+
     @media print {
       body {
         padding: 15px;
@@ -255,6 +268,8 @@ export function generateAccountStatementHTML(
   </style>
 </head>
 <body>
+  ${headerHTML}
+
   ${currencySections}
 
   <div class="footer">
@@ -267,7 +282,8 @@ export function generateAccountStatementHTML(
 
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
-  movements: AccountMovement[]
+  movements: AccountMovement[],
+  logoDataUrl?: string
 ): string {
-  return generateAccountStatementHTML(customerName, movements);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
 }

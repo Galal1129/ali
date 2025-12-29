@@ -112,8 +112,14 @@ export default function ReceiptPreviewScreen() {
       });
 
       console.log('[ReceiptPreview] Loading logo...');
-      const logoDataUrl = await getLogoBase64();
-      console.log('[ReceiptPreview] Logo loaded. Type:', logoDataUrl?.substring(0, 30));
+      let logoDataUrl: string | undefined;
+      try {
+        logoDataUrl = await getLogoBase64();
+        console.log('[ReceiptPreview] Logo loaded successfully. Type:', logoDataUrl?.substring(0, 30));
+      } catch (logoError) {
+        console.warn('[ReceiptPreview] Could not load logo, continuing without it:', logoError);
+        logoDataUrl = undefined;
+      }
 
       console.log('[ReceiptPreview] Generating HTML...');
       const html = generateReceiptHTML(receiptData, qrCodeDataUrl, logoDataUrl);

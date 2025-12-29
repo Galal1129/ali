@@ -23,6 +23,8 @@ import { supabase } from '@/lib/supabase';
 import { CustomerBalanceByCurrency, CURRENCIES, Currency } from '@/types/database';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { generatePDFHeaderHTML, generatePDFHeaderStyles } from '@/utils/pdfHeaderGenerator';
+import { getLogoBase64 } from '@/utils/logoHelper';
 
 type SortType = 'name' | 'balance' | 'currency';
 type FilterCurrency = 'all' | Currency;
@@ -158,6 +160,23 @@ export default function DebtSummaryScreen() {
     try {
       const stats = getTotalStats();
 
+      let logoDataUrl: string | undefined;
+      try {
+        logoDataUrl = await getLogoBase64();
+        console.log('[DebtSummary] Logo loaded successfully for PDF');
+      } catch (logoError) {
+        console.warn('[DebtSummary] Could not load logo, continuing without it:', logoError);
+      }
+
+      const headerHTML = generatePDFHeaderHTML({
+        title: 'تقرير - حركة الحسابات',
+        logoDataUrl,
+        primaryColor: '#4F46E5',
+        darkColor: '#4338CA',
+        height: 150,
+        showPhones: true,
+      });
+
       const tableRows = filteredData
         .flatMap((customer) =>
           customer.balances.map((balance) => {
@@ -196,16 +215,9 @@ export default function DebtSummaryScreen() {
               }
               body {
                 font-family: 'Arial', 'Tahoma', sans-serif;
-                padding: 0;
+                padding: 20px;
                 margin: 0;
                 background: white;
-              }
-              h1 {
-                color: #111827;
-                text-align: center;
-                margin: 0 0 20px 0;
-                font-size: 24px;
-                font-weight: bold;
               }
               table {
                 width: 100%;
@@ -231,10 +243,11 @@ export default function DebtSummaryScreen() {
                 font-size: 10px;
                 color: #6B7280;
               }
+              ${generatePDFHeaderStyles()}
             </style>
           </head>
           <body>
-            <h1>تقرير - حركة الحسابات</h1>
+            ${headerHTML}
 
             <table>
               <thead>
@@ -274,7 +287,7 @@ export default function DebtSummaryScreen() {
         Alert.alert('نجح', 'تم إنشاء التقرير بنجاح');
       }
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('[DebtSummary] Error generating PDF:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إنشاء التقرير');
     }
   };

@@ -20,9 +20,11 @@ interface TransferFormData {
   fromType: 'shop' | 'customer' | null;
   fromCustomerId?: string;
   fromCustomerName?: string;
+  fromCustomerAccount?: string;
   toType: 'shop' | 'customer' | null;
   toCustomerId?: string;
   toCustomerName?: string;
+  toCustomerAccount?: string;
   amount: string;
   currency: Currency;
   notes: string;
@@ -113,12 +115,15 @@ export default function InternalTransferScreen() {
           const movementId = result.to_movement_id || result.from_movement_id;
 
           if (withPrint && movementId) {
+            const customerName = formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName;
+            const customerAccountNumber = formData.toType === 'customer' ? formData.toCustomerAccount : formData.fromCustomerAccount;
+
             router.push({
               pathname: '/receipt-preview',
               params: {
                 movementId: movementId,
-                customerName: formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName,
-                customerAccountNumber: '000000',
+                customerName: customerName,
+                customerAccountNumber: customerAccountNumber || '000000',
               },
             });
           } else {
@@ -229,12 +234,13 @@ export default function InternalTransferScreen() {
             selectedType={formData.fromType}
             selectedCustomerId={formData.fromCustomerId}
             selectedCustomerName={formData.fromCustomerName}
-            onSelect={(type, customerId, customerName) => {
+            onSelect={(type, customerId, customerName, accountNumber) => {
               setFormData({
                 ...formData,
                 fromType: type,
                 fromCustomerId: customerId,
                 fromCustomerName: customerName,
+                fromCustomerAccount: accountNumber,
               });
               setValidationError(null);
             }}
@@ -254,12 +260,13 @@ export default function InternalTransferScreen() {
             selectedType={formData.toType}
             selectedCustomerId={formData.toCustomerId}
             selectedCustomerName={formData.toCustomerName}
-            onSelect={(type, customerId, customerName) => {
+            onSelect={(type, customerId, customerName, accountNumber) => {
               setFormData({
                 ...formData,
                 toType: type,
                 toCustomerId: customerId,
                 toCustomerName: customerName,
+                toCustomerAccount: accountNumber,
               });
               setValidationError(null);
             }}

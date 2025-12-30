@@ -18,7 +18,7 @@ interface PartySelectorProps {
   selectedType: 'shop' | 'customer' | null;
   selectedCustomerId?: string;
   selectedCustomerName?: string;
-  onSelect: (type: 'shop' | 'customer', customerId?: string, customerName?: string) => void;
+  onSelect: (type: 'shop' | 'customer', customerId?: string, customerName?: string, accountNumber?: string) => void;
   excludeCustomerId?: string;
 }
 
@@ -87,7 +87,7 @@ export default function PartySelector({
   };
 
   const handleSelectCustomer = (customer: Customer) => {
-    onSelect('customer', customer.id, customer.name);
+    onSelect('customer', customer.id, customer.name, customer.account_number);
     setShowModal(false);
   };
 

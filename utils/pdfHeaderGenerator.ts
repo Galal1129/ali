@@ -64,7 +64,7 @@ export function generatePDFHeaderStyles(): string {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 40px;
+      padding: 20px 60px;
       margin-bottom: 20px;
       overflow: visible;
       flex-shrink: 0;
@@ -76,7 +76,7 @@ export function generatePDFHeaderStyles(): string {
       z-index: 2;
       display: flex;
       align-items: center;
-      width: 280px;
+      width: 220px;
       flex-shrink: 0;
     }
 
@@ -101,7 +101,7 @@ export function generatePDFHeaderStyles(): string {
     }
 
     .header-spacer {
-      width: 280px;
+      width: 220px;
       flex-shrink: 0;
     }
 
@@ -110,14 +110,14 @@ export function generatePDFHeaderStyles(): string {
       backdrop-filter: blur(12px);
       border: 2px solid rgba(255, 255, 255, 0.35);
       border-radius: 20px;
-      padding: 15px 25px;
+      padding: 12px 20px;
       display: flex;
       flex-direction: column;
       gap: 6px;
       align-items: center;
       justify-content: center;
       width: 100%;
-      max-width: 260px;
+      max-width: 200px;
     }
 
     .contact-box-title {
@@ -140,7 +140,7 @@ export function generatePDFHeaderStyles(): string {
     }
 
     .company-logo {
-      height: 60px;
+      height: 50px;
       width: auto;
       object-fit: contain;
       filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));

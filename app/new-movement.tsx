@@ -166,7 +166,7 @@ export default function NewMovementScreen() {
     setIsLoading(true);
     try {
       if (formData.operation_type === 'customer_to_customer') {
-        const transferGroupId = crypto.randomUUID();
+        const transferGroupId = `TG-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const { data: movementNumber1 } = await supabase.rpc('generate_movement_number');
         const { data: movementNumber2 } = await supabase.rpc('generate_movement_number');
 
@@ -202,10 +202,14 @@ export default function NewMovementScreen() {
           is_internal_transfer: true,
         };
 
-        const { error: error1 } = await supabase.from('account_movements').insert([movement1]);
+        const { data: insertedData1, error: error1 } = await supabase
+          .from('account_movements')
+          .insert([movement1])
+          .select()
+          .single();
         if (error1) throw error1;
 
-        const { data: insertedData, error: error2 } = await supabase
+        const { data: insertedData2, error: error2 } = await supabase
           .from('account_movements')
           .insert([movement2])
           .select()
@@ -213,9 +217,18 @@ export default function NewMovementScreen() {
         if (error2) throw error2;
 
         setSavedMovementData({
-          ...insertedData,
-          customerName: formData.to_customer_name,
-          customerAccountNumber: formData.to_customer_account,
+          isInternalTransfer: true,
+          transferGroupId: transferGroupId,
+          movement1: {
+            ...insertedData1,
+            customerName: formData.from_customer_name,
+            customerAccountNumber: formData.from_customer_account,
+          },
+          movement2: {
+            ...insertedData2,
+            customerName: formData.to_customer_name,
+            customerAccountNumber: formData.to_customer_account,
+          },
         });
         setShowSuccessModal(true);
       } else {
@@ -275,27 +288,37 @@ export default function NewMovementScreen() {
     }
   };
 
-  const handleOpenReceipt = () => {
+  const handleOpenReceipt = (movementIndex?: number) => {
     setShowSuccessModal(false);
-    router.push({
-      pathname: '/receipt-preview',
-      params: {
-        movementId: savedMovementData.id,
-        customerName: savedMovementData.customerName,
-        customerAccountNumber: savedMovementData.customerAccountNumber,
-      },
-    });
+
+    if (savedMovementData?.isInternalTransfer && movementIndex) {
+      const movement = movementIndex === 1 ? savedMovementData.movement1 : savedMovementData.movement2;
+      router.push({
+        pathname: '/receipt-preview',
+        params: {
+          movementId: movement.id,
+          customerName: movement.customerName,
+          customerAccountNumber: movement.customerAccountNumber,
+        },
+      });
+    } else {
+      router.push({
+        pathname: '/receipt-preview',
+        params: {
+          movementId: savedMovementData.id,
+          customerName: savedMovementData.customerName,
+          customerAccountNumber: savedMovementData.customerAccountNumber,
+        },
+      });
+    }
   };
 
-  const handleDownloadFromSuccess = async () => {
-    if (!savedMovementData) return;
-
-    setIsSavingPdf(true);
+  const handleDownloadReceipt = async (movementData: any) => {
     try {
       const receiptData = {
-        ...savedMovementData,
-        customerName: savedMovementData.customerName,
-        customerAccountNumber: savedMovementData.customerAccountNumber,
+        ...movementData,
+        customerName: movementData.customerName,
+        customerAccountNumber: movementData.customerAccountNumber,
       };
 
       const qrData = generateQRCodeData(receiptData);
@@ -319,7 +342,7 @@ export default function NewMovementScreen() {
         base64: false,
       });
 
-      const pdfName = `receipt_${savedMovementData.receipt_number || savedMovementData.movement_number}.pdf`;
+      const pdfName = `receipt_${receiptData.receipt_number || receiptData.movement_number}.pdf`;
       const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
 
       await FileSystem.moveAsync({
@@ -327,10 +350,49 @@ export default function NewMovementScreen() {
         to: pdfPath,
       });
 
-      Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${pdfName}\n\nالمسار:\n${pdfPath}`);
+      return pdfPath;
     } catch (error) {
       console.error('Error saving PDF:', error);
+      throw error;
+    }
+  };
+
+  const handleDownloadFromSuccess = async (movementIndex?: number) => {
+    if (!savedMovementData) return;
+
+    setIsSavingPdf(true);
+    try {
+      if (savedMovementData.isInternalTransfer && movementIndex) {
+        const movement = movementIndex === 1 ? savedMovementData.movement1 : savedMovementData.movement2;
+        const pdfPath = await handleDownloadReceipt(movement);
+        const fileName = pdfPath.split('/').pop();
+        Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${fileName}\n\nالمسار:\n${pdfPath}`);
+      } else {
+        const pdfPath = await handleDownloadReceipt(savedMovementData);
+        const fileName = pdfPath.split('/').pop();
+        Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${fileName}\n\nالمسار:\n${pdfPath}`);
+      }
+    } catch (error) {
       Alert.alert('خطأ', 'حدث خطأ أثناء حفظ الملف');
+    } finally {
+      setIsSavingPdf(false);
+    }
+  };
+
+  const handleDownloadBothReceipts = async () => {
+    if (!savedMovementData?.isInternalTransfer) return;
+
+    setIsSavingPdf(true);
+    try {
+      const path1 = await handleDownloadReceipt(savedMovementData.movement1);
+      const path2 = await handleDownloadReceipt(savedMovementData.movement2);
+
+      const file1 = path1.split('/').pop();
+      const file2 = path2.split('/').pop();
+
+      Alert.alert('نجح', `تم حفظ الإيصالين بنجاح:\n\n1. ${file1}\n2. ${file2}\n\nالمسار:\n${FileSystem.documentDirectory}`);
+    } catch (error) {
+      Alert.alert('خطأ', 'حدث خطأ أثناء حفظ الملفات');
     } finally {
       setIsSavingPdf(false);
     }
@@ -956,31 +1018,110 @@ export default function NewMovementScreen() {
               <CheckCircle size={64} color="#10B981" />
             </View>
             <Text style={styles.successTitle}>تم الحفظ بنجاح</Text>
-            <Text style={styles.successSubtitle}>تم إضافة الحركة المالية إلى النظام</Text>
+            <Text style={styles.successSubtitle}>
+              {savedMovementData?.isInternalTransfer
+                ? 'تم إضافة التحويل الداخلي بنجاح'
+                : 'تم إضافة الحركة المالية إلى النظام'}
+            </Text>
 
             <View style={styles.successButtonsContainer}>
-              <TouchableOpacity
-                style={styles.openReceiptButton}
-                onPress={handleOpenReceipt}
-              >
-                <FileText size={20} color="#FFFFFF" />
-                <Text style={styles.openReceiptButtonText}>فتح السند</Text>
-              </TouchableOpacity>
+              {savedMovementData?.isInternalTransfer ? (
+                <>
+                  <View style={styles.internalTransferSection}>
+                    <Text style={styles.internalTransferLabel}>إيصال المُرسل</Text>
+                    <View style={styles.internalTransferButtons}>
+                      <TouchableOpacity
+                        style={styles.internalTransferButton}
+                        onPress={() => handleOpenReceipt(1)}
+                      >
+                        <FileText size={18} color="#FFFFFF" />
+                        <Text style={styles.internalTransferButtonText}>فتح</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.internalTransferButton, styles.downloadButton]}
+                        onPress={() => handleDownloadFromSuccess(1)}
+                        disabled={isSavingPdf}
+                      >
+                        {isSavingPdf ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Download size={18} color="#FFFFFF" />
+                            <Text style={styles.internalTransferButtonText}>حفظ</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
 
-              <TouchableOpacity
-                style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
-                onPress={handleDownloadFromSuccess}
-                disabled={isSavingPdf}
-              >
-                {isSavingPdf ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Download size={20} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>حفظ في الجهاز</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+                  <View style={styles.internalTransferSection}>
+                    <Text style={styles.internalTransferLabel}>إيصال المُستفيد</Text>
+                    <View style={styles.internalTransferButtons}>
+                      <TouchableOpacity
+                        style={styles.internalTransferButton}
+                        onPress={() => handleOpenReceipt(2)}
+                      >
+                        <FileText size={18} color="#FFFFFF" />
+                        <Text style={styles.internalTransferButtonText}>فتح</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.internalTransferButton, styles.downloadButton]}
+                        onPress={() => handleDownloadFromSuccess(2)}
+                        disabled={isSavingPdf}
+                      >
+                        {isSavingPdf ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Download size={18} color="#FFFFFF" />
+                            <Text style={styles.internalTransferButtonText}>حفظ</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
+                    onPress={handleDownloadBothReceipts}
+                    disabled={isSavingPdf}
+                  >
+                    {isSavingPdf ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Download size={20} color="#FFFFFF" />
+                        <Text style={styles.saveButtonText}>حفظ كلا الإيصالين</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.openReceiptButton}
+                    onPress={() => handleOpenReceipt()}
+                  >
+                    <FileText size={20} color="#FFFFFF" />
+                    <Text style={styles.openReceiptButtonText}>فتح السند</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
+                    onPress={() => handleDownloadFromSuccess()}
+                    disabled={isSavingPdf}
+                  >
+                    {isSavingPdf ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Download size={20} color="#FFFFFF" />
+                        <Text style={styles.saveButtonText}>حفظ في الجهاز</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
 
               <TouchableOpacity
                 style={styles.closeModalButton}
@@ -995,9 +1136,16 @@ export default function NewMovementScreen() {
       </Modal>
 
       <View style={styles.hidden}>
-        {savedMovementData && (
+        {savedMovementData && !savedMovementData.isInternalTransfer && (
           <QRCode
             value={generateQRCodeData(savedMovementData)}
+            size={120}
+            getRef={(ref) => (qrRef.current = ref)}
+          />
+        )}
+        {savedMovementData?.isInternalTransfer && savedMovementData.movement1 && (
+          <QRCode
+            value={generateQRCodeData(savedMovementData.movement1)}
             size={120}
             getRef={(ref) => (qrRef.current = ref)}
           />
@@ -1430,6 +1578,39 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#374151',
+  },
+  internalTransferSection: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  internalTransferLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  internalTransferButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  internalTransferButton: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  downloadButton: {
+    backgroundColor: '#10B981',
+  },
+  internalTransferButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   hidden: {
     position: 'absolute',

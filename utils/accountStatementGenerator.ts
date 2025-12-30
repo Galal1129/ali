@@ -153,8 +153,8 @@ export function generateAccountStatementHTML(
   const headerHTML = generatePDFHeaderHTML({
     title: `كشف حساب العميل: ${customerName}`,
     logoDataUrl,
-    primaryColor: '#10B981',
-    darkColor: '#059669',
+    primaryColor: '#382de3',
+    darkColor: '#2821b8',
     height: 150,
     showPhones: true,
   });

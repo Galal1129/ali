@@ -83,8 +83,8 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       : 'تحويل من العميل للمحل'
     : movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
 
-  const primaryColor = isTransfer ? '#F59E0B' : '#3B82F6';
-  const darkColor = isTransfer ? '#D97706' : '#2563EB';
+  const primaryColor = '#382de3';
+  const darkColor = '#2821b8';
 
   return `
 <!DOCTYPE html>

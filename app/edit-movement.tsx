@@ -24,7 +24,6 @@ export default function EditMovementScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [showCommissionCurrencyPicker, setShowCommissionCurrencyPicker] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [originalMovement, setOriginalMovement] = useState<AccountMovement | null>(null);
 
@@ -154,11 +153,6 @@ export default function EditMovementScreen() {
   const selectCurrency = (currency: Currency) => {
     setFormData({ ...formData, currency });
     setShowCurrencyPicker(false);
-  };
-
-  const selectCommissionCurrency = (currency: Currency) => {
-    setFormData({ ...formData, commission_currency: currency });
-    setShowCommissionCurrencyPicker(false);
   };
 
   const getCurrencySymbol = (code: string) => {
@@ -313,15 +307,12 @@ export default function EditMovementScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
             <View style={styles.commissionRow}>
-              <TouchableOpacity
-                style={styles.commissionCurrencyButton}
-                onPress={() => setShowCommissionCurrencyPicker(true)}
-              >
+              <View style={styles.commissionCurrencyDisplay}>
                 <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
                 <Text style={styles.commissionCurrencySymbol}>
                   {getCurrencySymbol(formData.commission_currency)}
                 </Text>
-              </TouchableOpacity>
+              </View>
               <TextInput
                 style={styles.commissionInput}
                 value={formData.commission}
@@ -337,13 +328,6 @@ export default function EditMovementScreen() {
                 textAlign="right"
               />
             </View>
-            {formData.commission && parseFloat(formData.commission) > 0 && formData.commission_currency !== formData.currency && (
-              <View style={styles.warningBox}>
-                <Text style={styles.warningText}>
-                  تنبيه: العمولة بعملة مختلفة عن الحوالة. ستُسجَّل مباشرة في الأرباح والخسائر ولن تُخصم من حساب العميل.
-                </Text>
-              </View>
-            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -456,39 +440,6 @@ export default function EditMovementScreen() {
             <TouchableOpacity
               style={styles.modalCloseButton}
               onPress={() => setShowCurrencyPicker(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>إغلاق</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        visible={showCommissionCurrencyPicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCommissionCurrencyPicker(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>اختر عملة العمولة</Text>
-            <ScrollView style={styles.modalList}>
-              {CURRENCIES.map((currency) => (
-                <TouchableOpacity
-                  key={currency.code}
-                  style={styles.modalItem}
-                  onPress={() => selectCommissionCurrency(currency.code)}
-                >
-                  <Text style={styles.modalItemText}>
-                    {currency.code} - {currency.name}
-                  </Text>
-                  <Text style={styles.modalItemSubtext}>{currency.symbol}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowCommissionCurrencyPicker(false)}
             >
               <Text style={styles.modalCloseButtonText}>إغلاق</Text>
             </TouchableOpacity>
@@ -710,8 +661,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  commissionCurrencyButton: {
-    backgroundColor: '#10B981',
+  commissionCurrencyDisplay: {
+    backgroundColor: '#4F46E5',
     borderRadius: 12,
     padding: 16,
     width: 100,
@@ -726,7 +677,7 @@ const styles = StyleSheet.create({
   },
   commissionCurrencySymbol: {
     fontSize: 12,
-    color: '#D1FAE5',
+    color: '#E0E7FF',
   },
   commissionInput: {
     flex: 1,
@@ -738,20 +689,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#111827',
-  },
-  warningBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-  },
-  warningText: {
-    fontSize: 13,
-    color: '#92400E',
-    textAlign: 'right',
-    lineHeight: 18,
   },
   textArea: {
     height: 80,

@@ -47,8 +47,6 @@ export default function InternalTransferScreen() {
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showCommission, setShowCommission] = useState(false);
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [showCommissionCurrencyPicker, setShowCommissionCurrencyPicker] = useState(false);
 
   React.useEffect(() => {
     setFormData((prev) => ({
@@ -358,12 +356,12 @@ export default function InternalTransferScreen() {
                 <Text style={styles.label}>عمولة (اختياري)</Text>
               </View>
               <View style={styles.commissionRow}>
-                <TouchableOpacity
-                  style={styles.commissionCurrencyButton}
-                  onPress={() => setShowCommissionCurrencyPicker(true)}
-                >
+                <View style={styles.commissionCurrencyDisplay}>
                   <Text style={styles.commissionCurrencyText}>{formData.commissionCurrency}</Text>
-                </TouchableOpacity>
+                  <Text style={styles.commissionCurrencySymbol}>
+                    {CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol || formData.commissionCurrency}
+                  </Text>
+                </View>
                 <TextInput
                   style={styles.commissionInput}
                   placeholder="0.00"
@@ -376,13 +374,6 @@ export default function InternalTransferScreen() {
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
-              {formData.commission && parseFloat(formData.commission) > 0 && formData.commissionCurrency !== formData.currency && (
-                <View style={styles.warningBox}>
-                  <Text style={styles.warningText}>
-                    تنبيه: العمولة بعملة مختلفة عن الحوالة. ستُسجَّل مباشرة في الأرباح والخسائر ولن تُخصم من حساب العميل.
-                  </Text>
-                </View>
-              )}
             </View>
           )}
 
@@ -443,42 +434,6 @@ export default function InternalTransferScreen() {
         </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <Modal
-        visible={showCommissionCurrencyPicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCommissionCurrencyPicker(false)}
-      >
-        <View style={styles.pickerContainer}>
-          <View style={styles.pickerContent}>
-            <Text style={styles.pickerTitle}>اختر عملة العمولة</Text>
-            <ScrollView style={styles.pickerList}>
-              {CURRENCIES.map((curr) => (
-                <TouchableOpacity
-                  key={curr.code}
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setFormData({ ...formData, commissionCurrency: curr.code });
-                    setShowCommissionCurrencyPicker(false);
-                  }}
-                >
-                  <Text style={styles.pickerItemText}>
-                    {curr.code} - {curr.name}
-                  </Text>
-                  <Text style={styles.pickerItemSymbol}>{curr.symbol}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.pickerCloseButton}
-              onPress={() => setShowCommissionCurrencyPicker(false)}
-            >
-              <Text style={styles.pickerCloseButtonText}>إغلاق</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -667,8 +622,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  commissionCurrencyButton: {
-    backgroundColor: '#10B981',
+  commissionCurrencyDisplay: {
+    backgroundColor: '#4F46E5',
     borderRadius: 12,
     padding: 14,
     width: 90,
@@ -679,6 +634,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  commissionCurrencySymbol: {
+    fontSize: 12,
+    color: '#E0E7FF',
   },
   commissionInput: {
     flex: 1,
@@ -780,19 +740,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     textAlign: 'center',
-  },
-  warningBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-  },
-  warningText: {
-    fontSize: 13,
-    color: '#92400E',
-    textAlign: 'right',
-    lineHeight: 18,
   },
 });

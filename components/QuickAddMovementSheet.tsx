@@ -54,10 +54,9 @@ export default function QuickAddMovementSheet({
   const [notes, setNotes] = useState('');
   const [showCommission, setShowCommission] = useState(false);
   const [commission, setCommission] = useState('');
-  const [commissionCurrency, setCommissionCurrency] = useState<Currency>('YER');
+  const [commissionCurrency, setCommissionCurrency] = useState<Currency>('USD');
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  const [showCommissionCurrencyPicker, setShowCommissionCurrencyPicker] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -343,15 +342,12 @@ export default function QuickAddMovementSheet({
                     <Text style={styles.sectionTitle}>عمولة</Text>
                   </View>
                   <View style={styles.amountRow}>
-                    <TouchableOpacity
-                      style={styles.commissionCurrencyButton}
-                      onPress={() => setShowCommissionCurrencyPicker(true)}
-                    >
+                    <View style={styles.commissionCurrencyDisplay}>
                       <Text style={styles.currencyCode}>{commissionCurrency}</Text>
                       <Text style={styles.currencySymbol}>
                         {getCurrencySymbol(commissionCurrency)}
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                     <TextInput
                       style={styles.amountInput}
                       value={commission}
@@ -361,13 +357,6 @@ export default function QuickAddMovementSheet({
                       keyboardType="decimal-pad"
                     />
                   </View>
-                  {commission && parseFloat(commission) > 0 && commissionCurrency !== currency && (
-                    <View style={styles.warningBox}>
-                      <Text style={styles.warningText}>
-                        تنبيه: العمولة بعملة مختلفة عن الحوالة. ستُسجَّل مباشرة في الأرباح والخسائر ولن تُخصم من حساب العميل.
-                      </Text>
-                    </View>
-                  )}
                 </View>
               )}
 
@@ -477,42 +466,6 @@ export default function QuickAddMovementSheet({
             </View>
           </View>
         </Modal>
-
-        <Modal
-          visible={showCommissionCurrencyPicker}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowCommissionCurrencyPicker(false)}
-        >
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerContent}>
-              <Text style={styles.pickerTitle}>اختر عملة العمولة</Text>
-              <ScrollView style={styles.pickerList}>
-                {CURRENCIES.map((curr) => (
-                  <TouchableOpacity
-                    key={curr.code}
-                    style={styles.pickerItem}
-                    onPress={() => {
-                      setCommissionCurrency(curr.code);
-                      setShowCommissionCurrencyPicker(false);
-                    }}
-                  >
-                    <Text style={styles.pickerItemText}>
-                      {curr.code} - {curr.name}
-                    </Text>
-                    <Text style={styles.pickerItemSymbol}>{curr.symbol}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.pickerCloseButton}
-                onPress={() => setShowCommissionCurrencyPicker(false)}
-              >
-                <Text style={styles.pickerCloseButtonText}>إغلاق</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -609,8 +562,8 @@ const styles = StyleSheet.create({
     width: 90,
     alignItems: 'center',
   },
-  commissionCurrencyButton: {
-    backgroundColor: '#10B981',
+  commissionCurrencyDisplay: {
+    backgroundColor: '#4F46E5',
     borderRadius: 12,
     padding: 14,
     width: 90,
@@ -791,19 +744,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     textAlign: 'center',
-  },
-  warningBox: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F59E0B',
-  },
-  warningText: {
-    fontSize: 13,
-    color: '#92400E',
-    textAlign: 'right',
-    lineHeight: 18,
   },
 });

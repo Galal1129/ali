@@ -96,18 +96,13 @@ export default function UsersManagement() {
       return;
     }
 
-    if (newPin.length < 6 || newPin.length > 8) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يكون بين 6-8 أرقام');
-      return;
-    }
-
-    if (!/^\d+$/.test(newPin)) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يحتوي على أرقام فقط');
+    if (newPin.length < 8 || newPin.length > 16) {
+      Alert.alert('خطأ', 'كلمة المرور يجب أن تكون بين 8-16 حرف');
       return;
     }
 
     if (newPin !== newPinConfirm) {
-      Alert.alert('خطأ', 'رقم PIN غير متطابق');
+      Alert.alert('خطأ', 'كلمة المرور غير متطابقة');
       return;
     }
 
@@ -152,18 +147,13 @@ export default function UsersManagement() {
   const handleEditPin = async () => {
     if (!selectedUser) return;
 
-    if (editPin.length < 6 || editPin.length > 8) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يكون بين 6-8 أرقام');
-      return;
-    }
-
-    if (!/^\d+$/.test(editPin)) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يحتوي على أرقام فقط');
+    if (editPin.length < 8 || editPin.length > 16) {
+      Alert.alert('خطأ', 'كلمة المرور يجب أن تكون بين 8-16 حرف');
       return;
     }
 
     if (editPin !== editPinConfirm) {
-      Alert.alert('خطأ', 'رقم PIN غير متطابق');
+      Alert.alert('خطأ', 'كلمة المرور غير متطابقة');
       return;
     }
 
@@ -181,15 +171,15 @@ export default function UsersManagement() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
-      Alert.alert('نجح', 'تم تحديث PIN بنجاح');
+      Alert.alert('نجح', 'تم تحديث كلمة المرور بنجاح');
       setEditModalVisible(false);
       setEditPin('');
       setEditPinConfirm('');
       setSelectedUser(null);
       await loadUsers();
     } catch (error) {
-      console.error('Error updating PIN:', error);
-      Alert.alert('خطأ', 'فشل تحديث PIN');
+      console.error('Error updating password:', error);
+      Alert.alert('خطأ', 'فشل تحديث كلمة المرور');
     } finally {
       setSaving(false);
     }
@@ -272,17 +262,17 @@ export default function UsersManagement() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>رقم PIN (6-8 أرقام)</Text>
+              <Text style={styles.label}>كلمة المرور (8-16 حرف)</Text>
               <View style={styles.inputContainer}>
                 <Lock size={20} color="#6B7280" />
                 <TextInput
                   style={styles.input}
-                  placeholder="******"
+                  placeholder="********"
                   placeholderTextColor="#9CA3AF"
                   value={newPin}
                   onChangeText={setNewPin}
-                  keyboardType="number-pad"
-                  maxLength={8}
+                  keyboardType="default"
+                  maxLength={16}
                   secureTextEntry
                   textAlign="right"
                 />
@@ -290,17 +280,17 @@ export default function UsersManagement() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>تأكيد رقم PIN</Text>
+              <Text style={styles.label}>تأكيد كلمة المرور</Text>
               <View style={styles.inputContainer}>
                 <Lock size={20} color="#6B7280" />
                 <TextInput
                   style={styles.input}
-                  placeholder="******"
+                  placeholder="********"
                   placeholderTextColor="#9CA3AF"
                   value={newPinConfirm}
                   onChangeText={setNewPinConfirm}
-                  keyboardType="number-pad"
-                  maxLength={8}
+                  keyboardType="default"
+                  maxLength={16}
                   secureTextEntry
                   textAlign="right"
                 />
@@ -356,23 +346,23 @@ export default function UsersManagement() {
               <X size={24} color="#6B7280" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              تعديل PIN - {selectedUser?.user_name}
+              تعديل كلمة المرور - {selectedUser?.user_name}
             </Text>
           </View>
 
           <View style={styles.modalBody}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>رقم PIN الجديد (6-8 أرقام)</Text>
+              <Text style={styles.label}>كلمة المرور الجديدة (8-16 حرف)</Text>
               <View style={styles.inputContainer}>
                 <Lock size={20} color="#6B7280" />
                 <TextInput
                   style={styles.input}
-                  placeholder="******"
+                  placeholder="********"
                   placeholderTextColor="#9CA3AF"
                   value={editPin}
                   onChangeText={setEditPin}
-                  keyboardType="number-pad"
-                  maxLength={8}
+                  keyboardType="default"
+                  maxLength={16}
                   secureTextEntry
                   textAlign="right"
                 />
@@ -380,17 +370,17 @@ export default function UsersManagement() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>تأكيد رقم PIN</Text>
+              <Text style={styles.label}>تأكيد كلمة المرور</Text>
               <View style={styles.inputContainer}>
                 <Lock size={20} color="#6B7280" />
                 <TextInput
                   style={styles.input}
-                  placeholder="******"
+                  placeholder="********"
                   placeholderTextColor="#9CA3AF"
                   value={editPinConfirm}
                   onChangeText={setEditPinConfirm}
-                  keyboardType="number-pad"
-                  maxLength={8}
+                  keyboardType="default"
+                  maxLength={16}
                   secureTextEntry
                   textAlign="right"
                 />
@@ -465,7 +455,7 @@ export default function UsersManagement() {
           onPress={() => openEditModal(user)}
         >
           <Edit3 size={18} color="#3B82F6" />
-          <Text style={styles.editButtonText}>تعديل PIN</Text>
+          <Text style={styles.editButtonText}>تعديل كلمة المرور</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}

@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   Settings as SettingsIcon,
   Building2,
+  Users,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePin } from '@/contexts/PinContext';
@@ -47,6 +48,13 @@ export default function SettingsScreen() {
       subtitle: 'اسم المحل والشعار',
       color: '#4F46E5',
       onPress: () => router.push('/shop-settings' as any),
+    },
+    {
+      icon: Users,
+      title: 'إدارة المستخدمين',
+      subtitle: 'إضافة وتعديل وحذف المستخدمين',
+      color: '#8B5CF6',
+      onPress: () => router.push('/users-management' as any),
     },
     {
       icon: Lock,

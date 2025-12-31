@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowRight, Lock, User, Trash2, Check } from 'lucide-react-native';
+import { ArrowRight, Lock, User, Check } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
 import * as Crypto from 'expo-crypto';
@@ -36,6 +36,8 @@ export default function PinSettings() {
       const { data, error } = await supabase
         .from('app_security')
         .select('user_name')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
@@ -90,46 +92,25 @@ export default function PinSettings() {
     try {
       const pinHash = await hashPin(pin);
 
-      if (pinExists) {
-        const { error } = await supabase
-          .from('app_security')
-          .update({
-            user_name: userName.trim(),
-            pin_hash: pinHash,
-          })
-          .eq('id', (await supabase.from('app_security').select('id').single()).data?.id);
+      const { error } = await supabase.from('app_security').insert({
+        user_name: userName.trim(),
+        pin_hash: pinHash,
+        role: 'user',
+        is_active: true,
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        Alert.alert('نجح', 'تم تحديث رقم PIN بنجاح', [
-          {
-            text: 'حسناً',
-            onPress: () => router.back(),
-          },
-        ]);
-      } else {
-        const { error } = await supabase.from('app_security').insert({
-          user_name: userName.trim(),
-          pin_hash: pinHash,
-        });
-
-        if (error) throw error;
-
-        if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        Alert.alert('نجح', 'تم تعيين رقم PIN بنجاح', [
-          {
-            text: 'حسناً',
-            onPress: () => router.back(),
-          },
-        ]);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+
+      Alert.alert('نجح', 'تم إضافة المستخدم بنجاح', [
+        {
+          text: 'حسناً',
+          onPress: () => router.back(),
+        },
+      ]);
 
       setPin('');
       setConfirmPin('');
@@ -143,39 +124,6 @@ export default function PinSettings() {
     }
   };
 
-  const handleDeletePin = () => {
-    Alert.alert('تأكيد الحذف', 'هل أنت متأكد من حذف رقم PIN؟', [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const { error } = await supabase
-              .from('app_security')
-              .delete()
-              .eq('id', (await supabase.from('app_security').select('id').single()).data?.id);
-
-            if (error) throw error;
-
-            if (Platform.OS !== 'web') {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-
-            Alert.alert('نجح', 'تم حذف رقم PIN بنجاح');
-            setPinExists(false);
-            setCurrentUserName('');
-            setUserName('');
-            setPin('');
-            setConfirmPin('');
-          } catch (error) {
-            console.error('Error deleting PIN:', error);
-            Alert.alert('خطأ', 'حدث خطأ أثناء حذف رقم PIN');
-          }
-        },
-      },
-    ]);
-  };
 
   if (checkingPin) {
     return (
@@ -203,18 +151,16 @@ export default function PinSettings() {
       </View>
 
       <ScrollView style={styles.content}>
-        {pinExists && (
-          <View style={styles.infoCard}>
-            <Lock size={32} color="#10B981" />
-            <Text style={styles.infoTitle}>رقم PIN مفعل</Text>
-            <Text style={styles.infoSubtitle}>المستخدم: {currentUserName}</Text>
-          </View>
-        )}
+        <View style={styles.infoCard}>
+          <Lock size={32} color="#4F46E5" />
+          <Text style={styles.infoTitle}>إضافة مستخدم جديد</Text>
+          <Text style={styles.infoSubtitle}>
+            استخدم صفحة "إدارة المستخدمين" لتعديل أو حذف المستخدمين الموجودين
+          </Text>
+        </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            {pinExists ? 'تغيير رقم PIN' : 'تعيين رقم PIN'}
-          </Text>
+          <Text style={styles.cardTitle}>معلومات المستخدم الجديد</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>اسم المستخدم</Text>
@@ -274,17 +220,10 @@ export default function PinSettings() {
           >
             <Check size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>
-              {loading ? 'جاري الحفظ...' : pinExists ? 'تحديث PIN' : 'حفظ PIN'}
+              {loading ? 'جاري الحفظ...' : 'إضافة مستخدم'}
             </Text>
           </TouchableOpacity>
         </View>
-
-        {pinExists && (
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeletePin}>
-            <Trash2 size={20} color="#EF4444" />
-            <Text style={styles.deleteButtonText}>حذف رقم PIN</Text>
-          </TouchableOpacity>
-        )}
 
         <View style={styles.infoSection}>
           <Text style={styles.infoSectionTitle}>معلومات مهمة</Text>
@@ -293,7 +232,7 @@ export default function PinSettings() {
             • الحد الأقصى 8 أرقام{'\n'}
             • احفظ رقم PIN في مكان آمن{'\n'}
             • سيتم طلب رقم PIN عند فتح التطبيق{'\n'}
-            • يمكنك تغيير أو حذف رقم PIN في أي وقت
+            • لتعديل أو حذف المستخدمين، استخدم صفحة "إدارة المستخدمين"
           </Text>
         </View>
       </ScrollView>
@@ -340,24 +279,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoCard: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#EEF2FF',
     margin: 16,
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: '#4F46E5',
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#065F46',
+    color: '#312E81',
     marginTop: 12,
   },
   infoSubtitle: {
     fontSize: 14,
-    color: '#047857',
+    color: '#4338CA',
     marginTop: 4,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -420,22 +360,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEE2E2',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#EF4444',
   },
   infoSection: {
     backgroundColor: '#FFFFFF',

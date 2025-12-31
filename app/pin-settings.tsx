@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { ArrowRight, Lock, User, Trash2, Check } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
+import * as Crypto from 'expo-crypto';
 import { usePin } from '@/contexts/PinContext';
 
 export default function PinSettings() {
@@ -51,11 +52,11 @@ export default function PinSettings() {
   };
 
   const hashPin = async (pinValue: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pinValue);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const hash = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      pinValue
+    );
+    return hash;
   };
 
   const handleSetPin = async () => {

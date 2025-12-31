@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
+import * as Crypto from 'expo-crypto';
 import { usePin } from '@/contexts/PinContext';
 
 interface PinEntryProps {
@@ -60,12 +61,10 @@ export default function PinEntry() {
 
   const verifyEnteredPin = async (enteredPin: string) => {
     try {
-      // Import crypto for hashing
-      const encoder = new TextEncoder();
-      const data = encoder.encode(enteredPin);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const hashHex = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        enteredPin
+      );
 
       const { supabase } = await import('@/lib/supabase');
       const { data: securityData, error: fetchError } = await supabase

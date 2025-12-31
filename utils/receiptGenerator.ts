@@ -69,11 +69,9 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
   const currencyName = getCurrencyName(currency);
   const commissionCurrencyName = getCurrencyName(commission_currency);
 
-  const totalAmount = currency === commission_currency
-    ? Number(amount) + Number(commission)
-    : Number(amount);
+  const netAmount = Number(amount) - Number(commission || 0);
 
-  const amountInWords = numberToArabicTextWithCurrency(totalAmount, currency as Currency);
+  const amountInWords = numberToArabicTextWithCurrency(netAmount, currency as Currency);
 
   const actionTitle = isTransfer
     ? receiptData.transfer_direction === 'customer_to_customer'
@@ -879,8 +877,8 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
           <div class="four-cards-row">
             <div class="info-card">
-              <div class="card-label">مبلغ الحساب</div>
-              <div class="card-value">${amount}</div>
+              <div class="card-label">المبلغ الإجمالي</div>
+              <div class="card-value">${amount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
             </div>
 
             <div class="info-card">
@@ -891,13 +889,13 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
             <div class="info-card">
               <div class="card-label">العمولة</div>
               <div class="card-value">
-                ${commission} <span class="card-currency">${commissionCurrencyName}</span>
+                ${commission || 0} <span class="card-currency">${commission > 0 ? commissionCurrencyName : ''}</span>
               </div>
             </div>
 
             <div class="info-card">
-              <div class="card-label">الإجمالي</div>
-              <div class="card-value">${totalAmount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
+              <div class="card-label">الصافي</div>
+              <div class="card-value">${netAmount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
             </div>
           </div>
 

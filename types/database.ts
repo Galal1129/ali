@@ -7,6 +7,7 @@ export interface Customer {
   account_number: string;
   balance: number;
   notes?: string;
+  is_profit_loss_account?: boolean;
   created_at: string;
   updated_at: string;
 }

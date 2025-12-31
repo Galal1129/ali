@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Search } from 'lucide-react-native';
+import { Plus, Search, TrendingUp } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, CustomerBalanceByCurrency, CURRENCIES } from '@/types/database';
 
@@ -199,6 +199,11 @@ export default function CustomersScreen() {
   };
 
   const handleCustomerLongPress = (customer: CustomerWithBalances) => {
+    if (customer.is_profit_loss_account) {
+      Alert.alert('حساب الأرباح والخسائر', 'هذا حساب النظام ولا يمكن حذفه أو تصفيره.');
+      return;
+    }
+
     Alert.alert('خيارات العميل', `اختر العملية لـ ${customer.name}:`, [
       { text: 'إلغاء', style: 'cancel' },
       {
@@ -220,18 +225,31 @@ export default function CustomersScreen() {
   const renderCustomer = ({ item, index }: { item: CustomerWithBalances; index: number }) => {
     const hasBalances = item.balances.length > 0;
     const displayBalances = item.balances.slice(0, 2);
+    const isProfitLoss = item.is_profit_loss_account;
 
     return (
       <TouchableOpacity
-        style={styles.customerCard}
+        style={[
+          styles.customerCard,
+          isProfitLoss && styles.profitLossCard,
+        ]}
         onPress={() => router.push(`/customer-details?id=${item.id}` as any)}
         onLongPress={() => handleCustomerLongPress(item)}
       >
-        <View style={[styles.avatar, { backgroundColor: getAvatarColor(index) }]}>
-          <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
-        </View>
+        {isProfitLoss ? (
+          <View style={[styles.avatar, styles.profitLossAvatar]}>
+            <TrendingUp size={28} color="#FFFFFF" />
+          </View>
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: getAvatarColor(index) }]}>
+            <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+          </View>
+        )}
 
-        <Text style={styles.customerName}>{item.name}</Text>
+        <Text style={[styles.customerName, isProfitLoss && styles.profitLossName]}>
+          {item.name}
+          {isProfitLoss && ' 💰'}
+        </Text>
 
         <View style={styles.balanceContainer}>
           {!hasBalances ? (
@@ -359,10 +377,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 2,
+    marginBottom: 12,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 12,
+  },
+  profitLossCard: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+  },
+  profitLossAvatar: {
+    backgroundColor: '#F59E0B',
+  },
+  profitLossName: {
+    fontWeight: 'bold',
+    color: '#92400E',
   },
   avatar: {
     width: 56,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,39 +6,36 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
 import * as Crypto from 'expo-crypto';
 import { usePin } from '@/contexts/PinContext';
-
-interface PinEntryProps {
-  onSuccess?: () => void;
-}
+import { Lock, LogIn } from 'lucide-react-native';
 
 export default function PinEntry() {
   const router = useRouter();
   const { verifyPin: markPinAsVerified } = usePin();
   const [pin, setPin] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const shakeAnimation = new Animated.Value(0);
-
-  const handleNumberPress = (num: string) => {
-    if (pin.length < 8) {
-      const newPin = pin + num;
-      setPin(newPin);
-      setError('');
-
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
+  const inputRef = useRef<TextInput>(null);
 
   const handleSubmit = () => {
-    if (pin.length < 6) {
-      setError('رقم PIN يجب أن يكون 6 أرقام على الأقل');
+    if (pin.length < 8) {
+      setError('رقم PIN يجب أن يكون 8 أحرف على الأقل');
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      shakeError();
+      return;
+    }
+    if (pin.length > 16) {
+      setError('رقم PIN يجب أن لا يزيد عن 16 حرف');
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -48,18 +45,10 @@ export default function PinEntry() {
     verifyEnteredPin(pin);
   };
 
-  const handleDelete = () => {
-    if (pin.length > 0) {
-      setPin(pin.slice(0, -1));
-      setError('');
-
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
-
   const verifyEnteredPin = async (enteredPin: string) => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       const hashHex = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
@@ -93,6 +82,8 @@ export default function PinEntry() {
       console.error('Error verifying PIN:', err);
       setError('حدث خطأ أثناء التحقق');
       setPin('');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,77 +112,88 @@ export default function PinEntry() {
     ]).start();
   };
 
-  const renderPinDots = () => {
-    return (
-      <View style={styles.pinDotsContainer}>
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
-          <View
-            key={index}
-            style={[
-              styles.pinDot,
-              pin.length > index && styles.pinDotFilled,
-            ]}
-          />
-        ))}
-      </View>
-    );
-  };
-
-  const renderNumberPad = () => {
-    const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'];
-
-    return (
-      <View style={styles.numberPad}>
-        {numbers.map((num, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.numberButton,
-              num === '✓' && styles.numberButtonSubmit,
-            ]}
-            onPress={() => {
-              if (num === '⌫') {
-                handleDelete();
-              } else if (num === '✓') {
-                handleSubmit();
-              } else {
-                handleNumberPress(num);
-              }
-            }}
-          >
-            <Text style={[
-              styles.numberButtonText,
-              num === '✓' && styles.numberButtonTextSubmit,
-            ]}>{num}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <StatusBar style="light" />
 
       <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <Lock size={64} color="#10B981" />
+        </View>
+
         <Text style={styles.title}>أدخل رقم PIN</Text>
+        <Text style={styles.subtitle}>
+          استخدم رقم PIN المكون من 8-16 حرف (أرقام، أحرف، رموز)
+        </Text>
 
         <Animated.View
           style={[
-            styles.pinContainer,
+            styles.inputContainer,
             { transform: [{ translateX: shakeAnimation }] },
           ]}
         >
-          {renderPinDots()}
+          <Lock size={20} color="#9CA3AF" />
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            placeholder="أدخل رقم PIN"
+            placeholderTextColor="#6B7280"
+            value={pin}
+            onChangeText={(text) => {
+              if (text.length <= 16) {
+                setPin(text);
+                setError('');
+              }
+            }}
+            secureTextEntry
+            autoFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+            textAlign="right"
+            returnKeyType="go"
+            onSubmitEditing={handleSubmit}
+          />
         </Animated.View>
 
+        {pin.length > 0 && (
+          <View style={styles.lengthIndicator}>
+            <Text style={[
+              styles.lengthText,
+              pin.length >= 8 && pin.length <= 16 ? styles.lengthTextValid : styles.lengthTextInvalid
+            ]}>
+              {pin.length} / 16 حرف
+            </Text>
+          </View>
+        )}
+
         {error ? (
-          <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         ) : null}
 
-        {renderNumberPad()}
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            (isSubmitting || pin.length < 8) && styles.submitButtonDisabled
+          ]}
+          onPress={handleSubmit}
+          disabled={isSubmitting || pin.length < 8}
+        >
+          {isSubmitting ? (
+            <Text style={styles.submitButtonText}>جاري التحقق...</Text>
+          ) : (
+            <>
+              <LogIn size={20} color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>دخول</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -204,75 +206,102 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 32,
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#1F2937',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+    borderWidth: 2,
+    borderColor: '#10B981',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 60,
+    marginBottom: 12,
     textAlign: 'center',
   },
-  pinContainer: {
+  subtitle: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    textAlign: 'center',
     marginBottom: 40,
+    lineHeight: 22,
   },
-  pinDotsContainer: {
+  inputContainer: {
     flexDirection: 'row',
-    gap: 12,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    maxWidth: 300,
-  },
-  pinDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#6B7280',
-    backgroundColor: 'transparent',
-  },
-  pinDotFilled: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  numberPad: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: 300,
-    justifyContent: 'center',
-    gap: 20,
-  },
-  numberButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#1F2937',
-    justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    backgroundColor: '#1F2937',
+    borderRadius: 16,
+    borderWidth: 2,
     borderColor: '#374151',
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+    width: '100%',
+    maxWidth: 400,
   },
-  numberButtonEmpty: {
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-  },
-  numberButtonSubmit: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  numberButtonText: {
-    fontSize: 32,
+  input: {
+    flex: 1,
+    fontSize: 18,
     color: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+  },
+  lengthIndicator: {
+    marginTop: 12,
+    width: '100%',
+    maxWidth: 400,
+  },
+  lengthText: {
+    fontSize: 14,
+    textAlign: 'right',
     fontWeight: '500',
   },
-  numberButtonTextSubmit: {
-    fontSize: 36,
+  lengthTextValid: {
+    color: '#10B981',
+  },
+  lengthTextInvalid: {
+    color: '#F59E0B',
+  },
+  errorContainer: {
+    marginTop: 16,
+    backgroundColor: '#7F1D1D',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: 400,
+  },
+  errorText: {
+    color: '#FEE2E2',
+    fontSize: 15,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: '#10B981',
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    marginTop: 32,
+    width: '100%',
+    maxWidth: 400,
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonText: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#FFFFFF',
   },
 });

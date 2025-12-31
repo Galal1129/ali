@@ -23,7 +23,6 @@ export default function PinSettings() {
   const [userName, setUserName] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');
   const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [checkingPin, setCheckingPin] = useState(true);
 
@@ -67,23 +66,13 @@ export default function PinSettings() {
       return;
     }
 
-    if (pin.length < 6) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يكون 6 أرقام على الأقل');
+    if (pin.length < 8) {
+      Alert.alert('خطأ', 'رقم PIN يجب أن يكون 8 أحرف على الأقل');
       return;
     }
 
-    if (pin.length > 8) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن لا يزيد عن 8 أرقام');
-      return;
-    }
-
-    if (pin !== confirmPin) {
-      Alert.alert('خطأ', 'رقم PIN غير متطابق');
-      return;
-    }
-
-    if (!/^\d+$/.test(pin)) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يحتوي على أرقام فقط');
+    if (pin.length > 16) {
+      Alert.alert('خطأ', 'رقم PIN يجب أن لا يزيد عن 16 حرف');
       return;
     }
 
@@ -113,7 +102,6 @@ export default function PinSettings() {
       ]);
 
       setPin('');
-      setConfirmPin('');
       setUserName('');
       await checkPinStatus();
     } catch (error: any) {
@@ -178,39 +166,34 @@ export default function PinSettings() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>رقم PIN (6-8 أرقام)</Text>
+            <Text style={styles.label}>رقم PIN (8-16 حرف: أرقام، أحرف، رموز)</Text>
             <View style={styles.inputContainer}>
               <Lock size={20} color="#6B7280" />
               <TextInput
                 style={styles.input}
-                placeholder="******"
+                placeholder="أدخل رقم PIN"
                 placeholderTextColor="#9CA3AF"
                 value={pin}
-                onChangeText={setPin}
-                keyboardType="number-pad"
-                maxLength={8}
+                onChangeText={(text) => {
+                  if (text.length <= 16) {
+                    setPin(text);
+                  }
+                }}
+                maxLength={16}
                 secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
                 textAlign="right"
               />
             </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>تأكيد رقم PIN</Text>
-            <View style={styles.inputContainer}>
-              <Lock size={20} color="#6B7280" />
-              <TextInput
-                style={styles.input}
-                placeholder="******"
-                placeholderTextColor="#9CA3AF"
-                value={confirmPin}
-                onChangeText={setConfirmPin}
-                keyboardType="number-pad"
-                maxLength={8}
-                secureTextEntry
-                textAlign="right"
-              />
-            </View>
+            {pin.length > 0 && (
+              <Text style={[
+                styles.lengthIndicator,
+                pin.length >= 8 && pin.length <= 16 ? styles.lengthIndicatorValid : styles.lengthIndicatorInvalid
+              ]}>
+                {pin.length} / 16 حرف
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -228,8 +211,9 @@ export default function PinSettings() {
         <View style={styles.infoSection}>
           <Text style={styles.infoSectionTitle}>معلومات مهمة</Text>
           <Text style={styles.infoSectionText}>
-            • رقم PIN يجب أن يكون 6 أرقام على الأقل{'\n'}
-            • الحد الأقصى 8 أرقام{'\n'}
+            • رقم PIN يجب أن يكون 8 أحرف على الأقل{'\n'}
+            • الحد الأقصى 16 حرف{'\n'}
+            • يمكن استخدام الأرقام والأحرف والرموز{'\n'}
             • احفظ رقم PIN في مكان آمن{'\n'}
             • سيتم طلب رقم PIN عند فتح التطبيق{'\n'}
             • لتعديل أو حذف المستخدمين، استخدم صفحة "إدارة المستخدمين"
@@ -384,5 +368,17 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 22,
     textAlign: 'right',
+  },
+  lengthIndicator: {
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: 'right',
+    fontWeight: '500',
+  },
+  lengthIndicatorValid: {
+    color: '#10B981',
+  },
+  lengthIndicatorInvalid: {
+    color: '#F59E0B',
   },
 });

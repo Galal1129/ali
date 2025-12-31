@@ -8,6 +8,7 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -159,6 +160,7 @@ export default function CustomerDetailsScreen() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [showCurrencyDetails, setShowCurrencyDetails] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const loadCustomerData = useCallback(async () => {
     try {
@@ -596,24 +598,7 @@ export default function CustomerDetailsScreen() {
           <Text style={styles.headerTitle}>{customer.name}</Text>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() =>
-              Alert.alert('إدارة العميل', `اختر العملية المطلوبة لـ ${customer.name}:`, [
-                { text: 'إلغاء', style: 'cancel' },
-                { text: 'تعديل البيانات', onPress: () => Alert.alert('قيد التطوير') },
-                { text: 'واتساب', onPress: handleWhatsApp },
-                { text: 'اتصال', onPress: handleCall },
-                {
-                  text: 'تصفير الحساب',
-                  onPress: handleResetAccount,
-                  style: 'destructive'
-                },
-                {
-                  text: 'حذف العميل',
-                  onPress: handleDeleteCustomer,
-                  style: 'destructive'
-                },
-              ])
-            }
+            onPress={() => setShowSettingsMenu(true)}
           >
             <Settings size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -850,6 +835,86 @@ export default function CustomerDetailsScreen() {
           }}
         />
       )}
+
+      <Modal
+        visible={showSettingsMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSettingsMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSettingsMenu(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>إدارة العميل</Text>
+            <Text style={styles.modalSubtitle}>{customer?.name}</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSettingsMenu(false);
+                router.push({
+                  pathname: '/add-customer',
+                  params: { id: customer.id },
+                });
+              }}
+            >
+              <Text style={styles.menuItemText}>تعديل البيانات</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSettingsMenu(false);
+                handleWhatsApp();
+              }}
+            >
+              <Text style={styles.menuItemText}>إرسال واتساب</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSettingsMenu(false);
+                handleCall();
+              }}
+            >
+              <Text style={styles.menuItemText}>اتصال</Text>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={styles.menuItemDanger}
+              onPress={() => {
+                setShowSettingsMenu(false);
+                handleResetAccount();
+              }}
+            >
+              <Text style={styles.menuItemDangerText}>تصفير الحساب</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemDanger}
+              onPress={() => {
+                setShowSettingsMenu(false);
+                handleDeleteCustomer();
+              }}
+            >
+              <Text style={styles.menuItemDangerText}>حذف العميل</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItemCancel}
+              onPress={() => setShowSettingsMenu(false)}
+            >
+              <Text style={styles.menuItemCancelText}>إلغاء</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -1186,5 +1251,68 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  menuItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#374151',
+    textAlign: 'right',
+  },
+  menuItemDanger: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  menuItemDangerText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'right',
+    fontWeight: '600',
+  },
+  menuItemCancel: {
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  menuItemCancelText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  menuDivider: {
+    height: 8,
+    backgroundColor: '#F9FAFB',
+    marginVertical: 8,
+    marginHorizontal: -20,
   },
 });

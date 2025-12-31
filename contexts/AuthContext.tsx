@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
 import { supabase } from '@/lib/supabase';
 import { AppSettings } from '@/types/database';
 
@@ -61,16 +62,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await loadSettings();
       }
 
+      const hashHex = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        pin
+      );
+
       const { data, error } = await supabase
-        .from('app_settings')
-        .select('pin_code')
+        .from('app_security')
+        .select('pin_hash')
         .maybeSingle();
 
       if (error || !data) {
         return false;
       }
 
-      if (data.pin_code === pin) {
+      if (data.pin_hash === hashHex) {
         await AsyncStorage.setItem(AUTH_KEY, 'true');
         setIsAuthenticated(true);
         return true;
@@ -118,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         const { error: insertError } = await supabase
           .from('app_settings')
-          .insert({ ...newSettings, pin_code: '1234' });
+          .insert(newSettings);
 
         if (insertError) {
           throw insertError;

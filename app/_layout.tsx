@@ -4,35 +4,26 @@ import { StatusBar } from 'expo-status-bar';
 import { I18nManager } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { PinProvider, usePin } from '@/contexts/PinContext';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
-  const { pinRequired, pinVerified, checkingPin } = usePin();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isLoading || checkingPin) return;
+    if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inPinEntry = segments[0] === 'pin-entry';
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
-      if (pinRequired && !pinVerified) {
-        router.replace('/pin-entry');
-      } else {
-        router.replace('/(tabs)');
-      }
-    } else if (isAuthenticated && pinRequired && !pinVerified && !inPinEntry) {
-      router.replace('/pin-entry');
+      router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, segments, pinRequired, pinVerified, checkingPin]);
+  }, [isAuthenticated, isLoading, segments]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -67,10 +58,8 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <PinProvider>
-        <RootLayoutNav />
-        <StatusBar style="auto" />
-      </PinProvider>
+      <RootLayoutNav />
+      <StatusBar style="auto" />
     </AuthProvider>
   );
 }

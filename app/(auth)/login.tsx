@@ -21,8 +21,13 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (pin.length < 4) {
-      Alert.alert('خطأ', 'الرجاء إدخال رمز PIN صحيح');
+    if (pin.length < 8) {
+      Alert.alert('خطأ', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+      return;
+    }
+
+    if (pin.length > 16) {
+      Alert.alert('خطأ', 'كلمة المرور يجب أن لا تزيد عن 16 حرف');
       return;
     }
 
@@ -33,7 +38,7 @@ export default function LoginScreen() {
     if (success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('خطأ', 'رمز PIN غير صحيح');
+      Alert.alert('خطأ', 'كلمة المرور غير صحيحة');
       setPin('');
     }
   };
@@ -55,21 +60,37 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.title}>نظام إدارة الحوالات المالية</Text>
-          <Text style={styles.subtitle}>أدخل رمز PIN للدخول</Text>
+          <Text style={styles.subtitle}>أدخل كلمة المرور (8-16 حرف)</Text>
 
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               value={pin}
-              onChangeText={setPin}
-              placeholder="أدخل رمز PIN"
+              onChangeText={(text) => {
+                if (text.length <= 16) {
+                  setPin(text);
+                }
+              }}
+              placeholder="أدخل كلمة المرور"
               placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
               secureTextEntry
-              maxLength={6}
+              maxLength={16}
               textAlign="center"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
+
+          {pin.length > 0 && (
+            <View style={styles.lengthIndicator}>
+              <Text style={[
+                styles.lengthText,
+                pin.length >= 8 && pin.length <= 16 ? styles.lengthTextValid : styles.lengthTextInvalid
+              ]}>
+                {pin.length} / 16 حرف
+              </Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -80,8 +101,6 @@ export default function LoginScreen() {
               {isLoading ? 'جاري التحقق...' : 'دخول'}
             </Text>
           </TouchableOpacity>
-
-          <Text style={styles.hint}>رمز PIN الافتراضي: 1234</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -158,9 +177,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-  hint: {
+  lengthIndicator: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  lengthText: {
     fontSize: 14,
-    color: '#9CA3AF',
     textAlign: 'center',
+    fontWeight: '500',
+  },
+  lengthTextValid: {
+    color: '#10B981',
+  },
+  lengthTextInvalid: {
+    color: '#F59E0B',
   },
 });

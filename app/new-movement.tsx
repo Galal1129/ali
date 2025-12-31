@@ -16,7 +16,7 @@ import {
   FlatList,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search, ArrowRightLeft } from 'lucide-react-native';
+import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import QRCode from 'react-native-qrcode-svg';
@@ -25,7 +25,7 @@ import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getLogoBase64 } from '@/utils/logoHelper';
 
-type OperationType = 'shop_to_customer' | 'customer_to_shop' | 'customer_to_customer' | '';
+type OperationType = 'shop_to_customer' | 'customer_to_shop' | '';
 
 export default function NewMovementScreen() {
   const router = useRouter();
@@ -103,12 +103,6 @@ export default function NewMovementScreen() {
         sender_name: shopName,
         beneficiary_name: prev.to_customer_name,
       }));
-    } else if (formData.operation_type === 'customer_to_customer') {
-      setFormData((prev) => ({
-        ...prev,
-        sender_name: prev.from_customer_name,
-        beneficiary_name: prev.to_customer_name,
-      }));
     }
   }, [formData.operation_type, formData.from_customer_name, formData.to_customer_name]);
 
@@ -150,21 +144,6 @@ export default function NewMovementScreen() {
       return;
     }
 
-    if (formData.operation_type === 'customer_to_customer') {
-      if (!formData.from_customer_id) {
-        Alert.alert('خطأ', 'الرجاء اختيار العميل المُرسل');
-        return;
-      }
-      if (!formData.to_customer_id) {
-        Alert.alert('خطأ', 'الرجاء اختيار العميل المُستفيد');
-        return;
-      }
-      if (formData.from_customer_id === formData.to_customer_id) {
-        Alert.alert('خطأ', 'لا يمكن التحويل لنفس العميل');
-        return;
-      }
-    }
-
     if (!formData.operation_type) {
       Alert.alert('خطأ', 'الرجاء اختيار نوع العملية');
       return;
@@ -172,121 +151,53 @@ export default function NewMovementScreen() {
 
     setIsLoading(true);
     try {
-      if (formData.operation_type === 'customer_to_customer') {
-        const transferGroupId = `TG-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const { data: movementNumber1 } = await supabase.rpc('generate_movement_number');
-        const { data: movementNumber2 } = await supabase.rpc('generate_movement_number');
+      const { data: movementNumber } = await supabase.rpc('generate_movement_number');
 
-        const movement1 = {
-          movement_number: movementNumber1 || `MOV-${Date.now()}-1`,
-          customer_id: formData.from_customer_id,
-          movement_type: 'outgoing',
-          amount: Number(formData.amount),
-          currency: formData.currency,
-          commission: formData.commission ? Number(formData.commission) : null,
-          commission_currency: formData.commission_currency,
-          notes: formData.notes.trim() || `تحويل إلى ${formData.to_customer_name}`,
-          sender_name: formData.sender_name.trim() || formData.from_customer_name,
-          beneficiary_name: formData.beneficiary_name.trim() || formData.to_customer_name,
-          transfer_number: formData.transfer_number.trim() || null,
-          transfer_group_id: transferGroupId,
-          is_internal_transfer: true,
-        };
+      const customerId = formData.operation_type === 'customer_to_shop'
+        ? formData.from_customer_id
+        : formData.to_customer_id;
 
-        const movement2 = {
-          movement_number: movementNumber2 || `MOV-${Date.now()}-2`,
-          customer_id: formData.to_customer_id,
-          movement_type: 'incoming',
-          amount: Number(formData.amount),
-          currency: formData.currency,
-          commission: formData.commission ? Number(formData.commission) : null,
-          commission_currency: formData.commission_currency,
-          notes: formData.notes.trim() || `تحويل من ${formData.from_customer_name}`,
-          sender_name: formData.sender_name.trim() || formData.from_customer_name,
-          beneficiary_name: formData.beneficiary_name.trim() || formData.to_customer_name,
-          transfer_number: formData.transfer_number.trim() || null,
-          transfer_group_id: transferGroupId,
-          is_internal_transfer: true,
-        };
+      const movementType = formData.operation_type === 'customer_to_shop'
+        ? 'outgoing'
+        : 'incoming';
 
-        const { data: insertedData1, error: error1 } = await supabase
-          .from('account_movements')
-          .insert([movement1])
-          .select()
-          .single();
-        if (error1) throw error1;
-
-        const { data: insertedData2, error: error2 } = await supabase
-          .from('account_movements')
-          .insert([movement2])
-          .select()
-          .single();
-        if (error2) throw error2;
-
-        setSavedMovementData({
-          isInternalTransfer: true,
-          transferGroupId: transferGroupId,
-          movement1: {
-            ...insertedData1,
-            customerName: formData.from_customer_name,
-            customerAccountNumber: formData.from_customer_account,
+      const { data: insertedData, error } = await supabase
+        .from('account_movements')
+        .insert([
+          {
+            movement_number: movementNumber || `MOV-${Date.now()}`,
+            customer_id: customerId,
+            movement_type: movementType,
+            amount: Number(formData.amount),
+            currency: formData.currency,
+            commission: formData.commission ? Number(formData.commission) : null,
+            commission_currency: formData.commission_currency,
+            notes: formData.notes.trim() || null,
+            sender_name: formData.sender_name.trim() || null,
+            beneficiary_name: formData.beneficiary_name.trim() || null,
+            transfer_number: formData.transfer_number.trim() || null,
+            is_internal_transfer: false,
           },
-          movement2: {
-            ...insertedData2,
-            customerName: formData.to_customer_name,
-            customerAccountNumber: formData.to_customer_account,
-          },
-        });
-        setShowSuccessModal(true);
-      } else {
-        const { data: movementNumber } = await supabase.rpc('generate_movement_number');
+        ])
+        .select()
+        .single();
 
-        const customerId = formData.operation_type === 'customer_to_shop'
-          ? formData.from_customer_id
-          : formData.to_customer_id;
+      if (error) throw error;
 
-        const movementType = formData.operation_type === 'customer_to_shop'
-          ? 'outgoing'
-          : 'incoming';
+      const customerName = formData.operation_type === 'customer_to_shop'
+        ? formData.from_customer_name
+        : formData.to_customer_name;
 
-        const { data: insertedData, error } = await supabase
-          .from('account_movements')
-          .insert([
-            {
-              movement_number: movementNumber || `MOV-${Date.now()}`,
-              customer_id: customerId,
-              movement_type: movementType,
-              amount: Number(formData.amount),
-              currency: formData.currency,
-              commission: formData.commission ? Number(formData.commission) : null,
-              commission_currency: formData.commission_currency,
-              notes: formData.notes.trim() || null,
-              sender_name: formData.sender_name.trim() || null,
-              beneficiary_name: formData.beneficiary_name.trim() || null,
-              transfer_number: formData.transfer_number.trim() || null,
-              is_internal_transfer: false,
-            },
-          ])
-          .select()
-          .single();
+      const customerAccountNumber = formData.operation_type === 'customer_to_shop'
+        ? formData.from_customer_account
+        : formData.to_customer_account;
 
-        if (error) throw error;
-
-        const customerName = formData.operation_type === 'customer_to_shop'
-          ? formData.from_customer_name
-          : formData.to_customer_name;
-
-        const customerAccountNumber = formData.operation_type === 'customer_to_shop'
-          ? formData.from_customer_account
-          : formData.to_customer_account;
-
-        setSavedMovementData({
-          ...insertedData,
-          customerName: customerName,
-          customerAccountNumber: customerAccountNumber,
-        });
-        setShowSuccessModal(true);
-      }
+      setSavedMovementData({
+        ...insertedData,
+        customerName: customerName,
+        customerAccountNumber: customerAccountNumber,
+      });
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error adding movement:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إضافة الحركة');
@@ -295,29 +206,16 @@ export default function NewMovementScreen() {
     }
   };
 
-  const handleOpenReceipt = (movementIndex?: number) => {
+  const handleOpenReceipt = () => {
     setShowSuccessModal(false);
-
-    if (savedMovementData?.isInternalTransfer && movementIndex) {
-      const movement = movementIndex === 1 ? savedMovementData.movement1 : savedMovementData.movement2;
-      router.push({
-        pathname: '/receipt-preview',
-        params: {
-          movementId: movement.id,
-          customerName: movement.customerName,
-          customerAccountNumber: movement.customerAccountNumber,
-        },
-      });
-    } else {
-      router.push({
-        pathname: '/receipt-preview',
-        params: {
-          movementId: savedMovementData.id,
-          customerName: savedMovementData.customerName,
-          customerAccountNumber: savedMovementData.customerAccountNumber,
-        },
-      });
-    }
+    router.push({
+      pathname: '/receipt-preview',
+      params: {
+        movementId: savedMovementData.id,
+        customerName: savedMovementData.customerName,
+        customerAccountNumber: savedMovementData.customerAccountNumber,
+      },
+    });
   };
 
   const handleDownloadReceipt = async (movementData: any) => {
@@ -364,42 +262,16 @@ export default function NewMovementScreen() {
     }
   };
 
-  const handleDownloadFromSuccess = async (movementIndex?: number) => {
+  const handleDownloadFromSuccess = async () => {
     if (!savedMovementData) return;
 
     setIsSavingPdf(true);
     try {
-      if (savedMovementData.isInternalTransfer && movementIndex) {
-        const movement = movementIndex === 1 ? savedMovementData.movement1 : savedMovementData.movement2;
-        const pdfPath = await handleDownloadReceipt(movement);
-        const fileName = pdfPath.split('/').pop();
-        Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${fileName}\n\nالمسار:\n${pdfPath}`);
-      } else {
-        const pdfPath = await handleDownloadReceipt(savedMovementData);
-        const fileName = pdfPath.split('/').pop();
-        Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${fileName}\n\nالمسار:\n${pdfPath}`);
-      }
+      const pdfPath = await handleDownloadReceipt(savedMovementData);
+      const fileName = pdfPath.split('/').pop();
+      Alert.alert('نجح', `تم حفظ الملف بنجاح:\n${fileName}\n\nالمسار:\n${pdfPath}`);
     } catch (error) {
       Alert.alert('خطأ', 'حدث خطأ أثناء حفظ الملف');
-    } finally {
-      setIsSavingPdf(false);
-    }
-  };
-
-  const handleDownloadBothReceipts = async () => {
-    if (!savedMovementData?.isInternalTransfer) return;
-
-    setIsSavingPdf(true);
-    try {
-      const path1 = await handleDownloadReceipt(savedMovementData.movement1);
-      const path2 = await handleDownloadReceipt(savedMovementData.movement2);
-
-      const file1 = path1.split('/').pop();
-      const file2 = path2.split('/').pop();
-
-      Alert.alert('نجح', `تم حفظ الإيصالين بنجاح:\n\n1. ${file1}\n2. ${file2}\n\nالمسار:\n${FileSystem.documentDirectory}`);
-    } catch (error) {
-      Alert.alert('خطأ', 'حدث خطأ أثناء حفظ الملفات');
     } finally {
       setIsSavingPdf(false);
     }
@@ -568,40 +440,10 @@ export default function NewMovementScreen() {
                   استلام من العميل
                 </Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.operationTypeButton,
-                  formData.operation_type === 'customer_to_customer' && styles.operationTypeButtonActive,
-                  { backgroundColor: formData.operation_type === 'customer_to_customer' ? '#8B5CF6' : '#F3F4F6' },
-                ]}
-                onPress={() => setFormData({ ...formData, operation_type: 'customer_to_customer' })}
-              >
-                <ArrowRightLeft
-                  size={28}
-                  color={formData.operation_type === 'customer_to_customer' ? '#FFFFFF' : '#6B7280'}
-                />
-                <Text
-                  style={[
-                    styles.operationTypeButtonText,
-                    { color: formData.operation_type === 'customer_to_customer' ? '#FFFFFF' : '#6B7280' },
-                  ]}
-                >
-                  من عميل إلى عميل
-                </Text>
-                <Text
-                  style={[
-                    styles.operationTypeButtonSubtext,
-                    { color: formData.operation_type === 'customer_to_customer' ? '#EDE9FE' : '#9CA3AF' },
-                  ]}
-                >
-                  تحويل داخلي
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
 
-          {(formData.operation_type === 'customer_to_shop' || formData.operation_type === 'customer_to_customer') && (
+          {formData.operation_type === 'customer_to_shop' && (
             <TouchableOpacity
               style={[
                 styles.customerSelector,
@@ -611,7 +453,7 @@ export default function NewMovementScreen() {
             >
               <View style={styles.customerLabelRow}>
                 <Text style={styles.customerLabel}>
-                  {formData.operation_type === 'customer_to_customer' ? 'المُرسل (من)' : 'العميل'} <Text style={styles.required}>*</Text>
+                  العميل <Text style={styles.required}>*</Text>
                 </Text>
                 {customerId && formData.operation_type === 'customer_to_shop' && (
                   <View style={styles.autoBadge}>
@@ -630,7 +472,7 @@ export default function NewMovementScreen() {
             </TouchableOpacity>
           )}
 
-          {(formData.operation_type === 'shop_to_customer' || formData.operation_type === 'customer_to_customer') && (
+          {formData.operation_type === 'shop_to_customer' && (
             <TouchableOpacity
               style={[
                 styles.customerSelector,
@@ -639,7 +481,7 @@ export default function NewMovementScreen() {
               onPress={() => setShowToCustomerPicker(true)}
             >
               <Text style={styles.customerLabel}>
-                {formData.operation_type === 'customer_to_customer' ? 'المُستفيد (إلى)' : 'العميل'} <Text style={styles.required}>*</Text>
+                العميل <Text style={styles.required}>*</Text>
               </Text>
               <Text style={styles.customerValue}>
                 {formData.to_customer_name || 'اختر عميل'}
@@ -1032,110 +874,31 @@ export default function NewMovementScreen() {
               <CheckCircle size={64} color="#10B981" />
             </View>
             <Text style={styles.successTitle}>تم الحفظ بنجاح</Text>
-            <Text style={styles.successSubtitle}>
-              {savedMovementData?.isInternalTransfer
-                ? 'تم إضافة التحويل الداخلي بنجاح'
-                : 'تم إضافة الحركة المالية إلى النظام'}
-            </Text>
+            <Text style={styles.successSubtitle}>تم إضافة الحركة المالية إلى النظام</Text>
 
             <View style={styles.successButtonsContainer}>
-              {savedMovementData?.isInternalTransfer ? (
-                <>
-                  <View style={styles.internalTransferSection}>
-                    <Text style={styles.internalTransferLabel}>إيصال المُرسل</Text>
-                    <View style={styles.internalTransferButtons}>
-                      <TouchableOpacity
-                        style={styles.internalTransferButton}
-                        onPress={() => handleOpenReceipt(1)}
-                      >
-                        <FileText size={18} color="#FFFFFF" />
-                        <Text style={styles.internalTransferButtonText}>فتح</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.internalTransferButton, styles.downloadButton]}
-                        onPress={() => handleDownloadFromSuccess(1)}
-                        disabled={isSavingPdf}
-                      >
-                        {isSavingPdf ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                          <>
-                            <Download size={18} color="#FFFFFF" />
-                            <Text style={styles.internalTransferButtonText}>حفظ</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+              <TouchableOpacity
+                style={styles.openReceiptButton}
+                onPress={() => handleOpenReceipt()}
+              >
+                <FileText size={20} color="#FFFFFF" />
+                <Text style={styles.openReceiptButtonText}>فتح السند</Text>
+              </TouchableOpacity>
 
-                  <View style={styles.internalTransferSection}>
-                    <Text style={styles.internalTransferLabel}>إيصال المُستفيد</Text>
-                    <View style={styles.internalTransferButtons}>
-                      <TouchableOpacity
-                        style={styles.internalTransferButton}
-                        onPress={() => handleOpenReceipt(2)}
-                      >
-                        <FileText size={18} color="#FFFFFF" />
-                        <Text style={styles.internalTransferButtonText}>فتح</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.internalTransferButton, styles.downloadButton]}
-                        onPress={() => handleDownloadFromSuccess(2)}
-                        disabled={isSavingPdf}
-                      >
-                        {isSavingPdf ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                          <>
-                            <Download size={18} color="#FFFFFF" />
-                            <Text style={styles.internalTransferButtonText}>حفظ</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
-                    onPress={handleDownloadBothReceipts}
-                    disabled={isSavingPdf}
-                  >
-                    {isSavingPdf ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Download size={20} color="#FFFFFF" />
-                        <Text style={styles.saveButtonText}>حفظ كلا الإيصالين</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.openReceiptButton}
-                    onPress={() => handleOpenReceipt()}
-                  >
-                    <FileText size={20} color="#FFFFFF" />
-                    <Text style={styles.openReceiptButtonText}>فتح السند</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
-                    onPress={() => handleDownloadFromSuccess()}
-                    disabled={isSavingPdf}
-                  >
-                    {isSavingPdf ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Download size={20} color="#FFFFFF" />
-                        <Text style={styles.saveButtonText}>حفظ في الجهاز</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
+              <TouchableOpacity
+                style={[styles.saveButton, isSavingPdf && styles.saveButtonDisabled]}
+                onPress={() => handleDownloadFromSuccess()}
+                disabled={isSavingPdf}
+              >
+                {isSavingPdf ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Download size={20} color="#FFFFFF" />
+                    <Text style={styles.saveButtonText}>حفظ في الجهاز</Text>
+                  </>
+                )}
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.closeModalButton}
@@ -1150,16 +913,9 @@ export default function NewMovementScreen() {
       </Modal>
 
       <View style={styles.hidden}>
-        {savedMovementData && !savedMovementData.isInternalTransfer && (
+        {savedMovementData && (
           <QRCode
             value={generateQRCodeData(savedMovementData)}
-            size={120}
-            getRef={(ref) => (qrRef.current = ref)}
-          />
-        )}
-        {savedMovementData?.isInternalTransfer && savedMovementData.movement1 && (
-          <QRCode
-            value={generateQRCodeData(savedMovementData.movement1)}
             size={120}
             getRef={(ref) => (qrRef.current = ref)}
           />
@@ -1606,39 +1362,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#374151',
-  },
-  internalTransferSection: {
-    width: '100%',
-    marginBottom: 12,
-  },
-  internalTransferLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  internalTransferButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  internalTransferButton: {
-    flex: 1,
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  downloadButton: {
-    backgroundColor: '#10B981',
-  },
-  internalTransferButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   hidden: {
     position: 'absolute',

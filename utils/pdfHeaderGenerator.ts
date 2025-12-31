@@ -64,10 +64,11 @@ export function generatePDFHeaderStyles(): string {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 60px;
+      padding: 20px 40px;
       margin-bottom: 20px;
       overflow: visible;
       flex-shrink: 0;
+      box-sizing: border-box;
     }
 
     .header-left,
@@ -76,16 +77,18 @@ export function generatePDFHeaderStyles(): string {
       z-index: 2;
       display: flex;
       align-items: center;
-      width: 220px;
+      width: 200px;
       flex-shrink: 0;
     }
 
     .header-left {
       justify-content: flex-start;
+      padding-right: 15px;
     }
 
     .header-right {
       justify-content: flex-end;
+      padding-left: 15px;
     }
 
     .header-center {
@@ -101,7 +104,7 @@ export function generatePDFHeaderStyles(): string {
     }
 
     .header-spacer {
-      width: 220px;
+      width: 200px;
       flex-shrink: 0;
     }
 
@@ -110,18 +113,19 @@ export function generatePDFHeaderStyles(): string {
       backdrop-filter: blur(12px);
       border: 2px solid rgba(255, 255, 255, 0.35);
       border-radius: 20px;
-      padding: 12px 20px;
+      padding: 12px 18px;
       display: flex;
       flex-direction: column;
       gap: 6px;
       align-items: center;
       justify-content: center;
       width: 100%;
-      max-width: 200px;
+      max-width: 180px;
+      box-sizing: border-box;
     }
 
     .contact-box-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: #ffffff;
       text-align: center;
@@ -130,7 +134,7 @@ export function generatePDFHeaderStyles(): string {
     }
 
     .contact-box-phone {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: #ffffff;
       text-align: center;
@@ -140,8 +144,9 @@ export function generatePDFHeaderStyles(): string {
     }
 
     .company-logo {
-      height: 50px;
+      height: 55px;
       width: auto;
+      max-width: 100%;
       object-fit: contain;
       filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));
     }
@@ -176,6 +181,11 @@ export function generatePDFHeaderStyles(): string {
       padding: 10px;
     }
 
+    .header-wrapper {
+      position: relative;
+      display: block;
+    }
+
     @media print {
       * {
         -webkit-print-color-adjust: exact !important;
@@ -189,11 +199,23 @@ export function generatePDFHeaderStyles(): string {
         color-adjust: exact;
         page-break-inside: avoid;
         page-break-after: avoid;
+        box-sizing: border-box;
+      }
+
+      .header-wrapper {
+        position: running(header);
+        display: none;
+      }
+
+      .header-wrapper:first-of-type {
+        display: block;
+        position: static;
       }
 
       .contact-box {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        box-sizing: border-box;
       }
 
       .company-name-en {

@@ -156,14 +156,15 @@ export function generateAccountStatementHTML(
   <title>كشف الحساب</title>
   <style>
     @page {
-      margin-top: 50mm;
-      margin-bottom: 50mm;
+      margin-top: 3cm;
+      margin-bottom: 3cm;
       margin-left: 15mm;
       margin-right: 15mm;
     }
 
     @page :first {
-      margin-top: 15mm;
+      margin-top: 0;
+      margin-bottom: 3cm;
     }
 
     * {
@@ -183,6 +184,16 @@ export function generateAccountStatementHTML(
 
     .header-wrapper {
       margin-bottom: 20px;
+      page-break-inside: avoid;
+      page-break-after: avoid;
+    }
+
+    .first-page-header {
+      display: block;
+    }
+
+    .non-first-page-header {
+      display: none;
     }
 
     .currency-section {
@@ -273,14 +284,20 @@ export function generateAccountStatementHTML(
       }
 
       @page {
-        margin-top: 50mm;
-        margin-bottom: 50mm;
+        margin-top: 3cm;
+        margin-bottom: 3cm;
         margin-left: 15mm;
         margin-right: 15mm;
       }
 
       @page :first {
-        margin-top: 15mm;
+        margin-top: 0;
+        margin-bottom: 3cm;
+      }
+
+      .header-wrapper {
+        page-break-inside: avoid;
+        page-break-after: avoid;
       }
 
       .currency-section {

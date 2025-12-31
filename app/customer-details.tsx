@@ -121,25 +121,17 @@ function calculateBalanceByCurrency(movements: AccountMovement[]): CurrencyBalan
     }
 
     const amount = Number(movement.amount);
+    const commission = movement.commission && Number(movement.commission) > 0 ? Number(movement.commission) : 0;
+    const commissionCurrency = (movement as any).commission_currency || 'USD';
+
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
-      currencyMap[currency].outgoing += amount;
-    }
-
-    if (movement.commission && Number(movement.commission) > 0) {
-      const commissionCurrency = (movement as any).commission_currency || 'YER';
-
-      if (!currencyMap[commissionCurrency]) {
-        currencyMap[commissionCurrency] = {
-          currency: commissionCurrency,
-          incoming: 0,
-          outgoing: 0,
-          balance: 0,
-        };
+      if (commission > 0 && commissionCurrency === currency) {
+        currencyMap[currency].outgoing += (amount + commission);
+      } else {
+        currencyMap[currency].outgoing += amount;
       }
-
-      currencyMap[commissionCurrency].outgoing += Number(movement.commission);
     }
   });
 

@@ -67,6 +67,10 @@ export default function QuickAddMovementSheet({
     }
   }, [visible]);
 
+  useEffect(() => {
+    setCommissionCurrency(currency);
+  }, [currency]);
+
   const loadLastUsedCurrency = async () => {
     try {
       const lastCurrency = await AsyncStorage.getItem('@last_used_currency');
@@ -357,6 +361,13 @@ export default function QuickAddMovementSheet({
                       keyboardType="decimal-pad"
                     />
                   </View>
+                  {commission && parseFloat(commission) > 0 && commissionCurrency !== currency && (
+                    <View style={styles.warningBox}>
+                      <Text style={styles.warningText}>
+                        تنبيه: العمولة بعملة مختلفة عن الحوالة. ستُسجَّل مباشرة في الأرباح والخسائر ولن تُخصم من حساب العميل.
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -780,5 +791,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     textAlign: 'center',
+  },
+  warningBox: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#92400E',
+    textAlign: 'right',
+    lineHeight: 18,
   },
 });

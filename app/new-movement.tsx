@@ -112,6 +112,13 @@ export default function NewMovementScreen() {
     }
   }, [formData.operation_type, formData.from_customer_name, formData.to_customer_name]);
 
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      commission_currency: prev.currency,
+    }));
+  }, [formData.currency]);
+
   const loadCustomers = async () => {
     try {
       const { data, error } = await supabase
@@ -696,6 +703,13 @@ export default function NewMovementScreen() {
                 textAlign="right"
               />
             </View>
+            {formData.commission && parseFloat(formData.commission) > 0 && formData.commission_currency !== formData.currency && (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>
+                  تنبيه: العمولة بعملة مختلفة عن الحوالة. ستُسجَّل مباشرة في الأرباح والخسائر ولن تُخصم من حساب العميل.
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -1368,6 +1382,20 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#111827',
+  },
+  warningBox: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#92400E',
+    textAlign: 'right',
+    lineHeight: 18,
   },
   textArea: {
     height: 80,

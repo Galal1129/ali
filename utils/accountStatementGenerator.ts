@@ -26,29 +26,12 @@ export function generateAccountStatementHTML(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
 
-  // Group movements by currency (including commissions separately)
+  // Group movements by currency
   const groupedByCurrency = sortedMovements.reduce((acc, movement) => {
     if (!acc[movement.currency]) {
       acc[movement.currency] = [];
     }
     acc[movement.currency].push(movement);
-
-    // Add commission as separate entry if it exists and has different currency
-    if (movement.commission && Number(movement.commission) > 0 && movement.commission_currency) {
-      if (!acc[movement.commission_currency]) {
-        acc[movement.commission_currency] = [];
-      }
-      // Only add if commission currency is different from movement currency
-      if (movement.commission_currency !== movement.currency) {
-        acc[movement.commission_currency].push({
-          ...movement,
-          currency: movement.commission_currency,
-          amount: movement.commission,
-          movement_type: 'outgoing',
-          notes: `عمولة - ${movement.notes || movement.movement_number}`,
-        } as AccountMovement);
-      }
-    }
 
     return acc;
   }, {} as Record<string, AccountMovement[]>);
@@ -62,12 +45,17 @@ export function generateAccountStatementHTML(
 
     currMovements.forEach((movement) => {
       const amount = Number(movement.amount);
+      const commission = movement.commission && Number(movement.commission) > 0
+        && movement.commission_currency === movement.currency
+        ? Number(movement.commission)
+        : 0;
+
       // incoming = تسليم للعميل (يضيف للرصيد)
-      // outgoing = استلام من العميل (يخصم من الرصيد)
+      // outgoing = استلام من العميل (يخصم من الرصيد + عمولة إذا كانت بنفس العملة)
       if (movement.movement_type === 'incoming') {
         runningBalance += amount;
       } else {
-        runningBalance -= amount;
+        runningBalance -= (amount + commission);
       }
 
       movementsWithBalance.push({

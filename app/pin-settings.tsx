@@ -64,8 +64,13 @@ export default function PinSettings() {
       return;
     }
 
-    if (pin.length !== 4) {
-      Alert.alert('خطأ', 'رقم PIN يجب أن يكون 4 أرقام');
+    if (pin.length < 6) {
+      Alert.alert('خطأ', 'رقم PIN يجب أن يكون 6 أرقام على الأقل');
+      return;
+    }
+
+    if (pin.length > 8) {
+      Alert.alert('خطأ', 'رقم PIN يجب أن لا يزيد عن 8 أرقام');
       return;
     }
 
@@ -74,7 +79,7 @@ export default function PinSettings() {
       return;
     }
 
-    if (!/^\d{4}$/.test(pin)) {
+    if (!/^\d+$/.test(pin)) {
       Alert.alert('خطأ', 'رقم PIN يجب أن يحتوي على أرقام فقط');
       return;
     }
@@ -226,17 +231,17 @@ export default function PinSettings() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>رقم PIN (4 أرقام)</Text>
+            <Text style={styles.label}>رقم PIN (6-8 أرقام)</Text>
             <View style={styles.inputContainer}>
               <Lock size={20} color="#6B7280" />
               <TextInput
                 style={styles.input}
-                placeholder="****"
+                placeholder="******"
                 placeholderTextColor="#9CA3AF"
                 value={pin}
                 onChangeText={setPin}
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={8}
                 secureTextEntry
                 textAlign="right"
               />
@@ -249,12 +254,12 @@ export default function PinSettings() {
               <Lock size={20} color="#6B7280" />
               <TextInput
                 style={styles.input}
-                placeholder="****"
+                placeholder="******"
                 placeholderTextColor="#9CA3AF"
                 value={confirmPin}
                 onChangeText={setConfirmPin}
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={8}
                 secureTextEntry
                 textAlign="right"
               />
@@ -283,7 +288,8 @@ export default function PinSettings() {
         <View style={styles.infoSection}>
           <Text style={styles.infoSectionTitle}>معلومات مهمة</Text>
           <Text style={styles.infoSectionText}>
-            • رقم PIN يجب أن يكون 4 أرقام{'\n'}
+            • رقم PIN يجب أن يكون 6 أرقام على الأقل{'\n'}
+            • الحد الأقصى 8 أرقام{'\n'}
             • احفظ رقم PIN في مكان آمن{'\n'}
             • سيتم طلب رقم PIN عند فتح التطبيق{'\n'}
             • يمكنك تغيير أو حذف رقم PIN في أي وقت

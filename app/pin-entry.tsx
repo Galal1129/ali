@@ -24,7 +24,7 @@ export default function PinEntry() {
   const shakeAnimation = new Animated.Value(0);
 
   const handleNumberPress = (num: string) => {
-    if (pin.length < 4) {
+    if (pin.length < 8) {
       const newPin = pin + num;
       setPin(newPin);
       setError('');
@@ -32,11 +32,19 @@ export default function PinEntry() {
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
-
-      if (newPin.length === 4) {
-        verifyEnteredPin(newPin);
-      }
     }
+  };
+
+  const handleSubmit = () => {
+    if (pin.length < 6) {
+      setError('رقم PIN يجب أن يكون 6 أرقام على الأقل');
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+      shakeError();
+      return;
+    }
+    verifyEnteredPin(pin);
   };
 
   const handleDelete = () => {
@@ -117,7 +125,7 @@ export default function PinEntry() {
   const renderPinDots = () => {
     return (
       <View style={styles.pinDotsContainer}>
-        {[0, 1, 2, 3].map((index) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((index) => (
           <View
             key={index}
             style={[
@@ -131,7 +139,7 @@ export default function PinEntry() {
   };
 
   const renderNumberPad = () => {
-    const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
+    const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'];
 
     return (
       <View style={styles.numberPad}>
@@ -140,18 +148,22 @@ export default function PinEntry() {
             key={index}
             style={[
               styles.numberButton,
-              num === '' && styles.numberButtonEmpty,
+              num === '✓' && styles.numberButtonSubmit,
             ]}
             onPress={() => {
               if (num === '⌫') {
                 handleDelete();
-              } else if (num !== '') {
+              } else if (num === '✓') {
+                handleSubmit();
+              } else {
                 handleNumberPress(num);
               }
             }}
-            disabled={num === ''}
           >
-            <Text style={styles.numberButtonText}>{num}</Text>
+            <Text style={[
+              styles.numberButtonText,
+              num === '✓' && styles.numberButtonTextSubmit,
+            ]}>{num}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -207,12 +219,15 @@ const styles = StyleSheet.create({
   },
   pinDotsContainer: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: 300,
   },
   pinDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: '#6B7280',
     backgroundColor: 'transparent',
@@ -248,9 +263,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
+  numberButtonSubmit: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
   numberButtonText: {
     fontSize: 32,
     color: '#FFFFFF',
     fontWeight: '500',
+  },
+  numberButtonTextSubmit: {
+    fontSize: 36,
+    fontWeight: 'bold',
   },
 });

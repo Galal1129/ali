@@ -6,9 +6,10 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar, ArrowLeftRight } from 'lucide-react-native';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Calendar, ArrowLeftRight, Search, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { AccountMovement } from '@/types/database';
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ export default function TransactionsScreen() {
   const [movements, setMovements] = useState<MovementWithCustomer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadMovements();
@@ -59,6 +61,31 @@ export default function TransactionsScreen() {
     await loadMovements();
     setRefreshing(false);
   };
+
+  const filteredMovements = movements.filter((movement) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    const movementNumber = movement.movement_number.toLowerCase();
+    const notes = (movement.notes || '').toLowerCase();
+    const amount = movement.amount.toString();
+    const customerName = movement.customer_name.toLowerCase();
+    const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const senderName = (movement.sender_name || '').toLowerCase();
+    const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
+
+    return (
+      movementNumber.includes(query) ||
+      notes.includes(query) ||
+      amount.includes(query) ||
+      customerName.includes(query) ||
+      date.includes(query) ||
+      movementTypeText.includes(query) ||
+      senderName.includes(query) ||
+      beneficiaryName.includes(query)
+    );
+  });
 
   const renderMovement = ({ item }: { item: MovementWithCustomer }) => (
     <TouchableOpacity
@@ -150,8 +177,32 @@ export default function TransactionsScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="ابحث في الحركات (عميل، رقم، مبلغ، تاريخ...)"
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            textAlign="right"
+          />
+          {searchQuery !== '' && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <X size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
+        </View>
+        {searchQuery !== '' && (
+          <Text style={styles.searchResultText}>
+            {filteredMovements.length} نتيجة
+          </Text>
+        )}
+      </View>
+
       <FlatList
-        data={movements}
+        data={filteredMovements}
         renderItem={renderMovement}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -283,5 +334,40 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#9CA3AF',
+  },
+  searchSection: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchIcon: {
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 14,
+    color: '#111827',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchResultText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'right',
   },
 });

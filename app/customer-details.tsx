@@ -9,6 +9,7 @@ import {
   Linking,
   ActivityIndicator,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +26,8 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Search,
+  X,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, AccountMovement, CURRENCIES } from '@/types/database';
@@ -161,6 +164,7 @@ export default function CustomerDetailsScreen() {
   const [showCurrencyDetails, setShowCurrencyDetails] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadCustomerData = useCallback(async () => {
     try {
@@ -563,7 +567,31 @@ export default function CustomerDetailsScreen() {
   };
 
   const balance = customer?.balance || 0;
-  const groupedMovements = groupMovementsByMonth(movements);
+
+  const filteredMovements = movements.filter((movement) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    const movementNumber = movement.movement_number.toLowerCase();
+    const notes = (movement.notes || '').toLowerCase();
+    const amount = movement.amount.toString();
+    const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const senderName = (movement.sender_name || '').toLowerCase();
+    const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
+
+    return (
+      movementNumber.includes(query) ||
+      notes.includes(query) ||
+      amount.includes(query) ||
+      date.includes(query) ||
+      movementTypeText.includes(query) ||
+      senderName.includes(query) ||
+      beneficiaryName.includes(query)
+    );
+  });
+
+  const groupedMovements = groupMovementsByMonth(filteredMovements);
   const currencyBalances = calculateBalanceByCurrency(movements);
   const currencyTotals = calculateCurrencyTotals(movements);
 
@@ -707,8 +735,32 @@ export default function CustomerDetailsScreen() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.searchSection}>
+          <View style={styles.searchContainer}>
+            <Search size={20} color="#9CA3AF" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="ابحث في الحركات (رقم، مبلغ، تاريخ، ملاحظات...)"
+              placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              textAlign="right"
+            />
+            {searchQuery !== '' && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                <X size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
+          </View>
+          {searchQuery !== '' && (
+            <Text style={styles.searchResultText}>
+              {filteredMovements.length} نتيجة
+            </Text>
+          )}
+        </View>
+
         <View style={styles.movementsSection}>
-          {movements.length === 0 ? (
+          {filteredMovements.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>لا توجد حركات</Text>
             </View>
@@ -1314,5 +1366,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     marginVertical: 8,
     marginHorizontal: -20,
+  },
+  searchSection: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchIcon: {
+    marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 14,
+    color: '#111827',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchResultText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'right',
   },
 });

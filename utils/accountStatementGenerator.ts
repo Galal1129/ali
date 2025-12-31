@@ -167,6 +167,17 @@ export function generateAccountStatementHTML(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>كشف الحساب</title>
   <style>
+    @page {
+      margin-top: 50mm;
+      margin-bottom: 50mm;
+      margin-left: 15mm;
+      margin-right: 15mm;
+    }
+
+    @page :first {
+      margin-top: 15mm;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -175,7 +186,6 @@ export function generateAccountStatementHTML(
 
     body {
       font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
-      padding: 20px;
       background: #fff;
       color: #000;
       direction: rtl;
@@ -183,9 +193,17 @@ export function generateAccountStatementHTML(
       print-color-adjust: exact;
     }
 
+    .header-wrapper {
+      margin-bottom: 20px;
+    }
+
     .currency-section {
       margin-bottom: 30px;
       page-break-after: always;
+    }
+
+    .currency-section:last-child {
+      page-break-after: auto;
     }
 
     .section-title {
@@ -266,8 +284,15 @@ export function generateAccountStatementHTML(
         print-color-adjust: exact !important;
       }
 
-      body {
-        padding: 15px;
+      @page {
+        margin-top: 50mm;
+        margin-bottom: 50mm;
+        margin-left: 15mm;
+        margin-right: 15mm;
+      }
+
+      @page :first {
+        margin-top: 15mm;
       }
 
       .currency-section {
@@ -281,7 +306,9 @@ export function generateAccountStatementHTML(
   </style>
 </head>
 <body>
-  ${headerHTML}
+  <div class="header-wrapper">
+    ${headerHTML}
+  </div>
 
   ${currencySections}
 

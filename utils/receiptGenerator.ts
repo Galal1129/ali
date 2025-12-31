@@ -102,7 +102,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
     * {
       box-sizing: border-box;
-      font-family: 'Cairo', sans-serif;
+      font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -116,9 +116,11 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       align-items: center;
       justify-content: center;
       padding: 20px;
-      font-family: 'Cairo', sans-serif;
+      font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
       direction: rtl;
       margin: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     .receipt-page {
@@ -692,6 +694,11 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
       body * {

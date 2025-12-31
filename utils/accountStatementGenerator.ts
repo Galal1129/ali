@@ -174,11 +174,13 @@ export function generateAccountStatementHTML(
     }
 
     body {
-      font-family: 'Arial', 'Tahoma', sans-serif;
+      font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
       padding: 20px;
       background: #fff;
       color: #000;
       direction: rtl;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     .currency-section {
@@ -253,6 +255,17 @@ export function generateAccountStatementHTML(
     ${generatePDFHeaderStyles()}
 
     @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
       body {
         padding: 15px;
       }

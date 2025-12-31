@@ -16,63 +16,83 @@ interface GenerateReceiptParams {
 }
 
 export async function generateAndShareReceipt(params: GenerateReceiptParams): Promise<void> {
-  const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
+  try {
+    const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
 
-  const logoDataUrl = await getLogoBase64();
+    let logoDataUrl: string | undefined;
+    try {
+      logoDataUrl = await getLogoBase64();
+    } catch (logoError) {
+      console.warn('[receiptService] Could not load logo, continuing without it:', logoError);
+    }
 
-  const html = generateReceiptHTML(
-    {
-      ...movement,
-      customerName,
-      ...extraData,
-    },
-    qrCodeDataUrl || getPlaceholderQRCode(),
-    logoDataUrl
-  );
+    const html = generateReceiptHTML(
+      {
+        ...movement,
+        customerName,
+        ...extraData,
+      },
+      qrCodeDataUrl || getPlaceholderQRCode(),
+      logoDataUrl
+    );
 
-  const { uri } = await Print.printToFileAsync({
-    html,
-    base64: false,
-  });
-
-  const pdfName = `receipt_${movement.receipt_number || movement.movement_number}.pdf`;
-  const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
-
-  await FileSystem.moveAsync({
-    from: uri,
-    to: pdfPath,
-  });
-
-  const canShare = await Sharing.isAvailableAsync();
-  if (canShare) {
-    await Sharing.shareAsync(pdfPath, {
-      mimeType: 'application/pdf',
-      dialogTitle: 'مشاركة السند',
-      UTI: 'com.adobe.pdf',
+    const { uri } = await Print.printToFileAsync({
+      html,
+      base64: false,
     });
-  }
 
-  return;
+    const pdfName = `receipt_${movement.receipt_number || movement.movement_number}.pdf`;
+    const pdfPath = `${FileSystem.documentDirectory}${pdfName}`;
+
+    await FileSystem.moveAsync({
+      from: uri,
+      to: pdfPath,
+    });
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (canShare) {
+      await Sharing.shareAsync(pdfPath, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'مشاركة السند',
+        UTI: 'com.adobe.pdf',
+      });
+    } else {
+      throw new Error('المشاركة غير متاحة على هذا الجهاز');
+    }
+  } catch (error) {
+    console.error('[receiptService] Error in generateAndShareReceipt:', error);
+    throw new Error('حدث خطأ أثناء إنشاء أو مشاركة السند. الرجاء المحاولة مرة أخرى.');
+  }
 }
 
 export async function printReceipt(params: GenerateReceiptParams): Promise<void> {
-  const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
+  try {
+    const { movement, customerName, qrCodeDataUrl = '', ...extraData } = params;
 
-  const logoDataUrl = await getLogoBase64();
+    let logoDataUrl: string | undefined;
+    try {
+      logoDataUrl = await getLogoBase64();
+    } catch (logoError) {
+      console.warn('[receiptService] Could not load logo, continuing without it:', logoError);
+    }
 
-  const html = generateReceiptHTML(
-    {
-      ...movement,
-      customerName,
-      ...extraData,
-    },
-    qrCodeDataUrl || getPlaceholderQRCode(),
-    logoDataUrl
-  );
+    const html = generateReceiptHTML(
+      {
+        ...movement,
+        customerName,
+        ...extraData,
+      },
+      qrCodeDataUrl || getPlaceholderQRCode(),
+      logoDataUrl
+    );
 
-  await Print.printAsync({
-    html,
-  });
+    await Print.printAsync({
+      html,
+    });
+  } catch (error) {
+    console.error('[receiptService] Error in printReceipt:', error);
+    throw new Error('حدث خطأ أثناء طباعة السند. الرجاء المحاولة مرة أخرى.');
+  }
 }
 
 function getPlaceholderQRCode(): string {

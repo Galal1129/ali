@@ -18,10 +18,12 @@ import {
   Building2,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePin } from '@/contexts/PinContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, settings } = useAuth();
+  const { resetPinVerification } = usePin();
 
   const handleLogout = () => {
     Alert.alert('تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج؟', [
@@ -31,6 +33,7 @@ export default function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
+          resetPinVerification();
           router.replace('/(auth)/login' as any);
         },
       },
@@ -47,10 +50,10 @@ export default function SettingsScreen() {
     },
     {
       icon: Lock,
-      title: 'تغيير رمز PIN',
-      subtitle: 'تحديث رمز الأمان',
+      title: 'إدارة رمز PIN',
+      subtitle: 'تعيين أو تغيير رمز الأمان',
       color: '#EF4444',
-      onPress: () => Alert.alert('قريباً', 'هذه الميزة قيد التطوير'),
+      onPress: () => router.push('/pin-settings' as any),
     },
     {
       icon: Database,

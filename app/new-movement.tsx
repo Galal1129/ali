@@ -53,7 +53,7 @@ export default function NewMovementScreen() {
     to_customer_account: '',
     amount: '',
     commission: '',
-    commission_currency: 'YER' as Currency,
+    commission_currency: 'USD' as Currency,
     currency: 'USD' as Currency,
     notes: '',
     sender_name: '',

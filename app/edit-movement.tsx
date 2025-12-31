@@ -35,7 +35,7 @@ export default function EditMovementScreen() {
     movement_type: '' as 'incoming' | 'outgoing' | '',
     amount: '',
     commission: '',
-    commission_currency: 'YER' as Currency,
+    commission_currency: 'USD' as Currency,
     currency: 'USD' as Currency,
     notes: '',
     sender_name: '',

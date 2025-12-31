@@ -42,7 +42,7 @@ export default function InternalTransferScreen() {
     currency: 'USD',
     notes: '',
     commission: '',
-    commissionCurrency: 'YER',
+    commissionCurrency: 'USD',
   });
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);

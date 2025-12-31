@@ -191,8 +191,6 @@ export default function DebtSummaryScreen() {
               <tr>
                 <td style="padding: 8px; border: 1px solid #000; text-align: right;">${customer.customerName}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${getCurrencyName(balance.currency)}</td>
-                <td style="padding: 8px; border: 1px solid #000; text-align: center;"></td>
-                <td style="padding: 8px; border: 1px solid #000; text-align: center;"></td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedToMe > 0 ? owedToMe.toFixed(2) : ''}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedByMe > 0 ? owedByMe.toFixed(2) : ''}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedToMe > 0 ? owedToMe.toFixed(2) : ''}</td>
@@ -254,13 +252,10 @@ export default function DebtSummaryScreen() {
                 <tr>
                   <th rowspan="2">الحساب</th>
                   <th rowspan="2">العملة</th>
-                  <th colspan="2">رصيد سابق</th>
                   <th colspan="2">حركة الفترة</th>
                   <th colspan="2">صافي الرصيد</th>
                 </tr>
                 <tr>
-                  <th>له</th>
-                  <th>عليه</th>
                   <th>له</th>
                   <th>عليه</th>
                   <th>له</th>

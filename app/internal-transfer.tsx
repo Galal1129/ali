@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ArrowLeftRight, ArrowLeft, AlertCircle, Plus, X, Printer, Save } from 'lucide-react-native';
@@ -210,16 +212,26 @@ export default function InternalTransferScreen() {
         }}
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <ArrowLeftRight size={32} color="#3B82F6" />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
+      >
+        <ScrollView
+          style={styles.container}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <ArrowLeftRight size={32} color="#3B82F6" />
+            </View>
+            <Text style={styles.headerTitle}>تحويل داخلي</Text>
+            <Text style={styles.headerSubtitle}>
+              قم بتحويل الأموال بين العملاء أو بين العميل والمحل
+            </Text>
           </View>
-          <Text style={styles.headerTitle}>تحويل داخلي</Text>
-          <Text style={styles.headerSubtitle}>
-            قم بتحويل الأموال بين العملاء أو بين العميل والمحل
-          </Text>
-        </View>
 
         {validationError && (
           <View style={styles.errorContainer}>
@@ -415,7 +427,8 @@ export default function InternalTransferScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal
         visible={showCommissionCurrencyPicker}

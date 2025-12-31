@@ -6,6 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, ArrowRightLeft } from 'lucide-react-native';
@@ -76,7 +78,12 @@ export default function CalculatorScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
+      >
+        <View style={styles.content}>
         <View style={styles.calculatorCard}>
           <View style={styles.currencySection}>
             <Text style={styles.sectionLabel}>من</Text>
@@ -128,7 +135,8 @@ export default function CalculatorScreen() {
             </View>
           </View>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
 
       <Modal
         visible={showCurrencyPicker}

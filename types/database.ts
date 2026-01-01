@@ -75,6 +75,7 @@ export interface AccountMovement {
   currency: string;
   commission?: number;
   commission_currency?: string;
+  commission_recipient_id?: string;
   notes?: string;
   sender_name?: string;
   beneficiary_name?: string;
@@ -147,12 +148,18 @@ export interface TransferParty {
   customerName?: string;
 }
 
+export type CommissionRecipientType = 'from' | 'to' | null;
+
 export interface InternalTransferRequest {
   from: TransferParty;
   to: TransferParty;
   amount: number;
   currency: Currency;
   notes?: string;
+  commission?: number;
+  commissionCurrency?: Currency;
+  commissionRecipient?: CommissionRecipientType;
+  commissionRecipientId?: string;
 }
 
 export interface InternalTransferResponse {

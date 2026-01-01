@@ -10,6 +10,7 @@ interface ReceiptData extends AccountMovement {
   customerAccountNumber?: string;
   commission?: number;
   commission_currency?: string;
+  commission_recipient_name?: string;
   destination?: string;
   transferNumber?: string;
   beneficiary?: string;
@@ -926,6 +927,12 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
                 <span class="detail-label">المستلم:</span>
                 <span class="detail-value">${beneficiary_name || 'غير محدد'}</span>
               </div>
+              ${commission && commission > 0 ? `
+              <div class="detail-row">
+                <span class="detail-label">مستلم العمولة:</span>
+                <span class="detail-value">${receiptData.commission_recipient_name || 'الأرباح والخسائر'}</span>
+              </div>
+              ` : ''}
               <div class="detail-row">
                 <span class="detail-label">ملاحظات:</span>
                 <span class="detail-value">${notes || 'لا توجد ملاحظات'}</span>

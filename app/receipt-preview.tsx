@@ -45,7 +45,7 @@ export default function ReceiptPreviewScreen() {
       setIsLoading(true);
       const { data: movementData, error: movementError } = await supabase
         .from('account_movements')
-        .select('*, customers!customer_id(name, account_number, phone)')
+        .select('*, customers!customer_id(name, account_number, phone), commission_recipient:customers!commission_recipient_id(name)')
         .eq('id', movementId)
         .single();
 
@@ -78,11 +78,13 @@ export default function ReceiptPreviewScreen() {
       console.log('[ReceiptPreview] Starting receipt generation...');
       setIsPdfReady(false);
       const customerData = movementData.customers;
+      const commissionRecipientData = movementData.commission_recipient;
       const receiptData = {
         ...movementData,
         customerName: customerData?.name || (customerName as string) || 'عميل غير محدد',
         customerAccountNumber: customerData?.account_number || (customerAccountNumber as string) || '0000000',
         customerPhone: customerData?.phone,
+        commission_recipient_name: commissionRecipientData?.name,
       };
 
       console.log('[ReceiptPreview] Receipt data prepared:', receiptData);

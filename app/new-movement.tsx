@@ -53,6 +53,7 @@ export default function NewMovementScreen() {
     amount: '',
     commission: '',
     commission_currency: 'USD' as Currency,
+    commissionRecipient: null as 'customer' | null,
     currency: 'USD' as Currency,
     notes: '',
     sender_name: '',
@@ -160,6 +161,11 @@ export default function NewMovementScreen() {
         ? 'outgoing'
         : 'incoming';
 
+      let commissionRecipientId = null;
+      if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient === 'customer') {
+        commissionRecipientId = customerId;
+      }
+
       const { data: insertedData, error } = await supabase
         .from('account_movements')
         .insert([
@@ -171,6 +177,7 @@ export default function NewMovementScreen() {
             currency: formData.currency,
             commission: formData.commission ? Number(formData.commission) : null,
             commission_currency: formData.commission_currency,
+            commission_recipient_id: commissionRecipientId,
             notes: formData.notes.trim() || null,
             sender_name: formData.sender_name.trim() || null,
             beneficiary_name: formData.beneficiary_name.trim() || null,
@@ -537,6 +544,72 @@ export default function NewMovementScreen() {
               />
             </View>
           </View>
+
+          {formData.commission && parseFloat(formData.commission) > 0 && (
+            <View style={styles.commissionRecipientSection}>
+              <Text style={styles.label}>من يستلم العمولة؟</Text>
+              <Text style={styles.commissionRecipientSubtitle}>
+                اختر من سيستفيد من العمولة
+              </Text>
+
+              <View style={styles.commissionRecipientButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.recipientButton,
+                    styles.recipientButtonCustomer,
+                    formData.commissionRecipient === 'customer' && styles.recipientButtonCustomerActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, commissionRecipient: 'customer' })}
+                >
+                  <Text
+                    style={[
+                      styles.recipientButtonText,
+                      formData.commissionRecipient === 'customer' && styles.recipientButtonTextActive,
+                    ]}
+                  >
+                    {formData.operation_type === 'customer_to_shop'
+                      ? formData.from_customer_name || 'العميل'
+                      : formData.to_customer_name || 'العميل'
+                    }
+                  </Text>
+                  <Text
+                    style={[
+                      styles.recipientButtonSubtext,
+                      formData.commissionRecipient === 'customer' && styles.recipientButtonSubtextActive,
+                    ]}
+                  >
+                    {formData.operation_type === 'customer_to_shop' ? 'يدفع أقل' : 'يحصل على أكثر'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.recipientButton,
+                    styles.recipientButtonDefault,
+                    formData.commissionRecipient === null && styles.recipientButtonDefaultActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, commissionRecipient: null })}
+                >
+                  <Text
+                    style={[
+                      styles.recipientButtonText,
+                      formData.commissionRecipient === null && styles.recipientButtonTextActive,
+                    ]}
+                  >
+                    الأرباح والخسائر
+                  </Text>
+                  <Text
+                    style={[
+                      styles.recipientButtonSubtext,
+                      formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
+                    ]}
+                  >
+                    افتراضي
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>اسم المرسل</Text>
@@ -1299,6 +1372,57 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#374151',
+  },
+  commissionRecipientSection: {
+    marginTop: 16,
+  },
+  commissionRecipientSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 12,
+    textAlign: 'right',
+    marginTop: 4,
+  },
+  commissionRecipientButtons: {
+    gap: 10,
+  },
+  recipientButton: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  recipientButtonCustomer: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  recipientButtonCustomerActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  recipientButtonDefault: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+  },
+  recipientButtonDefaultActive: {
+    backgroundColor: '#F59E0B',
+    borderColor: '#F59E0B',
+  },
+  recipientButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  recipientButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  recipientButtonSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  recipientButtonSubtextActive: {
+    color: '#F3F4F6',
   },
   hidden: {
     position: 'absolute',

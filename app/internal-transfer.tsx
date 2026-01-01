@@ -32,6 +32,7 @@ interface TransferFormData {
   notes: string;
   commission: string;
   commissionCurrency: Currency;
+  commissionRecipient: 'from' | 'to' | null;
 }
 
 export default function InternalTransferScreen() {
@@ -43,6 +44,7 @@ export default function InternalTransferScreen() {
     notes: '',
     commission: '',
     commissionCurrency: 'USD',
+    commissionRecipient: null,
   });
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -101,6 +103,15 @@ export default function InternalTransferScreen() {
     setLoading(true);
 
     try {
+      let commissionRecipientId = null;
+      if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient) {
+        if (formData.commissionRecipient === 'from') {
+          commissionRecipientId = formData.fromCustomerId;
+        } else if (formData.commissionRecipient === 'to') {
+          commissionRecipientId = formData.toCustomerId;
+        }
+      }
+
       const { data, error: rpcError } = await supabase.rpc(
         'create_internal_transfer',
         {
@@ -111,6 +122,7 @@ export default function InternalTransferScreen() {
           p_notes: formData.notes || null,
           p_commission: formData.commission && parseFloat(formData.commission) > 0 ? parseFloat(formData.commission) : null,
           p_commission_currency: formData.commission && parseFloat(formData.commission) > 0 ? formData.commissionCurrency : null,
+          p_commission_recipient_id: commissionRecipientId,
         }
       );
 
@@ -348,7 +360,7 @@ export default function InternalTransferScreen() {
                 <TouchableOpacity
                   onPress={() => {
                     setShowCommission(false);
-                    setFormData({ ...formData, commission: '' });
+                    setFormData({ ...formData, commission: '', commissionRecipient: null });
                   }}
                 >
                   <X size={20} color="#EF4444" />
@@ -374,6 +386,111 @@ export default function InternalTransferScreen() {
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
+            </View>
+          )}
+
+          {showCommission && formData.commission && parseFloat(formData.commission) > 0 && (
+            <View style={styles.commissionRecipientSection}>
+              <Text style={styles.label}>من يستلم العمولة؟</Text>
+              <Text style={styles.commissionRecipientSubtitle}>
+                اختر من سيستفيد من العمولة
+              </Text>
+
+              <View style={styles.commissionRecipientButtons}>
+                {formData.fromType === 'customer' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.recipientButton,
+                      styles.recipientButtonFrom,
+                      formData.commissionRecipient === 'from' && styles.recipientButtonFromActive,
+                    ]}
+                    onPress={() => setFormData({ ...formData, commissionRecipient: 'from' })}
+                  >
+                    <Text
+                      style={[
+                        styles.recipientButtonText,
+                        formData.commissionRecipient === 'from' && styles.recipientButtonTextActive,
+                      ]}
+                    >
+                      {formData.fromCustomerName || 'المُحوِّل'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.recipientButtonSubtext,
+                        formData.commissionRecipient === 'from' && styles.recipientButtonSubtextActive,
+                      ]}
+                    >
+                      يدفع أقل
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {formData.toType === 'customer' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.recipientButton,
+                      styles.recipientButtonTo,
+                      formData.commissionRecipient === 'to' && styles.recipientButtonToActive,
+                    ]}
+                    onPress={() => setFormData({ ...formData, commissionRecipient: 'to' })}
+                  >
+                    <Text
+                      style={[
+                        styles.recipientButtonText,
+                        formData.commissionRecipient === 'to' && styles.recipientButtonTextActive,
+                      ]}
+                    >
+                      {formData.toCustomerName || 'المُحوَّل إليه'}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.recipientButtonSubtext,
+                        formData.commissionRecipient === 'to' && styles.recipientButtonSubtextActive,
+                      ]}
+                    >
+                      يحصل على أكثر
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={[
+                    styles.recipientButton,
+                    styles.recipientButtonDefault,
+                    formData.commissionRecipient === null && styles.recipientButtonDefaultActive,
+                  ]}
+                  onPress={() => setFormData({ ...formData, commissionRecipient: null })}
+                >
+                  <Text
+                    style={[
+                      styles.recipientButtonText,
+                      formData.commissionRecipient === null && styles.recipientButtonTextActive,
+                    ]}
+                  >
+                    الأرباح والخسائر
+                  </Text>
+                  <Text
+                    style={[
+                      styles.recipientButtonSubtext,
+                      formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
+                    ]}
+                  >
+                    افتراضي
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {formData.commissionRecipient && (
+                <View style={styles.commissionImpactInfo}>
+                  <AlertCircle size={16} color="#3B82F6" />
+                  <Text style={styles.commissionImpactText}>
+                    {formData.commissionRecipient === 'from'
+                      ? `${formData.fromCustomerName} سيدفع ${parseFloat(formData.amount) - parseFloat(formData.commission)} ${CURRENCIES.find(c => c.code === formData.currency)?.symbol}`
+                      : `${formData.toCustomerName} سيحصل على ${parseFloat(formData.amount) + parseFloat(formData.commission)} ${CURRENCIES.find(c => c.code === formData.currency)?.symbol}`
+                    }
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -740,5 +857,78 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     textAlign: 'center',
+  },
+  commissionRecipientSection: {
+    marginBottom: 20,
+  },
+  commissionRecipientSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  commissionRecipientButtons: {
+    gap: 10,
+  },
+  recipientButton: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  recipientButtonFrom: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  recipientButtonFromActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  recipientButtonTo: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#A7F3D0',
+  },
+  recipientButtonToActive: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  recipientButtonDefault: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+  },
+  recipientButtonDefaultActive: {
+    backgroundColor: '#F59E0B',
+    borderColor: '#F59E0B',
+  },
+  recipientButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  recipientButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  recipientButtonSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  recipientButtonSubtextActive: {
+    color: '#F3F4F6',
+  },
+  commissionImpactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EFF6FF',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  commissionImpactText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1E40AF',
+    textAlign: 'right',
   },
 });

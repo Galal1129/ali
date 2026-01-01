@@ -199,17 +199,20 @@ export default function InternalTransferScreen() {
 
       if (commission > 0) {
         if (formData.commissionRecipient === null) {
-          // العمولة من الأرباح والخسائر
-          toAmount = amount + commission;
-          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+          // الأرباح والخسائر تحصل على العمولة
+          // المبلغ المستلم ينقص بمقدار العمولة
+          toAmount = amount - commission;
+          profitLossImpact = `الأرباح والخسائر: سيزيد رصيده بمقدار +${commission} ${commissionSymbol}`;
         } else if (formData.commissionRecipient === 'from') {
           // العمولة للمرسل
+          // الأرباح تدفع العمولة للمرسل
           fromAmount = amount - commission;
-          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol} (يدفع للمرسل)`;
         } else if (formData.commissionRecipient === 'to') {
           // العمولة للمستلم
+          // الأرباح تدفع العمولة للمستلم
           toAmount = amount + commission;
-          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol} (يدفع للمستلم)`;
         }
       }
 
@@ -492,16 +495,25 @@ export default function InternalTransferScreen() {
                 </TouchableOpacity>
               </View>
 
-              {formData.commissionRecipient && (
+              {formData.commissionRecipient !== null ? (
                 <View style={styles.commissionImpactInfo}>
                   <AlertCircle size={16} color="#3B82F6" />
                   <Text style={styles.commissionImpactText}>
                     {formData.commissionRecipient === 'from'
-                      ? `${formData.fromCustomerName} سيحصل على عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} من الأرباح`
-                      : `${formData.toCustomerName} سيحصل على عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} من الأرباح`
+                      ? `حساب الأرباح والخسائر سيدفع عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} إلى ${formData.fromCustomerName}`
+                      : `حساب الأرباح والخسائر سيدفع عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} إلى ${formData.toCustomerName}`
                     }
                   </Text>
                 </View>
+              ) : (
+                formData.commission && parseFloat(formData.commission) > 0 && (
+                  <View style={styles.commissionImpactInfo}>
+                    <AlertCircle size={16} color="#10B981" />
+                    <Text style={[styles.commissionImpactText, { color: '#065F46' }]}>
+                      حساب الأرباح والخسائر سيحصل على عمولة {formData.commission} {CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} من المبلغ المحول
+                    </Text>
+                  </View>
+                )
               )}
             </View>
           )}

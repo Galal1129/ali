@@ -8,6 +8,8 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Store, User, Search, X } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -135,7 +137,11 @@ export default function PartySelector({
         transparent={true}
         onRequestClose={() => setShowModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>اختر {label}</Text>
@@ -204,10 +210,11 @@ export default function PartySelector({
                 }
                 style={styles.customerList}
                 contentContainerStyle={styles.customerListContent}
+                keyboardShouldPersistTaps="handled"
               />
             )}
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

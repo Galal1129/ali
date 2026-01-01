@@ -11,6 +11,7 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -233,7 +234,11 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setAddModalVisible(false)}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -325,7 +330,7 @@ export default function UsersManagement() {
             </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 
@@ -336,7 +341,11 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setEditModalVisible(false)}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -415,7 +424,7 @@ export default function UsersManagement() {
             </View>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 

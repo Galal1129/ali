@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ScrollView,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -15,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
 import * as Crypto from 'expo-crypto';
 import { usePin } from '@/contexts/PinContext';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function PinSettings() {
   const router = useRouter();
@@ -138,7 +138,7 @@ export default function PinSettings() {
         <Text style={styles.headerTitle}>إعدادات PIN</Text>
       </View>
 
-      <ScrollView style={styles.content}>
+      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
         <View style={styles.infoCard}>
           <Lock size={32} color="#4F46E5" />
           <Text style={styles.infoTitle}>إضافة مستخدم جديد</Text>
@@ -219,7 +219,7 @@ export default function PinSettings() {
             • لتعديل أو حذف المستخدمين، استخدم صفحة "إدارة المستخدمين"
           </Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareView>
     </View>
   );
 }
@@ -259,8 +259,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
   },
-  content: {
-    flex: 1,
+  contentContainer: {
+    padding: 0,
   },
   infoCard: {
     backgroundColor: '#EEF2FF',

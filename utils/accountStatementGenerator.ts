@@ -163,7 +163,7 @@ export function generateAccountStatementHTML(
     }
 
     @page :first {
-      margin-top: 0;
+      margin-top: 3cm;
       margin-bottom: 3cm;
     }
 
@@ -291,7 +291,7 @@ export function generateAccountStatementHTML(
       }
 
       @page :first {
-        margin-top: 0;
+        margin-top: 3cm;
         margin-bottom: 3cm;
       }
 

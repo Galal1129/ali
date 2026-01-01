@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   X,
@@ -23,7 +24,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES } from '@/types/database';
 import { useRouter } from 'expo-router';
-import { KeyboardAwareView } from './KeyboardAwareView';
 
 interface QuickAddMovementSheetProps {
   visible: boolean;
@@ -207,8 +207,12 @@ export default function QuickAddMovementSheet({
     >
       <View style={styles.container}>
         <View style={styles.overlay}>
-          <View style={styles.sheet}>
-            <View style={styles.header}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardView}
+          >
+            <View style={styles.sheet}>
+              <View style={styles.header}>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                 <X size={24} color="#6B7280" />
               </TouchableOpacity>
@@ -216,9 +220,11 @@ export default function QuickAddMovementSheet({
               <View style={{ width: 32 }} />
             </View>
 
-            <KeyboardAwareView
-              extraScrollHeight={100}
+            <ScrollView
+              style={styles.scrollView}
               contentContainerStyle={styles.content}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>
@@ -391,7 +397,7 @@ export default function QuickAddMovementSheet({
                   </View>
                 </View>
               )}
-            </KeyboardAwareView>
+            </ScrollView>
 
             <View style={styles.footer}>
               <TouchableOpacity
@@ -424,7 +430,8 @@ export default function QuickAddMovementSheet({
                 <Text style={styles.savePrintButtonText}>حفظ + طباعة</Text>
               </TouchableOpacity>
             </View>
-          </View>
+            </View>
+          </KeyboardAvoidingView>
         </View>
 
         <Modal
@@ -476,11 +483,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  keyboardView: {
+    maxHeight: '90%',
+  },
   sheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    flex: 1,
     paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
   header: {
@@ -500,9 +510,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 20,
   },
   section: {
     marginBottom: 20,

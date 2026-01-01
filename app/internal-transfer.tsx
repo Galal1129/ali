@@ -188,11 +188,35 @@ export default function InternalTransferScreen() {
     if (isNaN(amount) || amount <= 0) return null;
 
     const currencySymbol = CURRENCIES.find(c => c.code === formData.currency)?.symbol || '';
+    const commission = formData.commission ? parseFloat(formData.commission) : 0;
+    const commissionSymbol = CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol || '';
 
     if (formData.fromType === 'customer' && formData.toType === 'customer') {
+      // حساب التأثير بناءً على من يستلم العمولة
+      let fromAmount = amount;
+      let toAmount = amount;
+      let profitLossImpact = null;
+
+      if (commission > 0) {
+        if (formData.commissionRecipient === null) {
+          // العمولة من الأرباح والخسائر
+          toAmount = amount + commission;
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+        } else if (formData.commissionRecipient === 'from') {
+          // العمولة للمرسل
+          fromAmount = amount - commission;
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+        } else if (formData.commissionRecipient === 'to') {
+          // العمولة للمستلم
+          toAmount = amount + commission;
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol}`;
+        }
+      }
+
       return {
-        from: `${formData.fromCustomerName}: سيزيد رصيده بمقدار +${amount} ${currencySymbol}`,
-        to: `${formData.toCustomerName}: سينخفض رصيده بمقدار -${amount} ${currencySymbol}`,
+        from: `${formData.fromCustomerName}: سينقص رصيده بمقدار -${fromAmount} ${currencySymbol}`,
+        to: `${formData.toCustomerName}: سيزيد رصيده بمقدار +${toAmount} ${currencySymbol}`,
+        profitLossImpact: profitLossImpact,
         note: 'تحويل داخلي - لا يؤثر على رصيد المحل',
       };
     } else if (formData.fromType === 'shop') {
@@ -202,7 +226,7 @@ export default function InternalTransferScreen() {
       };
     } else if (formData.toType === 'shop') {
       return {
-        from: `${formData.fromCustomerName}: سينخفض رصيده بمقدار -${amount} ${currencySymbol}`,
+        from: `${formData.fromCustomerName}: سينقص رصيده بمقدار -${amount} ${currencySymbol}`,
         note: 'استلام من العميل للمحل',
       };
     }
@@ -505,6 +529,9 @@ export default function InternalTransferScreen() {
               {balanceImpact.to && (
                 <Text style={styles.impactText}>{balanceImpact.to}</Text>
               )}
+              {balanceImpact.profitLossImpact && (
+                <Text style={styles.impactCommissionText}>{balanceImpact.profitLossImpact}</Text>
+              )}
               {balanceImpact.note && (
                 <Text style={styles.impactNote}>{balanceImpact.note}</Text>
               )}
@@ -690,6 +717,13 @@ const styles = StyleSheet.create({
   impactText: {
     fontSize: 14,
     color: '#78350F',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  impactCommissionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#DC2626',
     marginBottom: 4,
     textAlign: 'right',
   },

@@ -13,12 +13,10 @@ import { ArrowRight, Lock, User, Check } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
 import * as Crypto from 'expo-crypto';
-import { usePin } from '@/contexts/PinContext';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function PinSettings() {
   const router = useRouter();
-  const { resetPinVerification } = usePin();
   const [pinExists, setPinExists] = useState(false);
   const [userName, setUserName] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');

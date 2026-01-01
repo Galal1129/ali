@@ -71,7 +71,7 @@ export default function TransactionsScreen() {
     const amount = movement.amount.toString();
     const customerName = movement.customer_name.toLowerCase();
     const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const senderName = (movement.sender_name || '').toLowerCase();
     const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 

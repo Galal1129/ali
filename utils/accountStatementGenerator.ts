@@ -50,8 +50,8 @@ export function generateAccountStatementHTML(
         ? Number(movement.commission)
         : 0;
 
-      // incoming = تسليم للعميل (يضيف للرصيد)
-      // outgoing = استلام من العميل (يخصم من الرصيد + عمولة إذا كانت بنفس العملة)
+      // incoming = استلام من العميل (يضيف للرصيد)
+      // outgoing = تسليم للعميل (يخصم من الرصيد + عمولة إذا كانت بنفس العملة)
       if (movement.movement_type === 'incoming') {
         runningBalance += amount;
       } else {
@@ -72,7 +72,7 @@ export function generateAccountStatementHTML(
       .filter(m => m.movement_type === 'incoming')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
-    // الرصيد = التسليم - الاستلام
+    // الرصيد = الاستلام - التسليم
     // رصيد موجب = "لنا عنده"، رصيد سالب = "له عندنا"
     const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);

@@ -396,7 +396,7 @@ export default function NewMovementScreen() {
                     { color: formData.operation_type === 'shop_to_customer' ? '#DBEAFE' : '#9CA3AF' },
                   ]}
                 >
-                  تسليم للعميل
+                  دفع للعميل
                 </Text>
               </TouchableOpacity>
 
@@ -426,7 +426,7 @@ export default function NewMovementScreen() {
                     { color: formData.operation_type === 'customer_to_shop' ? '#D1FAE5' : '#9CA3AF' },
                   ]}
                 >
-                  استلام من العميل
+                  قبض من العميل
                 </Text>
               </TouchableOpacity>
             </View>

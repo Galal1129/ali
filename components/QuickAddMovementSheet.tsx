@@ -239,7 +239,7 @@ export default function QuickAddMovementSheet({
                         { color: movementType === 'outgoing' ? '#FFFFFF' : '#10B981' },
                       ]}
                     >
-                      استلام
+                      تسليم
                     </Text>
                     <Text
                       style={[
@@ -271,7 +271,7 @@ export default function QuickAddMovementSheet({
                         { color: movementType === 'incoming' ? '#FFFFFF' : '#3B82F6' },
                       ]}
                     >
-                      تسليم
+                      استلام
                     </Text>
                     <Text
                       style={[

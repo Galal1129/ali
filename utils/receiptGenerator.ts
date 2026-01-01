@@ -80,7 +80,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       : receiptData.transfer_direction === 'shop_to_customer'
       ? 'تحويل من المحل للعميل'
       : 'تحويل من العميل للمحل'
-    : movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+    : movement_type === 'outgoing' ? 'تسليم للعميل' : 'استلام من العميل';
 
   const primaryColor = '#382de3';
   const darkColor = '#2821b8';
@@ -872,7 +872,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
                   : receiptData.transfer_direction === 'shop_to_customer'
                   ? 'بتحويل المبلغ المذكور من المحل إليكم'
                   : 'باستلام المبلغ المذكور منكم وتحويله للمحل'
-                : `أننا ${movement_type === 'outgoing' ? 'استلمنا منكم حسب توجيهكم لنا باستلام المبلغ المذكور' : 'سلمنا لكم حسب توجيهكم لنا بتسليم المبلغ المذكور'}`} حسب التفاصيل التالية
+                : `أننا ${movement_type === 'outgoing' ? 'سلمنا لكم حسب توجيهكم لنا بتسليم المبلغ المذكور' : 'استلمنا منكم حسب توجيهكم لنا باستلام المبلغ المذكور'}`} حسب التفاصيل التالية
             </div>
           </div>
 

@@ -4,13 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   TextInput,
   Image,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Camera, ImageIcon, Trash2, Save } from 'lucide-react-native';
@@ -22,6 +19,7 @@ import {
   updateShopLogo,
 } from '@/services/logoService';
 import { getLogoUrl } from '@/utils/logoHelper';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function ShopSettingsScreen() {
   const router = useRouter();
@@ -163,17 +161,7 @@ export default function ShopSettingsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-      >
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 100 }}
-        >
+      <KeyboardAwareView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>شعار المحل</Text>
 
@@ -267,8 +255,7 @@ export default function ShopSettingsScreen() {
             />
           </View>
         </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
 
       <View style={styles.footer}>
         <TouchableOpacity

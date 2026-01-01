@@ -6,13 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Lock } from 'lucide-react-native';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function LoginScreen() {
   const [pin, setPin] = useState('');
@@ -44,17 +42,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        bounces={false}
-      >
-        <View style={styles.content}>
+    <KeyboardAwareView contentContainerStyle={styles.content}>
           <View style={styles.iconContainer}>
             <Lock size={64} color="#4F46E5" />
           </View>
@@ -101,26 +89,17 @@ export default function LoginScreen() {
               {isLoading ? 'جاري التحقق...' : 'دخول'}
             </Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
   content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    minHeight: '100%',
+    backgroundColor: '#F9FAFB',
   },
   iconContainer: {
     width: 120,

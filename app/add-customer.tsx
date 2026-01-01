@@ -1,24 +1,21 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function AddCustomerScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const scrollViewRef = useRef<ScrollView>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(!!id);
   const [isEditMode, setIsEditMode] = useState(!!id);
@@ -151,20 +148,7 @@ export default function AddCustomerScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-        enabled
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             الاسم <Text style={styles.required}>*</Text>
@@ -213,11 +197,6 @@ export default function AddCustomerScreen() {
             style={styles.input}
             value={formData.address}
             onChangeText={(text) => setFormData({ ...formData, address: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
             placeholder="أدخل العنوان"
             placeholderTextColor="#9CA3AF"
             textAlign="right"
@@ -230,11 +209,6 @@ export default function AddCustomerScreen() {
             style={[styles.input, styles.textArea]}
             value={formData.notes}
             onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
             placeholder="أدخل ملاحظات إضافية"
             placeholderTextColor="#9CA3AF"
             multiline
@@ -254,8 +228,7 @@ export default function AddCustomerScreen() {
             {isLoading ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديلات' : 'حفظ العميل')}
           </Text>
         </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </View>
   );
 }

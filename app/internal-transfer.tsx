@@ -8,15 +8,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ArrowLeftRight, ArrowLeft, AlertCircle, Plus, X, Printer, Save } from 'lucide-react-native';
 import PartySelector from '@/components/PartySelector';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES } from '@/types/database';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 interface TransferFormData {
   fromType: 'shop' | 'customer' | null;
@@ -229,17 +227,7 @@ export default function InternalTransferScreen() {
         }}
       />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-      >
-        <ScrollView
-          style={styles.container}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
+      <KeyboardAwareView contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <ArrowLeftRight size={32} color="#3B82F6" />
@@ -549,8 +537,7 @@ export default function InternalTransferScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </>
   );
 }

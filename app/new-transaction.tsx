@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,18 +8,16 @@ import {
   ScrollView,
   Alert,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Save, ArrowRightLeft, DollarSign } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { getExchangeRate } from '@/services/exchangeRateService';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function NewTransactionScreen() {
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
@@ -167,20 +165,7 @@ export default function NewTransactionScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
-        enabled
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
         <TouchableOpacity
           style={styles.customerSelector}
           onPress={() => setShowCustomerPicker(true)}
@@ -269,11 +254,6 @@ export default function NewTransactionScreen() {
             style={[styles.input, styles.textArea]}
             value={formData.notes}
             onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
             placeholder="أدخل ملاحظات إضافية"
             placeholderTextColor="#9CA3AF"
             multiline
@@ -293,8 +273,7 @@ export default function NewTransactionScreen() {
             {isLoading ? 'جاري الحفظ...' : 'حفظ الحوالة'}
           </Text>
         </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
 
       <Modal
         visible={showCustomerPicker}
@@ -390,15 +369,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
   contentContainer: {
     padding: 20,
-    paddingBottom: 150,
   },
   customerSelector: {
     backgroundColor: '#FFFFFF',

@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Send, MessageSquare } from 'lucide-react-native';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 interface Message {
   id: string;
@@ -78,7 +78,7 @@ export default function AIAssistantScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
+      <KeyboardAwareView contentContainerStyle={styles.messagesContent}>
         {messages.map((message) => (
           <View
             key={message.id}
@@ -122,7 +122,7 @@ export default function AIAssistantScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </ScrollView>
+      </KeyboardAwareView>
 
       <View style={styles.inputContainer}>
         <TouchableOpacity
@@ -172,9 +172,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-  },
-  messagesContainer: {
-    flex: 1,
   },
   messagesContent: {
     padding: 16,

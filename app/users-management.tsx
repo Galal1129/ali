@@ -11,8 +11,8 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
-  KeyboardAvoidingView,
 } from 'react-native';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 import { useRouter } from 'expo-router';
 import {
   ArrowRight,
@@ -234,11 +234,7 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setAddModalVisible(false)}
     >
-      <KeyboardAvoidingView
-        style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
+      <KeyboardAwareView contentContainerStyle={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -330,7 +326,7 @@ export default function UsersManagement() {
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </Modal>
   );
 
@@ -341,11 +337,7 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setEditModalVisible(false)}
     >
-      <KeyboardAvoidingView
-        style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
+      <KeyboardAwareView contentContainerStyle={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -424,7 +416,7 @@ export default function UsersManagement() {
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </Modal>
   );
 

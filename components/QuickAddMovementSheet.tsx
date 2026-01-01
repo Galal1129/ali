@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Alert,
   ActivityIndicator,
 } from 'react-native';
@@ -24,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES } from '@/types/database';
 import { useRouter } from 'expo-router';
+import { KeyboardAwareView } from './KeyboardAwareView';
 
 interface QuickAddMovementSheetProps {
   visible: boolean;
@@ -205,10 +204,7 @@ export default function QuickAddMovementSheet({
       transparent={true}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View style={styles.container}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <View style={styles.header}>
@@ -219,11 +215,7 @@ export default function QuickAddMovementSheet({
               <View style={{ width: 32 }} />
             </View>
 
-            <ScrollView
-              style={styles.content}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
+            <KeyboardAwareView extraScrollHeight={100}>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>
                   نوع الحركة <Text style={styles.required}>*</Text>
@@ -395,7 +387,7 @@ export default function QuickAddMovementSheet({
                   </View>
                 </View>
               )}
-            </ScrollView>
+            </KeyboardAwareView>
 
             <View style={styles.footer}>
               <TouchableOpacity
@@ -466,7 +458,8 @@ export default function QuickAddMovementSheet({
             </View>
           </View>
         </Modal>
-      </KeyboardAvoidingView>
+        </View>
+      </View>
     </Modal>
   );
 }

@@ -8,7 +8,6 @@ import {
   ScrollView,
   Alert,
   Modal,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Keyboard,
@@ -24,13 +23,13 @@ import { supabase } from '@/lib/supabase';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getLogoBase64 } from '@/utils/logoHelper';
+import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 type OperationType = 'shop_to_customer' | 'customer_to_shop' | '';
 
 export default function NewMovementScreen() {
   const router = useRouter();
   const { customerId, customerName } = useLocalSearchParams();
-  const scrollViewRef = useRef<ScrollView>(null);
   const qrRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -364,19 +363,7 @@ export default function NewMovementScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-      >
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
           <View style={styles.operationTypeSection}>
             <Text style={styles.sectionTitle}>
               نوع العملية <Text style={styles.required}>*</Text>
@@ -532,11 +519,6 @@ export default function NewMovementScreen() {
                 style={styles.commissionInput}
                 value={formData.commission}
                 onChangeText={(text) => setFormData({ ...formData, commission: text })}
-                onFocus={() => {
-                  setTimeout(() => {
-                    scrollViewRef.current?.scrollToEnd({ animated: true });
-                  }, 100);
-                }}
                 placeholder="0.00"
                 placeholderTextColor="#9CA3AF"
                 keyboardType="decimal-pad"
@@ -617,11 +599,6 @@ export default function NewMovementScreen() {
               style={styles.input}
               value={formData.sender_name}
               onChangeText={(text) => setFormData({ ...formData, sender_name: text })}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
               placeholder="اسم المرسل"
               placeholderTextColor="#9CA3AF"
               textAlign="right"
@@ -634,11 +611,6 @@ export default function NewMovementScreen() {
               style={styles.input}
               value={formData.beneficiary_name}
               onChangeText={(text) => setFormData({ ...formData, beneficiary_name: text })}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
               placeholder="اسم المستفيد (اختياري)"
               placeholderTextColor="#9CA3AF"
               textAlign="right"
@@ -651,11 +623,6 @@ export default function NewMovementScreen() {
               style={styles.input}
               value={formData.transfer_number}
               onChangeText={(text) => setFormData({ ...formData, transfer_number: text })}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
               placeholder="رقم الحوالة (اختياري)"
               placeholderTextColor="#9CA3AF"
               textAlign="right"
@@ -668,11 +635,6 @@ export default function NewMovementScreen() {
               style={[styles.input, styles.textArea]}
               value={formData.notes}
               onChangeText={(text) => setFormData({ ...formData, notes: text })}
-              onFocus={() => {
-                setTimeout(() => {
-                  scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 100);
-              }}
               placeholder="أدخل ملاحظات إضافية"
               placeholderTextColor="#9CA3AF"
               multiline
@@ -692,8 +654,7 @@ export default function NewMovementScreen() {
               {isLoading ? 'جاري الحفظ...' : 'حفظ الحركة'}
             </Text>
           </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
 
       <Modal
         visible={showFromCustomerPicker}
@@ -976,15 +937,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-  },
   contentContainer: {
     padding: 20,
-    paddingBottom: 150,
   },
   operationTypeSection: {
     marginBottom: 20,

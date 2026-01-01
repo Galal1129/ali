@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "الترف للتحويلات المالية",
-    "slug": "altaraf-money-transfer",
+    "slug": "taraf-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -34,6 +34,9 @@
       "typedRoutes": true
     },
     "extra": {
+      "eas": {
+        "projectId": "23ff54c4-4900-48b9-9e17-8e207762lbc7"
+      },
       "EXPO_PUBLIC_SUPABASE_URL": "https://ucgbyqjmimzdfgaxpabq.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4"
     }

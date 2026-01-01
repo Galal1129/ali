@@ -13,6 +13,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   FlatList,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';

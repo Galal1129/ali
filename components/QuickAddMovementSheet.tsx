@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {
   X,
@@ -458,7 +459,6 @@ export default function QuickAddMovementSheet({
             </View>
           </View>
         </Modal>
-        </View>
       </View>
     </Modal>
   );

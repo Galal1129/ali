@@ -216,7 +216,10 @@ export default function QuickAddMovementSheet({
               <View style={{ width: 32 }} />
             </View>
 
-            <KeyboardAwareView extraScrollHeight={100}>
+            <KeyboardAwareView
+              extraScrollHeight={100}
+              contentContainerStyle={styles.content}
+            >
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>
                   نوع الحركة <Text style={styles.required}>*</Text>

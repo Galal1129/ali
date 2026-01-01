@@ -578,7 +578,7 @@ export default function NewMovementScreen() {
                       formData.commissionRecipient === 'customer' && styles.recipientButtonSubtextActive,
                     ]}
                   >
-                    {formData.operation_type === 'customer_to_shop' ? 'يدفع أقل' : 'يحصل على أكثر'}
+                    يحصل على العمولة
                   </Text>
                 </TouchableOpacity>
 
@@ -604,7 +604,7 @@ export default function NewMovementScreen() {
                       formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
                     ]}
                   >
-                    افتراضي
+                    تحصل على العمولة
                   </Text>
                 </TouchableOpacity>
               </View>

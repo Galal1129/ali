@@ -420,7 +420,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'from' && styles.recipientButtonSubtextActive,
                       ]}
                     >
-                      يدفع أقل
+                      يحصل على العمولة
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -448,7 +448,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'to' && styles.recipientButtonSubtextActive,
                       ]}
                     >
-                      يحصل على أكثر
+                      يحصل على العمولة
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -475,7 +475,7 @@ export default function InternalTransferScreen() {
                       formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
                     ]}
                   >
-                    افتراضي
+                    تحصل على العمولة
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -485,8 +485,8 @@ export default function InternalTransferScreen() {
                   <AlertCircle size={16} color="#3B82F6" />
                   <Text style={styles.commissionImpactText}>
                     {formData.commissionRecipient === 'from'
-                      ? `${formData.fromCustomerName} سيدفع ${parseFloat(formData.amount) - parseFloat(formData.commission)} ${CURRENCIES.find(c => c.code === formData.currency)?.symbol}`
-                      : `${formData.toCustomerName} سيحصل على ${parseFloat(formData.amount) + parseFloat(formData.commission)} ${CURRENCIES.find(c => c.code === formData.currency)?.symbol}`
+                      ? `${formData.fromCustomerName} سيحصل على عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} من الأرباح`
+                      : `${formData.toCustomerName} سيحصل على عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} من الأرباح`
                     }
                   </Text>
                 </View>

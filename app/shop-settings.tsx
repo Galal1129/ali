@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowRight, Camera, ImageIcon, Trash2, Save, Check } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function ShopSettingsScreen() {
   const router = useRouter();
-  const { settings, updateSettings } = useAuth();
+  const { settings, updateSettings, refreshSettings } = useAuth();
 
   const [shopName, setShopName] = useState(settings?.shop_name || '');
   const [shopPhone, setShopPhone] = useState(settings?.shop_phone || '');
@@ -39,6 +39,22 @@ export default function ShopSettingsScreen() {
     loadCurrentLogo();
     loadReceiptLogoSettings();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshSettings();
+      loadCurrentLogo();
+      loadReceiptLogoSettings();
+    }, [])
+  );
+
+  useEffect(() => {
+    if (settings) {
+      setShopName(settings.shop_name || '');
+      setShopPhone(settings.shop_phone || '');
+      setShopAddress(settings.shop_address || '');
+    }
+  }, [settings]);
 
   const loadCurrentLogo = async () => {
     try {
@@ -158,23 +174,31 @@ export default function ShopSettingsScreen() {
       }
 
       if (selectedReceiptLogo === 'uploaded') {
-        settingsUpdate.selected_receipt_logo = logoUrl || settings?.shop_logo || null;
+        if (logoUrl) {
+          settingsUpdate.selected_receipt_logo = logoUrl;
+        } else if (settings?.shop_logo) {
+          settingsUpdate.selected_receipt_logo = settings.shop_logo;
+        } else {
+          settingsUpdate.selected_receipt_logo = null;
+        }
       } else {
-        // Save 'DEFAULT' to indicate the default logo should be used
         settingsUpdate.selected_receipt_logo = 'DEFAULT';
       }
 
       const success = await updateSettings(settingsUpdate);
 
       if (success) {
+        setSelectedImageUri(null);
+        await refreshSettings();
+        await loadCurrentLogo();
+        await loadReceiptLogoSettings();
+
         Alert.alert('نجح', 'تم حفظ الإعدادات بنجاح', [
           {
             text: 'حسناً',
             onPress: () => router.back(),
           },
         ]);
-        setSelectedImageUri(null);
-        await loadCurrentLogo();
       } else {
         Alert.alert('خطأ', 'فشل حفظ الإعدادات');
       }

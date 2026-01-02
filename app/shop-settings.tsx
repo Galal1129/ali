@@ -60,10 +60,18 @@ export default function ShopSettingsScreen() {
         .maybeSingle();
 
       if (!error && data) {
-        if (!data.selected_receipt_logo || data.selected_receipt_logo === data.shop_logo) {
-          setSelectedReceiptLogo('uploaded');
-        } else {
+        // If selected_receipt_logo is 'DEFAULT', use default logo
+        if (data.selected_receipt_logo === 'DEFAULT') {
           setSelectedReceiptLogo('default');
+        }
+        // If selected_receipt_logo is null or empty, check shop_logo for backward compatibility
+        else if (!data.selected_receipt_logo) {
+          // If there's a shop_logo, default to uploaded, otherwise default
+          setSelectedReceiptLogo(data.shop_logo ? 'uploaded' : 'default');
+        }
+        // If selected_receipt_logo has a URL value, it's uploaded
+        else {
+          setSelectedReceiptLogo('uploaded');
         }
       }
     } catch (error) {
@@ -152,7 +160,8 @@ export default function ShopSettingsScreen() {
       if (selectedReceiptLogo === 'uploaded') {
         settingsUpdate.selected_receipt_logo = logoUrl || settings?.shop_logo || null;
       } else {
-        settingsUpdate.selected_receipt_logo = null;
+        // Save 'DEFAULT' to indicate the default logo should be used
+        settingsUpdate.selected_receipt_logo = 'DEFAULT';
       }
 
       const success = await updateSettings(settingsUpdate);

@@ -72,7 +72,19 @@ async function getReceiptLogoFromDatabase(): Promise<string | null> {
       return null;
     }
 
-    return data.selected_receipt_logo || data.shop_logo;
+    // If selected_receipt_logo is 'DEFAULT', return null to use default logo
+    if (data.selected_receipt_logo === 'DEFAULT') {
+      return null;
+    }
+
+    // If selected_receipt_logo has a valid URL, use it
+    if (data.selected_receipt_logo) {
+      return data.selected_receipt_logo;
+    }
+
+    // For backward compatibility: if selected_receipt_logo is null/empty,
+    // use shop_logo if available
+    return data.shop_logo || null;
   } catch (error) {
     console.error('Error loading receipt logo from database:', error);
     return null;

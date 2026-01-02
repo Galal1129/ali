@@ -1,11 +1,12 @@
 const { spawn } = require('child_process');
 const readline = require('readline');
 
-process.env.EXPO_TOKEN = 'KXZN2iN3d5k277zMfvbBP2KSzSaSc6vWl7URbt6p';
+process.env.EXPO_TOKEN = 'wuHP7MsCQt_at86feHoq1QteFNIit5qQ6hUigE4L';
 
 const child = spawn('npx', ['eas-cli', 'build', '--profile', 'preview', '--platform', 'android', '--clear-cache'], {
   stdio: ['pipe', 'pipe', 'pipe'],
-  env: { ...process.env }
+  env: { ...process.env },
+  cwd: __dirname
 });
 
 const rl = readline.createInterface({

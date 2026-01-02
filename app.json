@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "الترف للتحويلات المالية",
-    "slug": "taraf-app",
-    "owner": "articodes-organization",
+    "slug": "altarf-m",
+    "owner": "altaraf",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

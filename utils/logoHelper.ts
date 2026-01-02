@@ -61,6 +61,24 @@ async function getLogoFromDatabase(): Promise<string | null> {
   }
 }
 
+async function getReceiptLogoFromDatabase(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('selected_receipt_logo, shop_logo')
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data.selected_receipt_logo || data.shop_logo;
+  } catch (error) {
+    console.error('Error loading receipt logo from database:', error);
+    return null;
+  }
+}
+
 async function convertUrlToBase64(url: string): Promise<string> {
   try {
     if (Platform.OS === 'web') {
@@ -138,5 +156,38 @@ export async function getLogoUrl(): Promise<string> {
   } catch (error) {
     console.error('Error loading logo URL:', error);
     return DEFAULT_LOGO_PLACEHOLDER;
+  }
+}
+
+export async function getReceiptLogoBase64(): Promise<string> {
+  try {
+    console.log('[logoHelper] Getting receipt logo base64...');
+    const dbLogoUrl = await getReceiptLogoFromDatabase();
+
+    if (dbLogoUrl) {
+      console.log('[logoHelper] Receipt logo URL found:', dbLogoUrl);
+
+      if (Platform.OS === 'web') {
+        console.log('[logoHelper] Returning receipt logo URL for web');
+        return dbLogoUrl;
+      }
+
+      try {
+        console.log('[logoHelper] Converting receipt logo to base64...');
+        const base64 = await convertUrlToBase64(dbLogoUrl);
+        console.log('[logoHelper] Successfully converted receipt logo');
+        return base64;
+      } catch (error) {
+        console.error('[logoHelper] Error converting receipt logo to base64:', error);
+      }
+    } else {
+      console.log('[logoHelper] No receipt logo found, using default');
+    }
+
+    return await getDefaultLogoBase64();
+  } catch (error) {
+    console.error('[logoHelper] Error loading receipt logo:', error);
+    console.error('[logoHelper] Falling back to default logo');
+    return await getDefaultLogoBase64();
   }
 }

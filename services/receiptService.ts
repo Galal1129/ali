@@ -1,6 +1,6 @@
 import { AccountMovement } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
-import { getLogoBase64 } from '@/utils/logoHelper';
+import { getReceiptLogoBase64 } from '@/utils/logoHelper';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -21,7 +21,7 @@ export async function generateAndShareReceipt(params: GenerateReceiptParams): Pr
 
     let logoDataUrl: string | undefined;
     try {
-      logoDataUrl = await getLogoBase64();
+      logoDataUrl = await getReceiptLogoBase64();
     } catch (logoError) {
       console.warn('[receiptService] Could not load logo, continuing without it:', logoError);
     }
@@ -71,7 +71,7 @@ export async function printReceipt(params: GenerateReceiptParams): Promise<void>
 
     let logoDataUrl: string | undefined;
     try {
-      logoDataUrl = await getLogoBase64();
+      logoDataUrl = await getReceiptLogoBase64();
     } catch (logoError) {
       console.warn('[receiptService] Could not load logo, continuing without it:', logoError);
     }

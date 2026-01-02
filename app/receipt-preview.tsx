@@ -15,13 +15,13 @@ import { ArrowRight, Share2, Download } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
 import { AccountMovement } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
-import { getLogoBase64 } from '@/utils/logoHelper';
+import { getReceiptLogoBase64 } from '@/utils/logoHelper';
 
 export default function ReceiptPreviewScreen() {
   const router = useRouter();
@@ -113,13 +113,13 @@ export default function ReceiptPreviewScreen() {
         }, 500);
       });
 
-      console.log('[ReceiptPreview] Loading logo...');
+      console.log('[ReceiptPreview] Loading receipt logo...');
       let logoDataUrl: string | undefined;
       try {
-        logoDataUrl = await getLogoBase64();
-        console.log('[ReceiptPreview] Logo loaded successfully. Type:', logoDataUrl?.substring(0, 30));
+        logoDataUrl = await getReceiptLogoBase64();
+        console.log('[ReceiptPreview] Receipt logo loaded successfully. Type:', logoDataUrl?.substring(0, 30));
       } catch (logoError) {
-        console.warn('[ReceiptPreview] Could not load logo, continuing without it:', logoError);
+        console.warn('[ReceiptPreview] Could not load receipt logo, continuing without it:', logoError);
         logoDataUrl = undefined;
       }
 

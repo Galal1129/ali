@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 import { Asset } from 'expo-asset';
 
@@ -32,7 +32,7 @@ async function getDefaultLogoBase64(): Promise<string> {
 
     console.log('[logoHelper] Reading file as base64...');
     const base64 = await FileSystem.readAsStringAsync(uriToUse, {
-      encoding: 'base64' as any,
+      encoding: FileSystem.EncodingType.Base64,
     });
 
     console.log('[logoHelper] Successfully converted to base64. Length:', base64.length);
@@ -107,7 +107,7 @@ async function convertUrlToBase64(url: string): Promise<string> {
     }
 
     const base64 = await FileSystem.readAsStringAsync(downloadResult.uri, {
-      encoding: 'base64' as any,
+      encoding: FileSystem.EncodingType.Base64,
     });
 
     const mimeType = url.endsWith('.png') ? 'image/png' :

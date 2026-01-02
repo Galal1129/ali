@@ -55,7 +55,7 @@ export async function pickImageFromCamera(): Promise<string | null> {
 export async function uploadLogo(imageUri: string, userId: string = 'default'): Promise<UploadLogoResult> {
   try {
     const base64 = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: 'base64' as any,
+      encoding: FileSystem.EncodingType.Base64,
     });
 
     const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';

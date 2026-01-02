@@ -18,12 +18,12 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
 import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
-import { getLogoBase64 } from '@/utils/logoHelper';
+import { getReceiptLogoBase64 } from '@/utils/logoHelper';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 type OperationType = 'shop_to_customer' | 'customer_to_shop' | '';
@@ -245,7 +245,7 @@ export default function NewMovementScreen() {
         }, 100);
       });
 
-      const logoDataUrl = await getLogoBase64();
+      const logoDataUrl = await getReceiptLogoBase64();
       const html = generateReceiptHTML(receiptData, qrCodeDataUrl, logoDataUrl);
 
       const { uri } = await Print.printToFileAsync({

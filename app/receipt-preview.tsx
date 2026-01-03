@@ -15,7 +15,7 @@ import { ArrowRight, Share2, Download } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';

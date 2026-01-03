@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 
 const BUCKET_NAME = 'shop-logos';

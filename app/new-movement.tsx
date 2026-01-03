@@ -18,7 +18,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileText, Download, Search } from 'lucide-react-native';
 import * as Print from 'expo-print';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
 import { Customer, Currency, CURRENCIES } from '@/types/database';

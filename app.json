@@ -7,9 +7,14 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.altaraf.moneytransfer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "هذا التطبيق يحتاج للوصول إلى الكاميرا لالتقاط الصور.",
+        "NSPhotoLibraryUsageDescription": "هذا التطبيق يحتاج للوصول إلى معرض الصور لاختيار الصور."
+      }
     },
     "android": {
       "package": "com.altaraf.moneytransfer",
@@ -32,7 +37,19 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "هذا التطبيق يحتاج للوصول إلى الكاميرا."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "هذا التطبيق يحتاج للوصول إلى معرض الصور."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

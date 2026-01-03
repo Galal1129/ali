@@ -60,6 +60,7 @@ export interface AppSettings {
   id: string;
   shop_name: string;
   shop_logo?: string;
+  selected_receipt_logo?: string;
   shop_phone?: string;
   shop_address?: string;
   pin_code: string;

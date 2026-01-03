@@ -48,7 +48,9 @@ export default function QuickAddMovementSheet({
   onSuccess,
 }: QuickAddMovementSheetProps) {
   const router = useRouter();
-  const [movementType, setMovementType] = useState<'incoming' | 'outgoing' | ''>('');
+  const [movementType, setMovementType] = useState<
+    'incoming' | 'outgoing' | ''
+  >('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>('USD');
   const [notes, setNotes] = useState('');
@@ -59,6 +61,7 @@ export default function QuickAddMovementSheet({
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
   useEffect(() => {
+    console.log('[QuickAddMovementSheet] visible changed:', visible);
     if (visible) {
       loadLastUsedCurrency();
     } else {
@@ -133,8 +136,12 @@ export default function QuickAddMovementSheet({
 
     setIsLoading(true);
     try {
-      const { data: movementNumber } = await supabase.rpc('generate_movement_number');
-      const { data: transferNumber } = await supabase.rpc('generate_transfer_number');
+      const { data: movementNumber } = await supabase.rpc(
+        'generate_movement_number',
+      );
+      const { data: transferNumber } = await supabase.rpc(
+        'generate_transfer_number',
+      );
 
       const { data: insertedData, error } = await supabase
         .from('account_movements')
@@ -199,292 +206,327 @@ export default function QuickAddMovementSheet({
   const newBalance = calculateNewBalance();
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.container}>
-        <View style={styles.overlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardView}
-          >
-            <View style={styles.sheet}>
-              <View style={styles.header}>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X size={24} color="#6B7280" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>إضافة حركة</Text>
-              <View style={{ width: 32 }} />
-            </View>
-
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.content}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>
-                  نوع الحركة <Text style={styles.required}>*</Text>
-                </Text>
-                <View style={styles.typeButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.typeButton,
-                      movementType === 'outgoing' && styles.typeButtonActiveGreen,
-                    ]}
-                    onPress={() => setMovementType('outgoing')}
-                  >
-                    <ArrowDownCircle
-                      size={24}
-                      color={movementType === 'outgoing' ? '#FFFFFF' : '#10B981'}
-                    />
-                    <Text
-                      style={[
-                        styles.typeButtonText,
-                        { color: movementType === 'outgoing' ? '#FFFFFF' : '#10B981' },
-                      ]}
-                    >
-                      تسليم
-                    </Text>
-                    <Text
-                      style={[
-                        styles.typeButtonSubtext,
-                        {
-                          color:
-                            movementType === 'outgoing' ? '#D1FAE5' : '#6EE7B7',
-                        },
-                      ]}
-                    >
-                      قبض
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.typeButton,
-                      movementType === 'incoming' && styles.typeButtonActiveBlue,
-                    ]}
-                    onPress={() => setMovementType('incoming')}
-                  >
-                    <ArrowUpCircle
-                      size={24}
-                      color={movementType === 'incoming' ? '#FFFFFF' : '#3B82F6'}
-                    />
-                    <Text
-                      style={[
-                        styles.typeButtonText,
-                        { color: movementType === 'incoming' ? '#FFFFFF' : '#3B82F6' },
-                      ]}
-                    >
-                      استلام
-                    </Text>
-                    <Text
-                      style={[
-                        styles.typeButtonSubtext,
-                        {
-                          color:
-                            movementType === 'incoming' ? '#DBEAFE' : '#93C5FD',
-                        },
-                      ]}
-                    >
-                      صرف
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>
-                  المبلغ <Text style={styles.required}>*</Text>
-                </Text>
-                <View style={styles.amountRow}>
-                  <TouchableOpacity
-                    style={styles.currencyButton}
-                    onPress={() => setShowCurrencyPicker(true)}
-                  >
-                    <Text style={styles.currencyCode}>{currency}</Text>
-                    <Text style={styles.currencySymbol}>
-                      {getCurrencySymbol(currency)}
-                    </Text>
-                  </TouchableOpacity>
-                  <TextInput
-                    style={styles.amountInput}
-                    value={amount}
-                    onChangeText={setAmount}
-                    placeholder="0.00"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-              </View>
-
-              {!showCommission ? (
-                <TouchableOpacity
-                  style={styles.addCommissionButton}
-                  onPress={() => setShowCommission(true)}
-                >
-                  <Plus size={16} color="#3B82F6" />
-                  <Text style={styles.addCommissionText}>إضافة عمولة</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.section}>
-                  <View style={styles.commissionHeader}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setShowCommission(false);
-                        setCommission('');
-                      }}
-                    >
-                      <X size={18} color="#EF4444" />
-                    </TouchableOpacity>
-                    <Text style={styles.sectionTitle}>عمولة</Text>
-                  </View>
-                  <View style={styles.amountRow}>
-                    <View style={styles.commissionCurrencyDisplay}>
-                      <Text style={styles.currencyCode}>{commissionCurrency}</Text>
-                      <Text style={styles.currencySymbol}>
-                        {getCurrencySymbol(commissionCurrency)}
-                      </Text>
-                    </View>
-                    <TextInput
-                      style={styles.amountInput}
-                      value={commission}
-                      onChangeText={setCommission}
-                      placeholder="0.00"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>ملاحظة (اختياري)</Text>
-                <TextInput
-                  style={styles.notesInput}
-                  value={notes}
-                  onChangeText={setNotes}
-                  placeholder="أضف ملاحظة"
-                  placeholderTextColor="#9CA3AF"
-                  textAlign="right"
-                />
-              </View>
-
-              {amount && movementType && (
-                <View style={styles.previewSection}>
-                  <Text style={styles.previewTitle}>معاينة الأثر</Text>
-                  <View style={styles.previewRow}>
-                    <Text style={styles.previewValue}>
-                      {formatBalance(currentBalance)}
-                    </Text>
-                    <Text style={styles.previewLabel}>الرصيد قبل:</Text>
-                  </View>
-                  <View style={styles.previewRow}>
-                    <Text
-                      style={[
-                        styles.previewValue,
-                        styles.previewValueBold,
-                        { color: newBalance >= 0 ? '#10B981' : '#EF4444' },
-                      ]}
-                    >
-                      {formatBalance(newBalance)}
-                    </Text>
-                    <Text style={styles.previewLabel}>الرصيد بعد:</Text>
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-
-            <View style={styles.footer}>
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  isLoading && styles.saveButtonDisabled,
-                ]}
-                onPress={() => handleSave(false)}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Save size={20} color="#FFFFFF" />
-                    <Text style={styles.saveButtonText}>حفظ</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.savePrintButton,
-                  isLoading && styles.saveButtonDisabled,
-                ]}
-                onPress={() => handleSave(true)}
-                disabled={isLoading}
-              >
-                <Printer size={18} color="#3B82F6" />
-                <Text style={styles.savePrintButtonText}>حفظ + طباعة</Text>
-              </TouchableOpacity>
-            </View>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-
-        <Modal
-          visible={showCurrencyPicker}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowCurrencyPicker(false)}
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={onClose}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={onClose}
         >
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerContent}>
-              <Text style={styles.pickerTitle}>اختر العملة</Text>
-              <ScrollView style={styles.pickerList}>
-                {CURRENCIES.map((curr) => (
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.sheetContainer}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.keyboardView}
+            >
+              <View style={styles.sheet}>
+                <View style={styles.header}>
                   <TouchableOpacity
-                    key={curr.code}
-                    style={styles.pickerItem}
-                    onPress={() => {
-                      setCurrency(curr.code);
-                      setShowCurrencyPicker(false);
-                    }}
+                    onPress={onClose}
+                    style={styles.closeButton}
                   >
-                    <Text style={styles.pickerItemText}>
-                      {curr.code} - {curr.name}
-                    </Text>
-                    <Text style={styles.pickerItemSymbol}>{curr.symbol}</Text>
+                    <X size={24} color="#6B7280" />
                   </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.pickerCloseButton}
-                onPress={() => setShowCurrencyPicker(false)}
-              >
-                <Text style={styles.pickerCloseButtonText}>إغلاق</Text>
-              </TouchableOpacity>
-            </View>
+                  <Text style={styles.headerTitle}>إضافة حركة</Text>
+                  <View style={{ width: 32 }} />
+                </View>
+
+                <ScrollView
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.content}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>
+                      نوع الحركة <Text style={styles.required}>*</Text>
+                    </Text>
+                    <View style={styles.typeButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.typeButton,
+                          movementType === 'outgoing' &&
+                            styles.typeButtonActiveGreen,
+                        ]}
+                        onPress={() => setMovementType('outgoing')}
+                      >
+                        <ArrowDownCircle
+                          size={24}
+                          color={
+                            movementType === 'outgoing' ? '#FFFFFF' : '#10B981'
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.typeButtonText,
+                            {
+                              color:
+                                movementType === 'outgoing'
+                                  ? '#FFFFFF'
+                                  : '#10B981',
+                            },
+                          ]}
+                        >
+                          تسليم
+                        </Text>
+                        <Text
+                          style={[
+                            styles.typeButtonSubtext,
+                            {
+                              color:
+                                movementType === 'outgoing'
+                                  ? '#D1FAE5'
+                                  : '#6EE7B7',
+                            },
+                          ]}
+                        >
+                          قبض
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.typeButton,
+                          movementType === 'incoming' &&
+                            styles.typeButtonActiveBlue,
+                        ]}
+                        onPress={() => setMovementType('incoming')}
+                      >
+                        <ArrowUpCircle
+                          size={24}
+                          color={
+                            movementType === 'incoming' ? '#FFFFFF' : '#3B82F6'
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.typeButtonText,
+                            {
+                              color:
+                                movementType === 'incoming'
+                                  ? '#FFFFFF'
+                                  : '#3B82F6',
+                            },
+                          ]}
+                        >
+                          استلام
+                        </Text>
+                        <Text
+                          style={[
+                            styles.typeButtonSubtext,
+                            {
+                              color:
+                                movementType === 'incoming'
+                                  ? '#DBEAFE'
+                                  : '#93C5FD',
+                            },
+                          ]}
+                        >
+                          صرف
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>
+                      المبلغ <Text style={styles.required}>*</Text>
+                    </Text>
+                    <View style={styles.amountRow}>
+                      <TouchableOpacity
+                        style={styles.currencyButton}
+                        onPress={() => setShowCurrencyPicker(true)}
+                      >
+                        <Text style={styles.currencyCode}>{currency}</Text>
+                        <Text style={styles.currencySymbol}>
+                          {getCurrencySymbol(currency)}
+                        </Text>
+                      </TouchableOpacity>
+                      <TextInput
+                        style={styles.amountInput}
+                        value={amount}
+                        onChangeText={setAmount}
+                        placeholder="0.00"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="decimal-pad"
+                      />
+                    </View>
+                  </View>
+
+                  {!showCommission ? (
+                    <TouchableOpacity
+                      style={styles.addCommissionButton}
+                      onPress={() => setShowCommission(true)}
+                    >
+                      <Plus size={16} color="#3B82F6" />
+                      <Text style={styles.addCommissionText}>إضافة عمولة</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.section}>
+                      <View style={styles.commissionHeader}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowCommission(false);
+                            setCommission('');
+                          }}
+                        >
+                          <X size={18} color="#EF4444" />
+                        </TouchableOpacity>
+                        <Text style={styles.sectionTitle}>عمولة</Text>
+                      </View>
+                      <View style={styles.amountRow}>
+                        <View style={styles.commissionCurrencyDisplay}>
+                          <Text style={styles.currencyCode}>
+                            {commissionCurrency}
+                          </Text>
+                          <Text style={styles.currencySymbol}>
+                            {getCurrencySymbol(commissionCurrency)}
+                          </Text>
+                        </View>
+                        <TextInput
+                          style={styles.amountInput}
+                          value={commission}
+                          onChangeText={setCommission}
+                          placeholder="0.00"
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>ملاحظة (اختياري)</Text>
+                    <TextInput
+                      style={styles.notesInput}
+                      value={notes}
+                      onChangeText={setNotes}
+                      placeholder="أضف ملاحظة"
+                      placeholderTextColor="#9CA3AF"
+                      textAlign="right"
+                    />
+                  </View>
+
+                  {amount && movementType && (
+                    <View style={styles.previewSection}>
+                      <Text style={styles.previewTitle}>معاينة الأثر</Text>
+                      <View style={styles.previewRow}>
+                        <Text style={styles.previewValue}>
+                          {formatBalance(currentBalance)}
+                        </Text>
+                        <Text style={styles.previewLabel}>الرصيد قبل:</Text>
+                      </View>
+                      <View style={styles.previewRow}>
+                        <Text
+                          style={[
+                            styles.previewValue,
+                            styles.previewValueBold,
+                            { color: newBalance >= 0 ? '#10B981' : '#EF4444' },
+                          ]}
+                        >
+                          {formatBalance(newBalance)}
+                        </Text>
+                        <Text style={styles.previewLabel}>الرصيد بعد:</Text>
+                      </View>
+                    </View>
+                  )}
+                </ScrollView>
+
+                <View style={styles.footer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.saveButton,
+                      isLoading && styles.saveButtonDisabled,
+                    ]}
+                    onPress={() => handleSave(false)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Save size={20} color="#FFFFFF" />
+                        <Text style={styles.saveButtonText}>حفظ</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.savePrintButton,
+                      isLoading && styles.saveButtonDisabled,
+                    ]}
+                    onPress={() => handleSave(true)}
+                    disabled={isLoading}
+                  >
+                    <Printer size={18} color="#3B82F6" />
+                    <Text style={styles.savePrintButtonText}>حفظ + طباعة</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showCurrencyPicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCurrencyPicker(false)}
+      >
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerContent}>
+            <Text style={styles.pickerTitle}>اختر العملة</Text>
+            <ScrollView style={styles.pickerList}>
+              {CURRENCIES.map((curr) => (
+                <TouchableOpacity
+                  key={curr.code}
+                  style={styles.pickerItem}
+                  onPress={() => {
+                    setCurrency(curr.code);
+                    setShowCurrencyPicker(false);
+                  }}
+                >
+                  <Text style={styles.pickerItemText}>
+                    {curr.code} - {curr.name}
+                  </Text>
+                  <Text style={styles.pickerItemSymbol}>{curr.symbol}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.pickerCloseButton}
+              onPress={() => setShowCurrencyPicker(false)}
+            >
+              <Text style={styles.pickerCloseButtonText}>إغلاق</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      </View>
-    </Modal>
+        </View>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  keyboardView: {
+  sheetContainer: {
     maxHeight: '90%',
+  },
+  keyboardView: {
+    flex: 1,
   },
   sheet: {
     backgroundColor: '#FFFFFF',

@@ -82,7 +82,9 @@ interface CurrencyTotals {
   outgoing: number;
 }
 
-function calculateCurrencyTotals(movements: AccountMovement[]): CurrencyTotals[] {
+function calculateCurrencyTotals(
+  movements: AccountMovement[],
+): CurrencyTotals[] {
   const currencyMap: { [key: string]: CurrencyTotals } = {};
 
   movements.forEach((movement) => {
@@ -106,7 +108,9 @@ function calculateCurrencyTotals(movements: AccountMovement[]): CurrencyTotals[]
   return Object.values(currencyMap);
 }
 
-function calculateBalanceByCurrency(movements: AccountMovement[]): CurrencyBalance[] {
+function calculateBalanceByCurrency(
+  movements: AccountMovement[],
+): CurrencyBalance[] {
   const currencyMap: { [key: string]: CurrencyBalance } = {};
 
   movements.forEach((movement) => {
@@ -121,14 +125,17 @@ function calculateBalanceByCurrency(movements: AccountMovement[]): CurrencyBalan
     }
 
     const amount = Number(movement.amount);
-    const commission = movement.commission && Number(movement.commission) > 0 ? Number(movement.commission) : 0;
+    const commission =
+      movement.commission && Number(movement.commission) > 0
+        ? Number(movement.commission)
+        : 0;
     const commissionCurrency = (movement as any).commission_currency || 'USD';
 
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
       if (commission > 0 && commissionCurrency === currency) {
-        currencyMap[currency].outgoing += (amount + commission);
+        currencyMap[currency].outgoing += amount + commission;
       } else {
         currencyMap[currency].outgoing += amount;
       }
@@ -178,13 +185,15 @@ export default function CustomerDetailsScreen() {
       setCustomer(customerResult.data);
       setMovements(movementsResult.data || []);
 
-      const incoming = movementsResult.data
-        ?.filter((m) => m.movement_type === 'incoming')
-        .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const incoming =
+        movementsResult.data
+          ?.filter((m) => m.movement_type === 'incoming')
+          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
 
-      const outgoing = movementsResult.data
-        ?.filter((m) => m.movement_type === 'outgoing')
-        .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const outgoing =
+        movementsResult.data
+          ?.filter((m) => m.movement_type === 'outgoing')
+          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
 
       setTotalIncoming(incoming);
       setTotalOutgoing(outgoing);
@@ -202,7 +211,7 @@ export default function CustomerDetailsScreen() {
         setIsLoading(true);
         loadCustomerData();
       }
-    }, [id, loadCustomerData])
+    }, [id, loadCustomerData]),
   );
 
   const handleCall = () => {
@@ -215,7 +224,9 @@ export default function CustomerDetailsScreen() {
     if (customer?.phone) {
       const cleanPhone = customer.phone.replace(/[^0-9]/g, '');
       const balances = calculateBalanceByCurrency(movements);
-      const currentDate = format(new Date(), 'EEEE، dd MMMM yyyy', { locale: ar });
+      const currentDate = format(new Date(), 'EEEE، dd MMMM yyyy', {
+        locale: ar,
+      });
 
       let message = `مرحباً ${customer.name}،\n`;
       message += `رقم الحساب: ${customer.account_number}\n`;
@@ -238,7 +249,9 @@ export default function CustomerDetailsScreen() {
       message += `\nشكراً`;
 
       const encodedMessage = encodeURIComponent(message);
-      Linking.openURL(`whatsapp://send?phone=${cleanPhone}&text=${encodedMessage}`);
+      Linking.openURL(
+        `whatsapp://send?phone=${cleanPhone}&text=${encodedMessage}`,
+      );
     } else {
       Alert.alert('تنبيه', 'لا يوجد رقم هاتف مسجل لهذا العميل');
     }
@@ -258,10 +271,17 @@ export default function CustomerDetailsScreen() {
         logoDataUrl = await getLogoBase64();
         console.log('[CustomerDetails] Logo loaded successfully for PDF');
       } catch (logoError) {
-        console.warn('[CustomerDetails] Could not load logo, continuing without it:', logoError);
+        console.warn(
+          '[CustomerDetails] Could not load logo, continuing without it:',
+          logoError,
+        );
       }
 
-      const html = generateAccountStatementHTML(customer.name, movements, logoDataUrl);
+      const html = generateAccountStatementHTML(
+        customer.name,
+        movements,
+        logoDataUrl,
+      );
       const { uri } = await Print.printToFileAsync({ html });
 
       const canShare = await Sharing.isAvailableAsync();
@@ -299,9 +319,12 @@ export default function CustomerDetailsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { data, error } = await supabase.rpc('reset_customer_account', {
-                p_customer_id: id,
-              });
+              const { data, error } = await supabase.rpc(
+                'reset_customer_account',
+                {
+                  p_customer_id: id,
+                },
+              );
 
               if (error) {
                 Alert.alert('خطأ', 'حدث خطأ أثناء تصفير الحساب');
@@ -309,17 +332,25 @@ export default function CustomerDetailsScreen() {
                 return;
               }
 
-              const result = data as { success: boolean; message: string; movements_deleted: number };
+              const result = data as {
+                success: boolean;
+                message: string;
+                movements_deleted: number;
+              };
 
               if (result.success) {
-                Alert.alert('نجح', `تم تصفير الحساب بنجاح\nتم حذف ${result.movements_deleted} حركة`, [
-                  {
-                    text: 'حسناً',
-                    onPress: () => {
-                      loadCustomerData();
+                Alert.alert(
+                  'نجح',
+                  `تم تصفير الحساب بنجاح\nتم حذف ${result.movements_deleted} حركة`,
+                  [
+                    {
+                      text: 'حسناً',
+                      onPress: () => {
+                        loadCustomerData();
+                      },
                     },
-                  },
-                ]);
+                  ],
+                );
               } else {
                 Alert.alert('خطأ', result.message);
               }
@@ -329,7 +360,7 @@ export default function CustomerDetailsScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -337,7 +368,8 @@ export default function CustomerDetailsScreen() {
     if (!customer) return;
 
     const balances = calculateBalanceByCurrency(movements);
-    const hasBalance = balances.length > 0 && balances.some((b) => b.balance !== 0);
+    const hasBalance =
+      balances.length > 0 && balances.some((b) => b.balance !== 0);
 
     let warningMessage = `هل أنت متأكد من حذف ${customer.name} نهائياً؟\n\n`;
 
@@ -365,46 +397,53 @@ export default function CustomerDetailsScreen() {
         text: 'حذف',
         style: 'destructive',
         onPress: () => {
-          Alert.alert(
-            'تأكيد نهائي',
-            'هل أنت متأكد تماماً من حذف هذا العميل؟',
-            [
-              { text: 'إلغاء', style: 'cancel' },
-              {
-                text: 'نعم، احذف',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    const { data, error } = await supabase.rpc('delete_customer_completely', {
+          Alert.alert('تأكيد نهائي', 'هل أنت متأكد تماماً من حذف هذا العميل؟', [
+            { text: 'إلغاء', style: 'cancel' },
+            {
+              text: 'نعم، احذف',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  const { data, error } = await supabase.rpc(
+                    'delete_customer_completely',
+                    {
                       p_customer_id: id,
-                    });
+                    },
+                  );
 
-                    if (error) {
-                      Alert.alert('خطأ', 'حدث خطأ أثناء حذف العميل');
-                      console.error('Error deleting customer:', error);
-                      return;
-                    }
+                  if (error) {
+                    Alert.alert('خطأ', 'حدث خطأ أثناء حذف العميل');
+                    console.error('Error deleting customer:', error);
+                    return;
+                  }
 
-                    const result = data as { success: boolean; message: string; movements_deleted: number };
+                  const result = data as {
+                    success: boolean;
+                    message: string;
+                    movements_deleted: number;
+                  };
 
-                    if (result.success) {
-                      Alert.alert('تم الحذف', `تم حذف العميل بنجاح\nتم حذف ${result.movements_deleted} حركة`, [
+                  if (result.success) {
+                    Alert.alert(
+                      'تم الحذف',
+                      `تم حذف العميل بنجاح\nتم حذف ${result.movements_deleted} حركة`,
+                      [
                         {
                           text: 'حسناً',
                           onPress: () => router.back(),
                         },
-                      ]);
-                    } else {
-                      Alert.alert('خطأ', result.message);
-                    }
-                  } catch (error) {
-                    console.error('Error deleting customer:', error);
-                    Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+                      ],
+                    );
+                  } else {
+                    Alert.alert('خطأ', result.message);
                   }
-                },
+                } catch (error) {
+                  console.error('Error deleting customer:', error);
+                  Alert.alert('خطأ', 'حدث خطأ غير متوقع');
+                }
               },
-            ]
-          );
+            },
+          ]);
         },
       },
     ]);
@@ -441,8 +480,13 @@ export default function CustomerDetailsScreen() {
         accountText += `${monthYear}\n`;
         accountText += `-------------------------------------\n`;
         monthMovements.forEach((movement) => {
-          const date = format(new Date(movement.created_at), 'dd/MM/yyyy', { locale: ar });
-          const type = movement.movement_type === 'outgoing' ? 'تسليم للعميل' : 'استلام من العميل';
+          const date = format(new Date(movement.created_at), 'dd/MM/yyyy', {
+            locale: ar,
+          });
+          const type =
+            movement.movement_type === 'outgoing'
+              ? 'تسليم للعميل'
+              : 'استلام من العميل';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(Number(movement.amount))} ${symbol}\n`;
@@ -458,7 +502,9 @@ export default function CustomerDetailsScreen() {
     accountText += `\nتم إنشاء التقرير بتاريخ: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ar })}\n`;
 
     try {
-      await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(accountText)}`);
+      await Linking.openURL(
+        `whatsapp://send?text=${encodeURIComponent(accountText)}`,
+      );
     } catch (error) {
       Alert.alert('مشاركة الحساب', accountText, [
         { text: 'إغلاق', style: 'cancel' },
@@ -467,11 +513,14 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleAddMovement = () => {
+    console.log('[CustomerDetails] handleAddMovement called');
     setShowQuickAdd(true);
+    console.log('[CustomerDetails] setShowQuickAdd(true) called');
   };
 
   const handleMovementPress = (movement: AccountMovement) => {
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText =
+      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(Number(movement.amount));
 
@@ -496,7 +545,7 @@ export default function CustomerDetailsScreen() {
           text: 'إلغاء',
           style: 'cancel',
         },
-      ]
+      ],
     );
   };
 
@@ -512,7 +561,8 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleDeleteMovement = (movement: AccountMovement) => {
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText =
+      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(Number(movement.amount));
 
@@ -526,7 +576,7 @@ export default function CustomerDetailsScreen() {
           style: 'destructive',
           onPress: () => confirmDeleteMovement(movement),
         },
-      ]
+      ],
     );
   };
 
@@ -568,7 +618,8 @@ export default function CustomerDetailsScreen() {
     const notes = (movement.notes || '').toLowerCase();
     const amount = movement.amount.toString();
     const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText =
+      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const senderName = (movement.sender_name || '').toLowerCase();
     const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -590,9 +641,15 @@ export default function CustomerDetailsScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <LinearGradient colors={['#059669', '#10B981', '#34D399']} style={styles.gradientHeader}>
+        <LinearGradient
+          colors={['#059669', '#10B981', '#34D399']}
+          style={styles.gradientHeader}
+        >
           <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
               <ArrowRight size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>تفاصيل العميل</Text>
@@ -610,9 +667,15 @@ export default function CustomerDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#059669', '#10B981', '#34D399']} style={styles.gradientHeader}>
+      <LinearGradient
+        colors={['#059669', '#10B981', '#34D399']}
+        style={styles.gradientHeader}
+      >
         <View style={styles.headerContent}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <ArrowRight size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{customer.name}</Text>
@@ -629,7 +692,9 @@ export default function CustomerDetailsScreen() {
             <Text style={styles.headerBadgeText}>{movements.length} حركة</Text>
           </View>
           <View style={styles.headerBadge}>
-            <Text style={styles.headerBadgeText}>رقم الحساب: {customer.account_number}</Text>
+            <Text style={styles.headerBadgeText}>
+              رقم الحساب: {customer.account_number}
+            </Text>
           </View>
         </View>
       </LinearGradient>
@@ -640,19 +705,24 @@ export default function CustomerDetailsScreen() {
             <Text style={styles.summaryMainText}>الحساب متساوي</Text>
           ) : (
             currencyBalances.map((currBalance) => (
-              <View key={currBalance.currency} style={styles.currencyBalanceContainer}>
+              <View
+                key={currBalance.currency}
+                style={styles.currencyBalanceContainer}
+              >
                 {currBalance.balance > 0 ? (
                   <Text style={styles.summaryLineGreen}>
                     لنا عند {customer.name}{' '}
                     <Text style={styles.summaryAmountGreen}>
-                      {Math.round(currBalance.balance)} {getCurrencySymbol(currBalance.currency)}
+                      {Math.round(currBalance.balance)}{' '}
+                      {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 ) : (
                   <Text style={styles.summaryLineRed}>
                     {customer.name} له عندنا{' '}
                     <Text style={styles.summaryAmountRed}>
-                      {Math.round(Math.abs(currBalance.balance))} {getCurrencySymbol(currBalance.currency)}
+                      {Math.round(Math.abs(currBalance.balance))}{' '}
+                      {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 )}
@@ -673,7 +743,9 @@ export default function CustomerDetailsScreen() {
                 ) : (
                   <ChevronDown size={20} color="#6B7280" />
                 )}
-                <Text style={styles.currencyDetailsToggleText}>ملخص الحركات</Text>
+                <Text style={styles.currencyDetailsToggleText}>
+                  ملخص الحركات
+                </Text>
               </View>
             </TouchableOpacity>
 
@@ -681,16 +753,22 @@ export default function CustomerDetailsScreen() {
               <View style={styles.currencyDetailsContent}>
                 {currencyTotals.map((total) => (
                   <View key={total.currency} style={styles.currencyDetailsCard}>
-                    <Text style={styles.currencyDetailsName}>{getCurrencyName(total.currency)}:</Text>
+                    <Text style={styles.currencyDetailsName}>
+                      {getCurrencyName(total.currency)}:
+                    </Text>
                     <View style={styles.currencyDetailsRow}>
                       <Text style={styles.currencyDetailsValueGreen}>
-                        {total.incoming.toFixed(2)} {getCurrencySymbol(total.currency)}
+                        {total.incoming.toFixed(2)}{' '}
+                        {getCurrencySymbol(total.currency)}
                       </Text>
-                      <Text style={styles.currencyDetailsLabelGreen}>وارد:</Text>
+                      <Text style={styles.currencyDetailsLabelGreen}>
+                        وارد:
+                      </Text>
                     </View>
                     <View style={styles.currencyDetailsRow}>
                       <Text style={styles.currencyDetailsValueRed}>
-                        {total.outgoing.toFixed(2)} {getCurrencySymbol(total.currency)}
+                        {total.outgoing.toFixed(2)}{' '}
+                        {getCurrencySymbol(total.currency)}
                       </Text>
                       <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
                     </View>
@@ -702,7 +780,10 @@ export default function CustomerDetailsScreen() {
         )}
 
         <View style={styles.tabButtons}>
-          <TouchableOpacity style={styles.tabButtonPrimary} onPress={handleShareAccount}>
+          <TouchableOpacity
+            style={styles.tabButtonPrimary}
+            onPress={handleShareAccount}
+          >
             <Text style={styles.tabButtonPrimaryText}>مشاركة الحساب</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -739,7 +820,10 @@ export default function CustomerDetailsScreen() {
               textAlign="right"
             />
             {searchQuery !== '' && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
                 <X size={18} color="#9CA3AF" />
               </TouchableOpacity>
             )}
@@ -757,107 +841,130 @@ export default function CustomerDetailsScreen() {
               <Text style={styles.emptyText}>لا توجد حركات</Text>
             </View>
           ) : (
-            Object.entries(groupedMovements).map(([monthYear, monthMovements]) => (
-              <View key={monthYear}>
-                <Text style={styles.monthHeader}>{monthYear}</Text>
-                {monthMovements.map((movement) => (
-                  <TouchableOpacity
-                    key={movement.id}
-                    style={styles.movementRow}
-                    activeOpacity={0.7}
-                    onPress={() => handleMovementPress(movement)}
-                  >
-                    <View style={styles.movementDate}>
-                      <Text style={styles.movementDateMonth}>
-                        {format(new Date(movement.created_at), 'MMM', { locale: ar })}
-                      </Text>
-                      <Text style={styles.movementDateDay}>
-                        {format(new Date(movement.created_at), 'dd')}
-                      </Text>
-                    </View>
-
-                    <View style={styles.movementNumberContainer}>
-                      <Text style={styles.movementNumber}>{movement.movement_number}</Text>
-                    </View>
-
-                    <View style={styles.movementTypeContainer}>
-                      <Text
-                        style={[
-                          styles.movementType,
-                          {
-                            color: (movement as any).is_internal_transfer
-                              ? '#F59E0B'
-                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
-                          },
-                        ]}
-                      >
-                        {(movement as any).is_internal_transfer
-                          ? 'تحويل داخلي'
-                          : movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام'}
-                      </Text>
-                      {(movement as any).is_internal_transfer && (
-                        <Text style={styles.movementNotes} numberOfLines={1}>
-                          {movement.movement_type === 'outgoing'
-                            ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
-                            : `من: ${movement.sender_name || 'عميل آخر'}`}
-                        </Text>
-                      )}
-                      {!(movement as any).is_internal_transfer && movement.notes && (
-                        <Text style={styles.movementNotes} numberOfLines={1}>
-                          {movement.notes}
-                        </Text>
-                      )}
-                    </View>
-
-                    <View style={styles.spacer} />
-
-                    <View
-                      style={[
-                        styles.movementIcon,
-                        {
-                          backgroundColor: (movement as any).is_internal_transfer
-                            ? '#FEF3C7'
-                            : movement.movement_type === 'outgoing' ? '#ECFDF5' : '#EFF6FF',
-                        },
-                      ]}
+            Object.entries(groupedMovements).map(
+              ([monthYear, monthMovements]) => (
+                <View key={monthYear}>
+                  <Text style={styles.monthHeader}>{monthYear}</Text>
+                  {monthMovements.map((movement) => (
+                    <TouchableOpacity
+                      key={movement.id}
+                      style={styles.movementRow}
+                      activeOpacity={0.7}
+                      onPress={() => handleMovementPress(movement)}
                     >
-                      <Text
-                        style={[
-                          styles.currencySymbolText,
-                          {
-                            color: (movement as any).is_internal_transfer
-                              ? '#F59E0B'
-                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
-                          },
-                        ]}
-                      >
-                        {getCurrencySymbol(movement.currency)}
-                      </Text>
-                    </View>
+                      <View style={styles.movementDate}>
+                        <Text style={styles.movementDateMonth}>
+                          {format(new Date(movement.created_at), 'MMM', {
+                            locale: ar,
+                          })}
+                        </Text>
+                        <Text style={styles.movementDateDay}>
+                          {format(new Date(movement.created_at), 'dd')}
+                        </Text>
+                      </View>
 
-                    <View style={styles.movementAmount}>
-                      <Text
+                      <View style={styles.movementNumberContainer}>
+                        <Text style={styles.movementNumber}>
+                          {movement.movement_number}
+                        </Text>
+                      </View>
+
+                      <View style={styles.movementTypeContainer}>
+                        <Text
+                          style={[
+                            styles.movementType,
+                            {
+                              color: (movement as any).is_internal_transfer
+                                ? '#F59E0B'
+                                : movement.movement_type === 'outgoing'
+                                  ? '#10B981'
+                                  : '#3B82F6',
+                            },
+                          ]}
+                        >
+                          {(movement as any).is_internal_transfer
+                            ? 'تحويل داخلي'
+                            : movement.movement_type === 'outgoing'
+                              ? 'تسليم'
+                              : 'استلام'}
+                        </Text>
+                        {(movement as any).is_internal_transfer && (
+                          <Text style={styles.movementNotes} numberOfLines={1}>
+                            {movement.movement_type === 'outgoing'
+                              ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
+                              : `من: ${movement.sender_name || 'عميل آخر'}`}
+                          </Text>
+                        )}
+                        {!(movement as any).is_internal_transfer &&
+                          movement.notes && (
+                            <Text
+                              style={styles.movementNotes}
+                              numberOfLines={1}
+                            >
+                              {movement.notes}
+                            </Text>
+                          )}
+                      </View>
+
+                      <View style={styles.spacer} />
+
+                      <View
                         style={[
-                          styles.movementAmountText,
+                          styles.movementIcon,
                           {
-                            color: (movement as any).is_internal_transfer
-                              ? '#F59E0B'
-                              : movement.movement_type === 'outgoing' ? '#10B981' : '#3B82F6',
+                            backgroundColor: (movement as any)
+                              .is_internal_transfer
+                              ? '#FEF3C7'
+                              : movement.movement_type === 'outgoing'
+                                ? '#ECFDF5'
+                                : '#EFF6FF',
                           },
                         ]}
                       >
-                        {Math.round(Number(movement.amount))}
-                      </Text>
-                      <Text style={styles.movementLabel}>
-                        {(movement as any).is_internal_transfer
-                          ? 'تحويل'
-                          : movement.movement_type === 'outgoing' ? 'من العميل' : 'للعميل'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))
+                        <Text
+                          style={[
+                            styles.currencySymbolText,
+                            {
+                              color: (movement as any).is_internal_transfer
+                                ? '#F59E0B'
+                                : movement.movement_type === 'outgoing'
+                                  ? '#10B981'
+                                  : '#3B82F6',
+                            },
+                          ]}
+                        >
+                          {getCurrencySymbol(movement.currency)}
+                        </Text>
+                      </View>
+
+                      <View style={styles.movementAmount}>
+                        <Text
+                          style={[
+                            styles.movementAmountText,
+                            {
+                              color: (movement as any).is_internal_transfer
+                                ? '#F59E0B'
+                                : movement.movement_type === 'outgoing'
+                                  ? '#10B981'
+                                  : '#3B82F6',
+                            },
+                          ]}
+                        >
+                          {Math.round(Number(movement.amount))}
+                        </Text>
+                        <Text style={styles.movementLabel}>
+                          {(movement as any).is_internal_transfer
+                            ? 'تحويل'
+                            : movement.movement_type === 'outgoing'
+                              ? 'من العميل'
+                              : 'للعميل'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ),
+            )
           )}
         </View>
       </ScrollView>

@@ -3,7 +3,7 @@ import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerato
 import { getReceiptLogoBase64 } from '@/utils/logoHelper';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 interface GenerateReceiptParams {
   movement: AccountMovement;

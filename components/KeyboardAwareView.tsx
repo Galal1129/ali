@@ -20,13 +20,13 @@ export function KeyboardAwareView({
   children,
   contentContainerStyle,
   enableAutomaticScroll = true,
-  extraScrollHeight = 50,
+  extraScrollHeight = 150,
 }: KeyboardAwareViewProps) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       enabled={enableAutomaticScroll}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -37,7 +37,9 @@ export function KeyboardAwareView({
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          bounces={false}
+          bounces={true}
+          nestedScrollEnabled={true}
+          scrollEventThrottle={16}
         >
           {children}
         </ScrollView>

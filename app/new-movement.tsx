@@ -368,7 +368,10 @@ export default function NewMovementScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
+      <KeyboardAwareView
+        contentContainerStyle={styles.contentContainer}
+        extraScrollHeight={180}
+      >
           <View style={styles.operationTypeSection}>
             <Text style={styles.sectionTitle}>
               نوع العملية <Text style={styles.required}>*</Text>
@@ -671,9 +674,9 @@ export default function NewMovementScreen() {
         }}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.modalContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 20}
         >
           <TouchableOpacity
             style={styles.modalOverlay}
@@ -750,9 +753,9 @@ export default function NewMovementScreen() {
         }}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.modalContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 20}
         >
           <TouchableOpacity
             style={styles.modalOverlay}

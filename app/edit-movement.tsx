@@ -189,7 +189,10 @@ export default function EditMovementScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
+      <KeyboardAwareView
+        contentContainerStyle={styles.contentContainer}
+        extraScrollHeight={180}
+      >
           <View style={styles.customerCard}>
             <Text style={styles.customerLabel}>العميل</Text>
             <Text style={styles.customerValue}>{formData.customer_name}</Text>

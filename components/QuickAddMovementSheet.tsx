@@ -227,7 +227,8 @@ export default function QuickAddMovementSheet({
             onPress={(e) => e.stopPropagation()}
           >
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
               style={styles.keyboardView}
             >
               <View style={styles.sheet}>
@@ -247,6 +248,8 @@ export default function QuickAddMovementSheet({
                   contentContainerStyle={styles.content}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                  scrollEventThrottle={16}
                 >
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>
@@ -561,7 +564,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 120,
   },
   section: {
     marginBottom: 20,

@@ -148,7 +148,10 @@ export default function AddCustomerScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <KeyboardAwareView contentContainerStyle={styles.contentContainer}>
+      <KeyboardAwareView
+        contentContainerStyle={styles.contentContainer}
+        extraScrollHeight={180}
+      >
         <View style={styles.inputGroup}>
           <Text style={styles.label}>
             الاسم <Text style={styles.required}>*</Text>
@@ -278,7 +281,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingBottom: 150,
+    paddingBottom: 50,
   },
   inputGroup: {
     marginBottom: 20,

@@ -13,8 +13,8 @@ export function generatePDFHeaderHTML(options: PDFHeaderOptions): string {
   const {
     title,
     logoDataUrl,
-    primaryColor = '#059669',
-    darkColor = '#047857',
+    primaryColor = '#382de3',
+    darkColor = '#2821b8',
     height = 150,
     showPhones = true,
   } = options;

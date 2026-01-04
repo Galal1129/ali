@@ -25,12 +25,14 @@ import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getReceiptLogoBase64 } from '@/utils/logoHelper';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 type OperationType = 'shop_to_customer' | 'customer_to_shop' | '';
 
 export default function NewMovementScreen() {
   const router = useRouter();
   const { customerId, customerName } = useLocalSearchParams();
+  const { triggerRefresh } = useDataRefresh();
   const qrRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -197,6 +199,8 @@ export default function NewMovementScreen() {
       const customerAccountNumber = formData.operation_type === 'customer_to_shop'
         ? formData.from_customer_account
         : formData.to_customer_account;
+
+      triggerRefresh('movements');
 
       setSavedMovementData({
         ...insertedData,

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Plus, Search, TrendingUp } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, CustomerBalanceByCurrency, CURRENCIES } from '@/types/database';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface CustomerWithBalances extends Customer {
   balances: CustomerBalanceByCurrency[];
@@ -20,6 +21,7 @@ interface CustomerWithBalances extends Customer {
 
 export default function CustomersScreen() {
   const router = useRouter();
+  const { lastRefreshTime } = useDataRefresh();
   const [customers, setCustomers] = useState<CustomerWithBalances[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<CustomerWithBalances[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,6 +31,13 @@ export default function CustomersScreen() {
   useEffect(() => {
     loadCustomers();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('[Customers] Auto-refreshing due to data change');
+      loadCustomers();
+    }
+  }, [lastRefreshTime]);
 
   useEffect(() => {
     filterCustomers();

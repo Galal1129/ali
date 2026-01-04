@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES } from '@/types/database';
 import { useRouter } from 'expo-router';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 interface QuickAddMovementSheetProps {
   visible: boolean;
@@ -48,6 +49,7 @@ export default function QuickAddMovementSheet({
   onSuccess,
 }: QuickAddMovementSheetProps) {
   const router = useRouter();
+  const { triggerRefresh } = useDataRefresh();
   const [movementType, setMovementType] = useState<
     'incoming' | 'outgoing' | ''
   >('');
@@ -173,6 +175,7 @@ export default function QuickAddMovementSheet({
       if (error) throw error;
 
       await saveLastUsedCurrency(currency);
+      triggerRefresh('movements');
       onSuccess();
 
       if (withPrint) {

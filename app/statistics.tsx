@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 import {
   ArrowRight,
   TrendingUp,
@@ -27,6 +28,7 @@ type PeriodFilter = 'today' | 'yesterday' | 'week' | 'month';
 
 export default function StatisticsScreen() {
   const router = useRouter();
+  const { lastRefreshTime } = useDataRefresh();
   const [stats, setStats] = useState<StatisticsData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,13 @@ export default function StatisticsScreen() {
   useEffect(() => {
     loadStats();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      console.log('[Statistics] Auto-refreshing due to data change');
+      loadStats();
+    }
+  }, [lastRefreshTime]);
 
   const loadStats = async () => {
     try {

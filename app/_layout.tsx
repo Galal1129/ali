@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { I18nManager } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { DataRefreshProvider } from '@/contexts/DataRefreshContext';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -59,8 +60,10 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <RootLayoutNav />
-      <StatusBar style="auto" />
+      <DataRefreshProvider>
+        <RootLayoutNav />
+        <StatusBar style="auto" />
+      </DataRefreshProvider>
     </AuthProvider>
   );
 }

@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 import {
   ArrowRight,
   Phone,
@@ -154,6 +155,7 @@ function calculateBalanceByCurrency(
 export default function CustomerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { lastRefreshTime } = useDataRefresh();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [movements, setMovements] = useState<AccountMovement[]>([]);
   const [totalIncoming, setTotalIncoming] = useState(0);
@@ -213,6 +215,13 @@ export default function CustomerDetailsScreen() {
       }
     }, [id, loadCustomerData]),
   );
+
+  useEffect(() => {
+    if (id && !isLoading) {
+      console.log('[CustomerDetails] Auto-refreshing due to data change');
+      loadCustomerData();
+    }
+  }, [lastRefreshTime]);
 
   const handleCall = () => {
     if (customer?.phone) {

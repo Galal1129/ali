@@ -15,9 +15,11 @@ import { ArrowRight, Save, ArrowDownCircle, ArrowUpCircle, CheckCircle, X, FileT
 import { supabase } from '@/lib/supabase';
 import { Currency, CURRENCIES, AccountMovement } from '@/types/database';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
+import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
 export default function EditMovementScreen() {
   const router = useRouter();
+  const { triggerRefresh } = useDataRefresh();
   const { movementId, customerName: initialCustomerName, customerAccountNumber } = useLocalSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -122,6 +124,7 @@ export default function EditMovementScreen() {
 
       if (error) throw error;
 
+      triggerRefresh('movements');
       setShowSuccessModal(true);
     } catch (error) {
       console.error('Error updating movement:', error);

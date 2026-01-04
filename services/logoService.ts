@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 
@@ -51,6 +52,40 @@ export async function pickImageFromCamera(): Promise<string | null> {
   }
 
   return null;
+}
+
+export async function pickPngFile(): Promise<string | null> {
+  try {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'image/png',
+      copyToCacheDirectory: true,
+    });
+
+    if (result.canceled) {
+      return null;
+    }
+
+    if (!result.assets || result.assets.length === 0) {
+      throw new Error('لم يتم اختيار أي ملف');
+    }
+
+    const file = result.assets[0];
+
+    if (!file.mimeType || file.mimeType !== 'image/png') {
+      throw new Error('يجب اختيار ملف PNG فقط');
+    }
+
+    if (!file.uri) {
+      throw new Error('فشل قراءة الملف');
+    }
+
+    return file.uri;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('فشل اختيار الملف');
+  }
 }
 
 export async function uploadLogo(imageUri: string, userId: string = 'default'): Promise<UploadLogoResult> {

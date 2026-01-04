@@ -10,11 +10,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ArrowRight, Camera, ImageIcon, Trash2, Save, Check } from 'lucide-react-native';
+import { ArrowRight, Camera, ImageIcon, Trash2, Save, Check, FileUp } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   pickImageFromGallery,
   pickImageFromCamera,
+  pickPngFile,
   uploadLogo,
   updateShopLogo,
 } from '@/services/logoService';
@@ -114,6 +115,17 @@ export default function ShopSettingsScreen() {
       }
     } catch (error) {
       Alert.alert('خطأ', error instanceof Error ? error.message : 'فشل التقاط الصورة');
+    }
+  };
+
+  const handlePickPngFile = async () => {
+    try {
+      const uri = await pickPngFile();
+      if (uri) {
+        setSelectedImageUri(uri);
+      }
+    } catch (error) {
+      Alert.alert('خطأ', error instanceof Error ? error.message : 'فشل اختيار الملف');
     }
   };
 
@@ -225,7 +237,9 @@ export default function ShopSettingsScreen() {
       <KeyboardAwareView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>شعار المحل</Text>
-          <Text style={styles.sectionDescription}>يمكنك رفع شعار بصيغة JPG أو PNG</Text>
+          <Text style={styles.sectionDescription}>
+            يمكنك رفع شعار من المعرض أو الكاميرا، أو رفع ملف PNG مباشرة
+          </Text>
 
           <View style={styles.logoContainer}>
             {isLoading ? (
@@ -259,6 +273,15 @@ export default function ShopSettingsScreen() {
             >
               <Camera size={20} color="#4F46E5" />
               <Text style={styles.logoActionText}>التقاط صورة</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.logoActionButton, styles.pngFileButton]}
+              onPress={handlePickPngFile}
+              disabled={isSaving}
+            >
+              <FileUp size={20} color="#10B981" />
+              <Text style={[styles.logoActionText, styles.pngFileText]}>رفع ملف PNG</Text>
             </TouchableOpacity>
 
             {(displayLogoUri || selectedImageUri) && (
@@ -556,6 +579,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4F46E5',
   },
+  pngFileButton: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
+  },
   deleteButton: {
     backgroundColor: '#FEE2E2',
     borderColor: '#EF4444',
@@ -564,6 +591,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#4F46E5',
+  },
+  pngFileText: {
+    color: '#10B981',
   },
   deleteText: {
     color: '#EF4444',

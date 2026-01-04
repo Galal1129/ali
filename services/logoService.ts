@@ -23,6 +23,7 @@ export async function pickImageFromGallery(): Promise<string | null> {
     allowsEditing: true,
     aspect: [1, 1],
     quality: 0.8,
+    base64: false,
   });
 
   if (!result.canceled && result.assets[0]) {
@@ -59,6 +60,15 @@ export async function uploadLogo(imageUri: string, userId: string = 'default'): 
     });
 
     const fileExt = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+
+    // Validate supported file types
+    const supportedFormats = ['jpg', 'jpeg', 'png'];
+    const normalizedExt = fileExt === 'jpg' ? 'jpeg' : fileExt;
+
+    if (!supportedFormats.includes(fileExt)) {
+      throw new Error('نوع الملف غير مدعوم. يرجى استخدام JPG أو PNG');
+    }
+
     const fileName = `${userId}_${Date.now()}.${fileExt}`;
     const filePath = `logos/${fileName}`;
 
@@ -67,7 +77,7 @@ export async function uploadLogo(imageUri: string, userId: string = 'default'): 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filePath, arrayBuffer, {
-        contentType: `image/${fileExt}`,
+        contentType: `image/${normalizedExt}`,
         upsert: false,
       });
 

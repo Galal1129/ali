@@ -225,6 +225,7 @@ export default function ShopSettingsScreen() {
       <KeyboardAwareView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>شعار المحل</Text>
+          <Text style={styles.sectionDescription}>يمكنك رفع شعار بصيغة JPG أو PNG</Text>
 
           <View style={styles.logoContainer}>
             {isLoading ? (

@@ -205,11 +205,16 @@ export default function ShopSettingsScreen() {
 
       if (success) {
         setSelectedImageUri(null);
+        setImageLoadError(false);
         await refreshSettings();
         await loadCurrentLogo();
         await loadReceiptLogoSettings();
 
-        Alert.alert('نجح', 'تم حفظ الإعدادات بنجاح', [
+        const message = logoUrl
+          ? 'تم حفظ الإعدادات والشعار بنجاح'
+          : 'تم حفظ الإعدادات بنجاح';
+
+        Alert.alert('نجح', message, [
           {
             text: 'حسناً',
             onPress: () => router.back(),
@@ -226,7 +231,6 @@ export default function ShopSettingsScreen() {
     }
   };
 
-  const displayLogoUri = selectedImageUri || logoUri;
 
   return (
     <View style={styles.container}>
@@ -247,7 +251,10 @@ export default function ShopSettingsScreen() {
           {selectedImageUri && (
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                ✓ تم اختيار صورة جديدة. اضغط على "حفظ التغييرات" لحفظها.
+                ✓ تم اختيار صورة جديدة بنجاح
+              </Text>
+              <Text style={[styles.infoText, { fontSize: 12, marginTop: 4 }]}>
+                المعاينة ستظهر بعد الحفظ
               </Text>
             </View>
           )}
@@ -257,21 +264,24 @@ export default function ShopSettingsScreen() {
               <View style={styles.logoPlaceholder}>
                 <ActivityIndicator size="large" color="#4F46E5" />
               </View>
-            ) : displayLogoUri && !imageLoadError ? (
+            ) : selectedImageUri ? (
+              <View style={styles.logoPlaceholder}>
+                <Check size={48} color="#10B981" />
+                <Text style={[styles.placeholderText, { color: '#10B981', fontWeight: '600' }]}>
+                  تم اختيار الصورة بنجاح
+                </Text>
+                <Text style={[styles.placeholderText, { fontSize: 12 }]}>
+                  اضغط "حفظ التغييرات" لرؤية الصورة
+                </Text>
+              </View>
+            ) : logoUri && !imageLoadError ? (
               <View style={styles.logoImageWrapper}>
                 <Image
-                  source={{ uri: displayLogoUri }}
+                  source={{ uri: logoUri }}
                   style={styles.logoImage}
                   resizeMode="contain"
                   onError={() => setImageLoadError(true)}
-                  onLoadStart={() => console.log('Loading image...')}
-                  onLoadEnd={() => console.log('Image loaded successfully')}
                 />
-                {selectedImageUri && (
-                  <View style={styles.newBadge}>
-                    <Text style={styles.newBadgeText}>جديد</Text>
-                  </View>
-                )}
               </View>
             ) : (
               <View style={styles.logoPlaceholder}>
@@ -311,7 +321,7 @@ export default function ShopSettingsScreen() {
               <Text style={[styles.logoActionText, styles.pngFileText]}>رفع ملف PNG</Text>
             </TouchableOpacity>
 
-            {(displayLogoUri || selectedImageUri) && (
+            {(logoUri || selectedImageUri) && (
               <TouchableOpacity
                 style={[styles.logoActionButton, styles.deleteButton]}
                 onPress={handleRemoveLogo}
@@ -338,9 +348,9 @@ export default function ShopSettingsScreen() {
               disabled={isSaving}
             >
               <View style={styles.logoOptionImageContainer}>
-                {displayLogoUri && !imageLoadError ? (
+                {logoUri && !imageLoadError ? (
                   <Image
-                    source={{ uri: displayLogoUri }}
+                    source={{ uri: logoUri }}
                     style={styles.logoOptionImage}
                     resizeMode="contain"
                   />
@@ -353,7 +363,11 @@ export default function ShopSettingsScreen() {
               <View style={styles.logoOptionContent}>
                 <Text style={styles.logoOptionTitle}>الشعار المرفوع</Text>
                 <Text style={styles.logoOptionDescription}>
-                  {displayLogoUri ? 'استخدام الشعار الحالي' : 'لم يتم رفع شعار بعد'}
+                  {logoUri
+                    ? 'استخدام الشعار الحالي'
+                    : selectedImageUri
+                    ? 'احفظ التغييرات أولاً'
+                    : 'لم يتم رفع شعار بعد'}
                 </Text>
               </View>
               {selectedReceiptLogo === 'uploaded' && (

@@ -9,7 +9,7 @@ const DEFAULT_LOGO_PLACEHOLDER =
 async function getDefaultLogoBase64(): Promise<string> {
   try {
     console.log('[logoHelper] Starting to load default logo...');
-    const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
 
     if (!asset.downloaded) {
       console.log('[logoHelper] Downloading asset...');
@@ -162,7 +162,7 @@ export async function getLogoUrl(): Promise<string> {
       return dbLogoUrl;
     }
 
-    const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
     await asset.downloadAsync();
     return asset.uri;
   } catch (error) {

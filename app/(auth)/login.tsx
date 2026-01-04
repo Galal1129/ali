@@ -9,16 +9,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Lock } from 'lucide-react-native';
+import { Lock, User } from 'lucide-react-native';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
 
 export default function LoginScreen() {
+  const [userName, setUserName] = useState('');
   const [pin, setPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
+    if (!userName.trim()) {
+      Alert.alert('خطأ', 'الرجاء إدخال اسم المستخدم');
+      return;
+    }
+
     if (pin.length < 8) {
       Alert.alert('خطأ', 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
       return;
@@ -30,13 +36,13 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
-    const success = await login(pin);
+    const success = await login(userName.trim(), pin);
     setIsLoading(false);
 
     if (success) {
       router.replace('/(tabs)');
     } else {
-      Alert.alert('خطأ', 'كلمة المرور غير صحيحة');
+      Alert.alert('خطأ', 'اسم المستخدم أو كلمة المرور غير صحيحة');
       setPin('');
     }
   };
@@ -48,9 +54,24 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.title}>نظام إدارة الحوالات المالية</Text>
-          <Text style={styles.subtitle}>أدخل كلمة المرور (8-16 حرف)</Text>
+          <Text style={styles.subtitle}>أدخل بياناتك للدخول</Text>
 
           <View style={styles.inputContainer}>
+            <User size={20} color="#6B7280" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              value={userName}
+              onChangeText={setUserName}
+              placeholder="اسم المستخدم"
+              placeholderTextColor="#9CA3AF"
+              textAlign="right"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Lock size={20} color="#6B7280" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               value={pin}
@@ -59,11 +80,11 @@ export default function LoginScreen() {
                   setPin(text);
                 }
               }}
-              placeholder="أدخل كلمة المرور"
+              placeholder="كلمة المرور (8-16 حرف)"
               placeholderTextColor="#9CA3AF"
               secureTextEntry
               maxLength={16}
-              textAlign="center"
+              textAlign="right"
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -125,19 +146,23 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 24,
-  },
-  input: {
-    width: '100%',
-    height: 64,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     paddingHorizontal: 16,
-    fontSize: 24,
-    fontWeight: 'bold',
-    letterSpacing: 8,
+    height: 64,
+  },
+  inputIcon: {
+    marginLeft: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
   },
   button: {
     width: '100%',

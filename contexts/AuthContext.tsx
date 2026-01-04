@@ -7,7 +7,7 @@ import { AppSettings } from '@/types/database';
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (pin: string) => Promise<boolean>;
+  login: (userName: string, pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   settings: AppSettings | null;
   refreshSettings: () => Promise<void>;
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const login = async (pin: string): Promise<boolean> => {
+  const login = async (userName: string, pin: string): Promise<boolean> => {
     try {
       if (!settings) {
         await loadSettings();
@@ -69,14 +69,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('app_security')
-        .select('pin_hash')
+        .select('id, pin_hash, is_active')
+        .eq('user_name', userName)
         .maybeSingle();
 
       if (error || !data) {
         return false;
       }
 
+      if (!data.is_active) {
+        return false;
+      }
+
       if (data.pin_hash === hashHex) {
+        await supabase
+          .from('app_security')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', data.id);
+
         await AsyncStorage.setItem(AUTH_KEY, 'true');
         setIsAuthenticated(true);
         return true;
@@ -163,7 +173,7 @@ export function useAuth() {
     return {
       isAuthenticated: false,
       isLoading: true,
-      login: async () => false,
+      login: async (_userName: string, _pin: string) => false,
       logout: async () => {},
       settings: null,
       refreshSettings: async () => {},

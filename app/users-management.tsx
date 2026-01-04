@@ -187,6 +187,14 @@ export default function UsersManagement() {
   };
 
   const handleDeleteUser = (user: UserData) => {
+    if (users.length <= 1) {
+      Alert.alert(
+        'تحذير',
+        'لا يمكن حذف آخر مستخدم في النظام.\n\nيجب أن يكون هناك مستخدم واحد على الأقل للدخول إلى التطبيق.'
+      );
+      return;
+    }
+
     Alert.alert(
       'تأكيد الحذف',
       `هل أنت متأكد من حذف المستخدم "${user.user_name}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`,
@@ -459,11 +467,23 @@ export default function UsersManagement() {
           <Text style={styles.editButtonText}>تعديل كلمة المرور</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
+          style={[
+            styles.actionButton,
+            styles.deleteButton,
+            users.length <= 1 && styles.deleteButtonDisabled,
+          ]}
           onPress={() => handleDeleteUser(user)}
+          disabled={users.length <= 1}
         >
-          <Trash2 size={18} color="#EF4444" />
-          <Text style={styles.deleteButtonText}>حذف</Text>
+          <Trash2 size={18} color={users.length <= 1 ? '#9CA3AF' : '#EF4444'} />
+          <Text
+            style={[
+              styles.deleteButtonText,
+              users.length <= 1 && styles.deleteButtonTextDisabled,
+            ]}
+          >
+            حذف
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -697,10 +717,17 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#FEE2E2',
   },
+  deleteButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.6,
+  },
   deleteButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  deleteButtonTextDisabled: {
+    color: '#9CA3AF',
   },
   emptyContainer: {
     alignItems: 'center',

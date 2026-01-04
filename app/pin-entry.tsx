@@ -58,12 +58,19 @@ export default function PinEntry() {
 
       const { data: securityData, error: fetchError } = await supabase
         .from('app_security')
-        .select('pin_hash')
+        .select('id, user_name, pin_hash, is_active')
+        .eq('pin_hash', hashHex)
+        .eq('is_active', true)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      if (securityData && securityData.pin_hash === hashHex) {
+      if (securityData) {
+        await supabase
+          .from('app_security')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', securityData.id);
+
         if (Platform.OS !== 'web') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }

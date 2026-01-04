@@ -30,8 +30,7 @@
       "userInterfaceStyle": "automatic"
     },
     "web": {
-      "bundler": "metro",
-      "output": "single",
+      "bundler": "webpack",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

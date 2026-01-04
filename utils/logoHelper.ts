@@ -43,6 +43,43 @@ async function getDefaultLogoBase64(): Promise<string> {
   }
 }
 
+async function getAltarfLogoBase64(): Promise<string> {
+  try {
+    console.log('[logoHelper] Starting to load Altarf logo...');
+    const asset = Asset.fromModule(require('@/assets/images/altarf.png'));
+
+    if (!asset.downloaded) {
+      console.log('[logoHelper] Downloading Altarf asset...');
+      await asset.downloadAsync();
+    }
+
+    console.log('[logoHelper] Altarf asset downloaded. URI:', asset.uri, 'LocalURI:', asset.localUri);
+
+    if (Platform.OS === 'web') {
+      console.log('[logoHelper] Platform is web, returning URI directly');
+      return asset.uri;
+    }
+
+    const uriToUse = asset.localUri || asset.uri;
+
+    if (!uriToUse) {
+      console.error('[logoHelper] No URI available for Altarf asset');
+      return DEFAULT_LOGO_PLACEHOLDER;
+    }
+
+    console.log('[logoHelper] Reading Altarf file as base64...');
+    const base64 = await FileSystem.readAsStringAsync(uriToUse, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    console.log('[logoHelper] Successfully converted Altarf to base64. Length:', base64.length);
+    return `data:image/png;base64,${base64}`;
+  } catch (error) {
+    console.error('[logoHelper] Error loading Altarf logo:', error);
+    return DEFAULT_LOGO_PLACEHOLDER;
+  }
+}
+
 async function getLogoFromDatabase(): Promise<string | null> {
   try {
     const { data, error } = await supabase
@@ -75,6 +112,11 @@ async function getReceiptLogoFromDatabase(): Promise<string | null> {
     // If selected_receipt_logo is 'DEFAULT', return null to use default logo
     if (data.selected_receipt_logo === 'DEFAULT') {
       return null;
+    }
+
+    // If selected_receipt_logo is 'ALTARF', return special marker
+    if (data.selected_receipt_logo === 'ALTARF') {
+      return 'ALTARF';
     }
 
     // If selected_receipt_logo has a valid URL, use it
@@ -178,6 +220,12 @@ export async function getReceiptLogoBase64(): Promise<string> {
 
     if (dbLogoUrl) {
       console.log('[logoHelper] Receipt logo URL found:', dbLogoUrl);
+
+      // Check if it's the Altarf logo
+      if (dbLogoUrl === 'ALTARF') {
+        console.log('[logoHelper] Using Altarf logo');
+        return await getAltarfLogoBase64();
+      }
 
       if (Platform.OS === 'web') {
         console.log('[logoHelper] Returning receipt logo URL for web');

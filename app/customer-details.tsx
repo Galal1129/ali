@@ -268,21 +268,33 @@ export default function CustomerDetailsScreen() {
     try {
       let logoDataUrl: string | undefined;
       try {
+        console.log('[CustomerDetails] Loading logo for PDF...');
         logoDataUrl = await getLogoBase64();
-        console.log('[CustomerDetails] Logo loaded successfully for PDF');
+
+        if (logoDataUrl && logoDataUrl.length > 0) {
+          console.log('[CustomerDetails] Logo loaded successfully. Length:', logoDataUrl.length);
+        } else {
+          console.warn('[CustomerDetails] Logo is empty, will use fallback');
+          logoDataUrl = undefined;
+        }
       } catch (logoError) {
         console.warn(
           '[CustomerDetails] Could not load logo, continuing without it:',
           logoError,
         );
+        logoDataUrl = undefined;
       }
 
+      console.log('[CustomerDetails] Generating HTML for PDF...');
       const html = generateAccountStatementHTML(
         customer.name,
         movements,
         logoDataUrl,
       );
+
+      console.log('[CustomerDetails] Creating PDF file...');
       const { uri } = await Print.printToFileAsync({ html });
+      console.log('[CustomerDetails] PDF created at:', uri);
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {

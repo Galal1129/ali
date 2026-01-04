@@ -9,6 +9,19 @@ const DEFAULT_LOGO_PLACEHOLDER =
 async function getDefaultLogoBase64(): Promise<string> {
   try {
     console.log('[logoHelper] Starting to load default logo...');
+
+    if (Platform.OS === 'web') {
+      try {
+        const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+        await asset.downloadAsync();
+        console.log('[logoHelper] Platform is web, returning URI:', asset.uri);
+        return asset.uri;
+      } catch (webError) {
+        console.error('[logoHelper] Error on web platform:', webError);
+        return DEFAULT_LOGO_PLACEHOLDER;
+      }
+    }
+
     const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
 
     if (!asset.downloaded) {
@@ -16,12 +29,7 @@ async function getDefaultLogoBase64(): Promise<string> {
       await asset.downloadAsync();
     }
 
-    console.log('[logoHelper] Asset downloaded. URI:', asset.uri, 'LocalURI:', asset.localUri);
-
-    if (Platform.OS === 'web') {
-      console.log('[logoHelper] Platform is web, returning URI directly');
-      return asset.uri;
-    }
+    console.log('[logoHelper] Asset info - URI:', asset.uri, 'LocalURI:', asset.localUri);
 
     const uriToUse = asset.localUri || asset.uri;
 
@@ -30,10 +38,15 @@ async function getDefaultLogoBase64(): Promise<string> {
       return DEFAULT_LOGO_PLACEHOLDER;
     }
 
-    console.log('[logoHelper] Reading file as base64...');
+    console.log('[logoHelper] Reading file as base64 from:', uriToUse);
     const base64 = await FileSystem.readAsStringAsync(uriToUse, {
       encoding: FileSystem.EncodingType.Base64,
     });
+
+    if (!base64 || base64.length === 0) {
+      console.error('[logoHelper] Empty base64 result');
+      return DEFAULT_LOGO_PLACEHOLDER;
+    }
 
     console.log('[logoHelper] Successfully converted to base64. Length:', base64.length);
     return `data:image/png;base64,${base64}`;
@@ -93,30 +106,47 @@ async function getReceiptLogoFromDatabase(): Promise<string | null> {
 
 async function convertUrlToBase64(url: string): Promise<string> {
   try {
+    console.log('[logoHelper] Converting URL to base64:', url);
+
     if (Platform.OS === 'web') {
+      console.log('[logoHelper] Web platform, returning URL directly');
+      return url;
+    }
+
+    if (!url || url.trim() === '') {
+      console.error('[logoHelper] Empty URL provided');
       return url;
     }
 
     const cacheFileName = `logo_${Date.now()}.png`;
     const cachePath = `${FileSystem.cacheDirectory}${cacheFileName}`;
 
+    console.log('[logoHelper] Downloading to cache:', cachePath);
     const downloadResult = await FileSystem.downloadAsync(url, cachePath);
 
     if (downloadResult.status !== 200) {
+      console.error('[logoHelper] Download failed with status:', downloadResult.status);
       throw new Error(`Failed to download logo: ${downloadResult.status}`);
     }
 
+    console.log('[logoHelper] Download successful, reading as base64...');
     const base64 = await FileSystem.readAsStringAsync(downloadResult.uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    const mimeType = url.endsWith('.png') ? 'image/png' :
-                      url.endsWith('.jpg') || url.endsWith('.jpeg') ? 'image/jpeg' :
+    if (!base64 || base64.length === 0) {
+      console.error('[logoHelper] Empty base64 result from downloaded file');
+      return url;
+    }
+
+    const mimeType = url.toLowerCase().endsWith('.png') ? 'image/png' :
+                      url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg') ? 'image/jpeg' :
                       'image/png';
 
+    console.log('[logoHelper] Successfully converted. Base64 length:', base64.length);
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error('Error converting URL to base64:', error);
+    console.error('[logoHelper] Error converting URL to base64:', error);
     return url;
   }
 }

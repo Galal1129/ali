@@ -36,7 +36,7 @@ export function generateAccountStatementHTML(
     return acc;
   }, {} as Record<string, AccountMovement[]>);
 
-  const reportDate = format(new Date(), 'dd-MM-yyyy');
+  const reportDate = format(new Date(), 'EEEE، dd MMMM yyyy', { locale: ar });
 
   // Generate sections for each currency
   const currencySections = Object.entries(groupedByCurrency).map(([curr, currMovements]) => {
@@ -82,17 +82,25 @@ export function generateAccountStatementHTML(
         // رصيد موجب = "لنا عنده" (يعرض عليه)
         // رصيد سالب = "له عندنا" (يعرض له)
         const balanceDisplay = movement.runningBalance > 0
-          ? `${Math.round(movement.runningBalance).toLocaleString('en-US')}- ${currencyName}`
+          ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} - ${currencyName}`
           : movement.runningBalance < 0
           ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName}`
-          : '0';
+          : '-';
+
+        const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
+        const incomingAmount = movement.movement_type === 'incoming'
+          ? Math.round(Number(movement.amount)).toLocaleString('en-US')
+          : '-';
+        const outgoingAmount = movement.movement_type === 'outgoing'
+          ? Math.round(Number(movement.amount)).toLocaleString('en-US')
+          : '-';
 
         return `
         <tr>
-          <td class="cell">${format(new Date(movement.created_at), 'dd-MM-yyyy')}</td>
-          <td class="cell">${movement.notes || movement.movement_number}</td>
-          <td class="cell text-center">${movement.movement_type === 'incoming' ? Math.round(Number(movement.amount)).toLocaleString('en-US') : ''}</td>
-          <td class="cell text-center">${movement.movement_type === 'outgoing' ? Math.round(Number(movement.amount)).toLocaleString('en-US') : ''}</td>
+          <td class="cell text-center">${dateStr}</td>
+          <td class="cell" style="text-align: right; padding-right: 12px;">${movement.notes || movement.movement_number}</td>
+          <td class="cell text-center">${incomingAmount}</td>
+          <td class="cell text-center">${outgoingAmount}</td>
           <td class="cell text-center">${balanceDisplay}</td>
         </tr>
         `;
@@ -100,37 +108,40 @@ export function generateAccountStatementHTML(
       .join('');
 
     const finalBalanceDisplay = finalBalance > 0
-      ? `${Math.round(finalBalance).toLocaleString('en-US')}- ${currencyName}`
+      ? `${Math.round(finalBalance).toLocaleString('en-US')} - ${currencyName}`
       : finalBalance < 0
       ? `${Math.round(Math.abs(finalBalance)).toLocaleString('en-US')} ${currencyName}`
-      : '0';
+      : '-';
+
+    const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';
+    const totalOutgoingStr = totalOutgoing > 0 ? Math.round(totalOutgoing).toLocaleString('en-US') : '-';
 
     return `
     <div class="currency-section">
       <div class="section-title">
-        <h2>كشف الحساب#${customerName} ${currencyName}</h2>
+        <h2>كشف حساب ${customerName} - ${currencyName}</h2>
       </div>
       <table>
         <thead>
           <tr>
-            <th>التاريخ</th>
-            <th>التفاصيل</th>
-            <th>له</th>
-            <th>عليه</th>
-            <th>الرصيد</th>
+            <th style="width: 12%;">التاريخ</th>
+            <th style="width: 38%;">البيان</th>
+            <th style="width: 15%;">له</th>
+            <th style="width: 15%;">عليه</th>
+            <th style="width: 20%;">الرصيد</th>
           </tr>
         </thead>
         <tbody>
           ${movementRows}
           <tr class="total-row">
-            <td colspan="2" class="cell text-center">إجمالي العمليات</td>
-            <td class="cell text-center">${Math.round(totalIncoming).toLocaleString('en-US')}</td>
-            <td class="cell text-center">${Math.round(totalOutgoing).toLocaleString('en-US')}</td>
-            <td class="cell text-center"></td>
+            <td colspan="2" class="cell text-center">المجموع</td>
+            <td class="cell text-center">${totalIncomingStr}</td>
+            <td class="cell text-center">${totalOutgoingStr}</td>
+            <td class="cell text-center">-</td>
           </tr>
           <tr class="final-row">
-            <td colspan="4" class="cell text-center">الإجمالي- له</td>
-            <td class="cell text-center">${finalBalanceDisplay}</td>
+            <td colspan="4" class="cell text-center"><strong>الرصيد النهائي</strong></td>
+            <td class="cell text-center"><strong>${finalBalanceDisplay}</strong></td>
           </tr>
         </tbody>
       </table>
@@ -141,8 +152,8 @@ export function generateAccountStatementHTML(
   const headerHTML = generatePDFHeaderHTML({
     title: `كشف حساب العميل: ${customerName}`,
     logoDataUrl,
-    primaryColor: '#382de3',
-    darkColor: '#2821b8',
+    primaryColor: '#059669',
+    darkColor: '#047857',
     height: 150,
     showPhones: true,
   });
@@ -153,18 +164,10 @@ export function generateAccountStatementHTML(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>كشف الحساب</title>
+  <title>كشف الحساب - ${customerName}</title>
   <style>
     @page {
-      margin-top: 3cm;
-      margin-bottom: 3cm;
-      margin-left: 15mm;
-      margin-right: 15mm;
-    }
-
-    @page :first {
-      margin-top: 3cm;
-      margin-bottom: 3cm;
+      margin: 1.5cm 1cm;
     }
 
     * {
@@ -174,72 +177,66 @@ export function generateAccountStatementHTML(
     }
 
     body {
-      font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
+      font-family: 'Arial', 'Tahoma', sans-serif;
       background: #fff;
       color: #000;
       direction: rtl;
+      padding: 15px;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
 
     .header-wrapper {
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       page-break-inside: avoid;
       page-break-after: avoid;
     }
 
-    .first-page-header {
-      display: block;
-    }
-
-    .non-first-page-header {
-      display: none;
-    }
-
     .currency-section {
-      margin-bottom: 30px;
-      page-break-after: always;
-    }
-
-    .currency-section:last-child {
-      page-break-after: auto;
+      margin-bottom: 40px;
+      page-break-inside: avoid;
     }
 
     .section-title {
-      border: 3px solid #000;
-      padding: 15px;
+      border: 2px solid #000;
+      padding: 12px 20px;
       margin-bottom: 0;
       text-align: center;
-      background: #fff;
+      background: #f9fafb;
     }
 
     .section-title h2 {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       margin: 0;
+      color: #111827;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      border: 3px solid #000;
+      border: 2px solid #000;
       border-top: none;
+      background: #fff;
     }
 
     th {
-      background-color: #fff;
+      background-color: #e5e7eb;
       font-weight: bold;
-      padding: 12px 8px;
-      border: 2px solid #000;
+      padding: 10px 8px;
+      border: 1px solid #000;
       font-size: 14px;
       text-align: center;
+      color: #111827;
     }
 
     td {
-      padding: 10px 8px;
-      border: 2px solid #000;
-      text-align: right;
+      padding: 8px 6px;
+      border: 1px solid #000;
+      text-align: center;
       font-size: 13px;
+      color: #374151;
+      vertical-align: middle;
     }
 
     .text-center {
@@ -247,26 +244,29 @@ export function generateAccountStatementHTML(
     }
 
     .cell {
-      min-height: 35px;
+      min-height: 30px;
     }
 
     .total-row {
-      background-color: #fff;
-      font-weight: bold;
-    }
-
-    .final-row {
-      background-color: #fff;
+      background-color: #f3f4f6;
       font-weight: bold;
       font-size: 14px;
     }
 
+    .final-row {
+      background-color: #dbeafe;
+      font-weight: bold;
+      font-size: 15px;
+      color: #1e40af;
+    }
+
     .footer {
       margin-top: 30px;
-      text-align: left;
-      font-size: 12px;
-      color: #000;
+      text-align: center;
+      font-size: 11px;
+      color: #6b7280;
       padding: 10px 0;
+      border-top: 1px solid #e5e7eb;
     }
 
     ${generatePDFHeaderStyles()}
@@ -278,21 +278,13 @@ export function generateAccountStatementHTML(
         color-adjust: exact !important;
       }
 
-      html {
+      html, body {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
       @page {
-        margin-top: 3cm;
-        margin-bottom: 3cm;
-        margin-left: 15mm;
-        margin-right: 15mm;
-      }
-
-      @page :first {
-        margin-top: 3cm;
-        margin-bottom: 3cm;
+        margin: 1.5cm 1cm;
       }
 
       .header-wrapper {
@@ -301,11 +293,31 @@ export function generateAccountStatementHTML(
       }
 
       .currency-section {
-        page-break-after: always;
+        page-break-inside: avoid;
       }
 
-      .currency-section:last-child {
-        page-break-after: auto;
+      table {
+        page-break-inside: avoid;
+      }
+
+      th {
+        background-color: #e5e7eb !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .total-row {
+        background-color: #f3f4f6 !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .final-row {
+        background-color: #dbeafe !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
+      .section-title {
+        background: #f9fafb !important;
+        -webkit-print-color-adjust: exact !important;
       }
     }
   </style>
@@ -318,7 +330,7 @@ export function generateAccountStatementHTML(
   ${currencySections}
 
   <div class="footer">
-    ${reportDate} | 1 / 1
+    <div>تاريخ الطباعة: ${reportDate}</div>
   </div>
 </body>
 </html>

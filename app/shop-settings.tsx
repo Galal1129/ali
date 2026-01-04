@@ -33,6 +33,7 @@ export default function ShopSettingsScreen() {
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [selectedReceiptLogo, setSelectedReceiptLogo] = useState<'uploaded' | 'default'>('uploaded');
+  const [imageLoadError, setImageLoadError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -98,6 +99,7 @@ export default function ShopSettingsScreen() {
 
   const handlePickFromGallery = async () => {
     try {
+      setImageLoadError(false);
       const uri = await pickImageFromGallery();
       if (uri) {
         setSelectedImageUri(uri);
@@ -109,6 +111,7 @@ export default function ShopSettingsScreen() {
 
   const handlePickFromCamera = async () => {
     try {
+      setImageLoadError(false);
       const uri = await pickImageFromCamera();
       if (uri) {
         setSelectedImageUri(uri);
@@ -120,6 +123,7 @@ export default function ShopSettingsScreen() {
 
   const handlePickPngFile = async () => {
     try {
+      setImageLoadError(false);
       const uri = await pickPngFile();
       if (uri) {
         setSelectedImageUri(uri);
@@ -240,18 +244,41 @@ export default function ShopSettingsScreen() {
           <Text style={styles.sectionDescription}>
             يمكنك رفع شعار من المعرض أو الكاميرا، أو رفع ملف PNG مباشرة
           </Text>
+          {selectedImageUri && (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>
+                ✓ تم اختيار صورة جديدة. اضغط على "حفظ التغييرات" لحفظها.
+              </Text>
+            </View>
+          )}
 
           <View style={styles.logoContainer}>
             {isLoading ? (
               <View style={styles.logoPlaceholder}>
                 <ActivityIndicator size="large" color="#4F46E5" />
               </View>
-            ) : displayLogoUri ? (
-              <Image source={{ uri: displayLogoUri }} style={styles.logoImage} />
+            ) : displayLogoUri && !imageLoadError ? (
+              <View style={styles.logoImageWrapper}>
+                <Image
+                  source={{ uri: displayLogoUri }}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                  onError={() => setImageLoadError(true)}
+                  onLoadStart={() => console.log('Loading image...')}
+                  onLoadEnd={() => console.log('Image loaded successfully')}
+                />
+                {selectedImageUri && (
+                  <View style={styles.newBadge}>
+                    <Text style={styles.newBadgeText}>جديد</Text>
+                  </View>
+                )}
+              </View>
             ) : (
               <View style={styles.logoPlaceholder}>
                 <ImageIcon size={48} color="#9CA3AF" />
-                <Text style={styles.placeholderText}>لا يوجد شعار</Text>
+                <Text style={styles.placeholderText}>
+                  {imageLoadError ? 'فشل تحميل الصورة' : 'لا يوجد شعار'}
+                </Text>
               </View>
             )}
           </View>
@@ -311,8 +338,12 @@ export default function ShopSettingsScreen() {
               disabled={isSaving}
             >
               <View style={styles.logoOptionImageContainer}>
-                {displayLogoUri ? (
-                  <Image source={{ uri: displayLogoUri }} style={styles.logoOptionImage} />
+                {displayLogoUri && !imageLoadError ? (
+                  <Image
+                    source={{ uri: displayLogoUri }}
+                    style={styles.logoOptionImage}
+                    resizeMode="contain"
+                  />
                 ) : (
                   <View style={styles.logoOptionPlaceholder}>
                     <ImageIcon size={32} color="#9CA3AF" />
@@ -545,10 +576,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     marginBottom: 16,
   },
+  logoImageWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+  },
   logoImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
+    backgroundColor: '#FFFFFF',
+  },
+  newBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  newBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   logoPlaceholder: {
     width: '100%',
@@ -560,6 +617,20 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 14,
     color: '#9CA3AF',
+  },
+  infoBox: {
+    backgroundColor: '#DBEAFE',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#1E40AF',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   logoActions: {
     flexDirection: 'row',

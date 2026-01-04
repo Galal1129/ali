@@ -1,12 +1,17 @@
 {
   "expo": {
-    "name": "الترف للتحويلات المالية",
+    "name": "Altarf Money Transfer",
     "slug": "altarf-m",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2E3A8E"
+    },
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,

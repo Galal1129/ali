@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start",
-    "build:web": "expo export:web",
+    "build:web": "expo export -p web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "android": "expo run:android",

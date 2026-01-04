@@ -5,7 +5,10 @@ module.exports = async function (env, argv) {
     {
       ...env,
       babel: {
-        dangerouslyAddModulePathsToTranspile: ['@expo/vector-icons'],
+        dangerouslyAddModulePathsToTranspile: [
+          '@expo/vector-icons',
+          'expo-modules-core',
+        ],
       },
     },
     argv

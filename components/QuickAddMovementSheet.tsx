@@ -524,7 +524,6 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     maxHeight: '90%',
-    width: '100%',
   },
   keyboardView: {
     flex: 1,

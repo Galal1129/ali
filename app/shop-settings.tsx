@@ -31,7 +31,7 @@ export default function ShopSettingsScreen() {
   const [shopAddress, setShopAddress] = useState(settings?.shop_address || '');
   const [logoUri, setLogoUri] = useState<string | null>(null);
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const [selectedReceiptLogo, setSelectedReceiptLogo] = useState<'uploaded' | 'default' | 'altarf'>('uploaded');
+  const [selectedReceiptLogo, setSelectedReceiptLogo] = useState<'uploaded' | 'default'>('uploaded');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -79,10 +79,6 @@ export default function ShopSettingsScreen() {
         // If selected_receipt_logo is 'DEFAULT', use default logo
         if (data.selected_receipt_logo === 'DEFAULT') {
           setSelectedReceiptLogo('default');
-        }
-        // If selected_receipt_logo is 'ALTARF', use altarf logo
-        else if (data.selected_receipt_logo === 'ALTARF') {
-          setSelectedReceiptLogo('altarf');
         }
         // If selected_receipt_logo is null or empty, check shop_logo for backward compatibility
         else if (!data.selected_receipt_logo) {
@@ -185,8 +181,6 @@ export default function ShopSettingsScreen() {
         } else {
           settingsUpdate.selected_receipt_logo = null;
         }
-      } else if (selectedReceiptLogo === 'altarf') {
-        settingsUpdate.selected_receipt_logo = 'ALTARF';
       } else {
         settingsUpdate.selected_receipt_logo = 'DEFAULT';
       }
@@ -324,7 +318,7 @@ export default function ShopSettingsScreen() {
             >
               <View style={styles.logoOptionImageContainer}>
                 <Image
-                  source={require('@/assets/images/icon.png')}
+                  source={require('@/assets/images/logo_1.png')}
                   style={styles.logoOptionImage}
                 />
               </View>
@@ -333,31 +327,6 @@ export default function ShopSettingsScreen() {
                 <Text style={styles.logoOptionDescription}>شعار التطبيق الأزرق</Text>
               </View>
               {selectedReceiptLogo === 'default' && (
-                <View style={styles.logoOptionCheck}>
-                  <Check size={20} color="#10B981" />
-                </View>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.logoOptionCard,
-                selectedReceiptLogo === 'altarf' && styles.logoOptionCardSelected,
-              ]}
-              onPress={() => setSelectedReceiptLogo('altarf')}
-              disabled={isSaving}
-            >
-              <View style={styles.logoOptionImageContainer}>
-                <Image
-                  source={require('@/assets/images/altarf.png')}
-                  style={styles.logoOptionImage}
-                />
-              </View>
-              <View style={styles.logoOptionContent}>
-                <Text style={styles.logoOptionTitle}>شعار الطرف</Text>
-                <Text style={styles.logoOptionDescription}>شعار الطرف للصرافة والتحويلات</Text>
-              </View>
-              {selectedReceiptLogo === 'altarf' && (
                 <View style={styles.logoOptionCheck}>
                   <Check size={20} color="#10B981" />
                 </View>

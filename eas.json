@@ -11,8 +11,9 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "app-bundle",
-        "credentialsSource": "remote"
+        "buildType": "apk",
+        "credentialsSource": "remote",
+        "gradleCommand": ":app:assembleRelease"
       },
       "autoIncrement": true,
       "env": {
@@ -22,11 +23,8 @@
     },
     "production": {
       "android": {
-        "buildType": "apk",
-        "credentialsSource": "remote",
-        "withoutCredentials": false
+        "buildType": "apk"
       },
-      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://ucgbyqjmimzdfgaxpabq.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4"

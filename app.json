@@ -1,59 +1,38 @@
 {
   "expo": {
-    "name": "Altarf Money Transfer",
+    "name": "الترف للتحويلات المالية",
     "slug": "altarf-m",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#2E3A8E"
-    },
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.altaraf.moneytransfer",
-      "infoPlist": {
-        "NSCameraUsageDescription": "هذا التطبيق يحتاج للوصول إلى الكاميرا لالتقاط الصور.",
-        "NSPhotoLibraryUsageDescription": "هذا التطبيق يحتاج للوصول إلى معرض الصور لاختيار الصور."
-      }
+      "supportsTablet": true
     },
     "android": {
       "package": "com.altaraf.moneytransfer",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#2E3A8E"
       },
       "permissions": [
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       "userInterfaceStyle": "automatic"
     },
     "web": {
       "bundler": "metro",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-web-browser",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "هذا التطبيق يحتاج للوصول إلى الكاميرا."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "هذا التطبيق يحتاج للوصول إلى معرض الصور."
-        }
-      ]
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -61,13 +40,11 @@
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://ucgbyqjmimzdfgaxpabq.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4",
-      "router": {
-        "origin": false
-      },
+      "router": {},
       "eas": {
-        "projectId": "4878bcf1-001e-4ecf-a688-869f22c96198"
+        "projectId": "c2fa17d0-e63d-4ebe-97eb-fb34b98652fb"
       }
     },
-    "owner": "arti_codeio"
+    "owner": "articodes-organization"
   }
 }

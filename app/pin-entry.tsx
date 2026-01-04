@@ -15,7 +15,6 @@ import * as Haptics from 'expo-haptics';
 import * as Crypto from 'expo-crypto';
 import { usePin } from '@/contexts/PinContext';
 import { Lock, LogIn } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
 
 export default function PinEntry() {
   const router = useRouter();
@@ -56,21 +55,15 @@ export default function PinEntry() {
         enteredPin
       );
 
+      const { supabase } = await import('@/lib/supabase');
       const { data: securityData, error: fetchError } = await supabase
         .from('app_security')
-        .select('id, user_name, pin_hash, is_active')
-        .eq('pin_hash', hashHex)
-        .eq('is_active', true)
+        .select('pin_hash')
         .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      if (securityData) {
-        await supabase
-          .from('app_security')
-          .update({ last_login: new Date().toISOString() })
-          .eq('id', securityData.id);
-
+      if (securityData && securityData.pin_hash === hashHex) {
         if (Platform.OS !== 'web') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }

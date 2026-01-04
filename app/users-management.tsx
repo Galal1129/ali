@@ -27,6 +27,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import { format } from 'date-fns';
@@ -43,6 +44,7 @@ interface UserData {
 
 export default function UsersManagement() {
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,16 +59,22 @@ export default function UsersManagement() {
   const [editPinConfirm, setEditPinConfirm] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const isAdmin = currentUser?.role === 'admin';
+
   useEffect(() => {
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('app_security')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('app_security').select('*');
+
+      // إذا لم يكن المستخدم admin، يحمل فقط بياناته
+      if (!isAdmin && currentUser) {
+        query = query.eq('id', currentUser.userId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setUsers(data || []);
@@ -92,6 +100,12 @@ export default function UsersManagement() {
   };
 
   const handleAddUser = async () => {
+    // فقط الـ admin يستطيع إضافة مستخدمين
+    if (!isAdmin) {
+      Alert.alert('غير مصرح', 'ليس لديك صلاحية إضافة مستخدمين');
+      return;
+    }
+
     if (!newUserName.trim()) {
       Alert.alert('خطأ', 'الرجاء إدخال اسم المستخدم');
       return;
@@ -187,6 +201,18 @@ export default function UsersManagement() {
   };
 
   const handleDeleteUser = (user: UserData) => {
+    // منع حذف Ali
+    if (user.user_name.toLowerCase() === 'ali') {
+      Alert.alert('غير مسموح', 'لا يمكن حذف حساب Ali - هذا هو الحساب الرئيسي');
+      return;
+    }
+
+    // فقط الـ admin يستطيع حذف المستخدمين
+    if (!isAdmin) {
+      Alert.alert('غير مصرح', 'ليس لديك صلاحية حذف المستخدمين');
+      return;
+    }
+
     Alert.alert(
       'تأكيد الحذف',
       `هل أنت متأكد من حذف المستخدم "${user.user_name}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`,
@@ -223,6 +249,13 @@ export default function UsersManagement() {
   };
 
   const openEditModal = (user: UserData) => {
+    // التحقق من الصلاحية: المستخدم يمكنه تعديل كلمة السر الخاصة به فقط
+    // أو إذا كان admin يستطيع تعديل الجميع
+    if (!isAdmin && currentUser?.userId !== user.id) {
+      Alert.alert('غير مصرح', 'يمكنك تغيير كلمة السر الخاصة بك فقط');
+      return;
+    }
+
     setSelectedUser(user);
     setEditModalVisible(true);
   };
@@ -420,54 +453,71 @@ export default function UsersManagement() {
     </Modal>
   );
 
-  const renderUserCard = (user: UserData) => (
-    <View key={user.id} style={styles.userCard}>
-      <View style={styles.userCardHeader}>
-        <View style={styles.userIconContainer}>
-          {user.role === 'admin' ? (
-            <Shield size={24} color="#10B981" />
-          ) : (
-            <User size={24} color="#6B7280" />
-          )}
-        </View>
-        <View style={styles.userInfo}>
-          <View style={styles.userNameRow}>
-            <Text style={styles.userName}>{user.user_name}</Text>
-            {user.role === 'admin' && (
-              <View style={styles.adminBadge}>
-                <Text style={styles.adminBadgeText}>مدير</Text>
-              </View>
+  const renderUserCard = (user: UserData) => {
+    const isAli = user.user_name.toLowerCase() === 'ali';
+    const canDelete = isAdmin && !isAli;
+    const isOwnAccount = currentUser?.userId === user.id;
+
+    return (
+      <View key={user.id} style={styles.userCard}>
+        <View style={styles.userCardHeader}>
+          <View style={styles.userIconContainer}>
+            {user.role === 'admin' ? (
+              <Shield size={24} color="#10B981" />
+            ) : (
+              <User size={24} color="#6B7280" />
             )}
           </View>
-          <Text style={styles.userDate}>
-            تاريخ الإنشاء: {format(new Date(user.created_at), 'yyyy/MM/dd')}
-          </Text>
-          {user.last_login && (
+          <View style={styles.userInfo}>
+            <View style={styles.userNameRow}>
+              <Text style={styles.userName}>{user.user_name}</Text>
+              {user.role === 'admin' && (
+                <View style={styles.adminBadge}>
+                  <Text style={styles.adminBadgeText}>مدير</Text>
+                </View>
+              )}
+              {isOwnAccount && (
+                <View style={[styles.adminBadge, { backgroundColor: '#3B82F6' }]}>
+                  <Text style={styles.adminBadgeText}>أنت</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.userDate}>
-              آخر دخول: {format(new Date(user.last_login), 'yyyy/MM/dd HH:mm')}
+              تاريخ الإنشاء: {format(new Date(user.created_at), 'yyyy/MM/dd')}
             </Text>
+            {user.last_login && (
+              <Text style={styles.userDate}>
+                آخر دخول: {format(new Date(user.last_login), 'yyyy/MM/dd HH:mm')}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.userActions}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.editButton,
+              !canDelete && { flex: 1 },
+            ]}
+            onPress={() => openEditModal(user)}
+          >
+            <Edit3 size={18} color="#3B82F6" />
+            <Text style={styles.editButtonText}>تعديل كلمة المرور</Text>
+          </TouchableOpacity>
+          {canDelete && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={() => handleDeleteUser(user)}
+            >
+              <Trash2 size={18} color="#EF4444" />
+              <Text style={styles.deleteButtonText}>حذف</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
-
-      <View style={styles.userActions}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.editButton]}
-          onPress={() => openEditModal(user)}
-        >
-          <Edit3 size={18} color="#3B82F6" />
-          <Text style={styles.editButtonText}>تعديل كلمة المرور</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.deleteButton]}
-          onPress={() => handleDeleteUser(user)}
-        >
-          <Trash2 size={18} color="#EF4444" />
-          <Text style={styles.deleteButtonText}>حذف</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -504,16 +554,20 @@ export default function UsersManagement() {
         <View style={styles.statsCard}>
           <Users size={32} color="#4F46E5" />
           <Text style={styles.statsNumber}>{users.length}</Text>
-          <Text style={styles.statsLabel}>مستخدم مسجل</Text>
+          <Text style={styles.statsLabel}>
+            {isAdmin ? 'مستخدم مسجل' : 'حسابي'}
+          </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setAddModalVisible(true)}
-        >
-          <Plus size={20} color="#FFFFFF" />
-          <Text style={styles.addButtonText}>إضافة مستخدم جديد</Text>
-        </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setAddModalVisible(true)}
+          >
+            <Plus size={20} color="#FFFFFF" />
+            <Text style={styles.addButtonText}>إضافة مستخدم جديد</Text>
+          </TouchableOpacity>
+        )}
 
         {users.length === 0 ? (
           <View style={styles.emptyContainer}>

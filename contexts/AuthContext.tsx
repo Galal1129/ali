@@ -7,6 +7,7 @@ import { AppSettings } from '@/types/database';
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  currentUser: { userName: string; role: string; userId: string } | null;
   login: (userName: string, pin: string) => Promise<boolean>;
   logout: () => Promise<void>;
   settings: AppSettings | null;
@@ -17,11 +18,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_KEY = '@money_transfer_auth';
+const USER_KEY = '@money_transfer_current_user';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ userName: string; role: string; userId: string } | null>(null);
 
   const loadSettings = async () => {
     try {
@@ -45,9 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const value = await AsyncStorage.getItem(AUTH_KEY);
-      if (value === 'true') {
+      const authValue = await AsyncStorage.getItem(AUTH_KEY);
+      const userValue = await AsyncStorage.getItem(USER_KEY);
+
+      if (authValue === 'true' && userValue) {
         setIsAuthenticated(true);
+        setCurrentUser(JSON.parse(userValue));
       }
     } catch (error) {
       console.error('Error checking auth:', error);
@@ -69,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { data, error } = await supabase
         .from('app_security')
-        .select('id, pin_hash, is_active')
+        .select('id, pin_hash, is_active, role, user_name')
         .eq('user_name', userName)
         .maybeSingle();
 
@@ -87,7 +93,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .update({ last_login: new Date().toISOString() })
           .eq('id', data.id);
 
+        const user = {
+          userName: data.user_name,
+          role: data.role,
+          userId: data.id,
+        };
+
         await AsyncStorage.setItem(AUTH_KEY, 'true');
+        await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+        setCurrentUser(user);
         setIsAuthenticated(true);
         return true;
       }
@@ -101,7 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await AsyncStorage.removeItem(AUTH_KEY);
+      await AsyncStorage.removeItem(USER_KEY);
       setIsAuthenticated(false);
+      setCurrentUser(null);
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -154,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         isAuthenticated,
         isLoading,
+        currentUser,
         login,
         logout,
         settings,
@@ -173,6 +190,7 @@ export function useAuth() {
     return {
       isAuthenticated: false,
       isLoading: true,
+      currentUser: null,
       login: async (_userName: string, _pin: string) => false,
       logout: async () => {},
       settings: null,

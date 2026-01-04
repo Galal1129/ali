@@ -11,9 +11,8 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "credentialsSource": "remote",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "app-bundle",
+        "credentialsSource": "remote"
       },
       "autoIncrement": true,
       "env": {

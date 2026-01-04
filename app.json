@@ -28,7 +28,9 @@
         "backgroundColor": "#2E3A8E"
       },
       "permissions": [
-        "READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "userInterfaceStyle": "automatic"
     },
@@ -59,11 +61,13 @@
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://ucgbyqjmimzdfgaxpabq.supabase.co",
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4",
-      "router": {},
+      "router": {
+        "origin": false
+      },
       "eas": {
-        "projectId": "c2fa17d0-e63d-4ebe-97eb-fb34b98652fb"
+        "projectId": "4878bcf1-001e-4ecf-a688-869f22c96198"
       }
     },
-    "owner": "articodes-organization"
+    "owner": "arti_codeio"
   }
 }

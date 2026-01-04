@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    maxHeight: '90%',
+    height: '90%',
   },
   keyboardView: {
     flex: 1,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    flex: 1,
+    height: '100%',
     paddingBottom: Platform.OS === 'ios' ? 20 : 0,
   },
   header: {

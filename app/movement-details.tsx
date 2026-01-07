@@ -35,6 +35,7 @@ export default function MovementDetailsScreen() {
   const [movement, setMovement] = useState<AccountMovement | null>(null);
   const [customerName, setCustomerName] = useState<string>('');
   const [customerAccountNumber, setCustomerAccountNumber] = useState<string>('');
+  const [relatedCommissionMovements, setRelatedCommissionMovements] = useState<AccountMovement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -47,24 +48,41 @@ export default function MovementDetailsScreen() {
   const loadMovementDetails = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('account_movements')
-        .select('*, customers!customer_id(name, account_number)')
-        .eq('id', movementId)
-        .maybeSingle();
+      const [movementResult, commissionsResult] = await Promise.all([
+        supabase
+          .from('account_movements')
+          .select('*, customers!customer_id(name, account_number)')
+          .eq('id', movementId)
+          .maybeSingle(),
+        supabase
+          .from('account_movements')
+          .select('*')
+          .eq('is_commission_movement', true)
+          .eq('related_commission_movement_id', movementId)
+      ]);
 
-      if (error) throw error;
+      if (movementResult.error) throw movementResult.error;
 
-      if (!data) {
+      if (!movementResult.data) {
         Alert.alert('خطأ', 'لم يتم العثور على المعاملة');
         router.back();
         return;
       }
 
-      setMovement(data);
-      if (data.customers) {
-        setCustomerName((data.customers as any).name);
-        setCustomerAccountNumber((data.customers as any).account_number);
+      setMovement(movementResult.data);
+      if (movementResult.data.customers) {
+        setCustomerName((movementResult.data.customers as any).name);
+        setCustomerAccountNumber((movementResult.data.customers as any).account_number);
+      }
+
+      if (commissionsResult.data) {
+        const customerCommissions = commissionsResult.data.filter(
+          (c) =>
+            c.customer_id === movementResult.data.customer_id &&
+            c.movement_type === movementResult.data.movement_type &&
+            c.currency === movementResult.data.currency
+        );
+        setRelatedCommissionMovements(customerCommissions);
       }
     } catch (error) {
       console.error('Error loading movement:', error);
@@ -226,15 +244,39 @@ export default function MovementDetailsScreen() {
         </View>
 
         <View style={styles.amountCard}>
-          <Text style={styles.amountLabel}>المبلغ</Text>
+          <Text style={styles.amountLabel}>المبلغ الإجمالي</Text>
           <View style={styles.amountRow}>
             <Text style={[styles.amountValue, { color: movementTypeColor }]}>
-              {Math.round(Number(movement.amount))}
+              {Math.round(
+                Number(movement.amount) +
+                  relatedCommissionMovements.reduce(
+                    (sum, c) => sum + Number(c.amount),
+                    0,
+                  ),
+              )}
             </Text>
             <Text style={[styles.currencyText, { color: movementTypeColor }]}>
               {getCurrencySymbol(movement.currency)}
             </Text>
           </View>
+          {relatedCommissionMovements.length > 0 && (
+            <View style={styles.amountBreakdown}>
+              <Text style={styles.breakdownLabel}>
+                المبلغ الأساسي: {Math.round(Number(movement.amount))}{' '}
+                {getCurrencySymbol(movement.currency)}
+              </Text>
+              <Text style={styles.breakdownLabel}>
+                العمولة:{' '}
+                {Math.round(
+                  relatedCommissionMovements.reduce(
+                    (sum, c) => sum + Number(c.amount),
+                    0,
+                  ),
+                )}{' '}
+                {getCurrencySymbol(movement.currency)}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -505,6 +547,19 @@ const styles = StyleSheet.create({
   currencyText: {
     fontSize: 24,
     fontWeight: '600',
+  },
+  amountBreakdown: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    width: '100%',
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 4,
   },
   section: {
     marginHorizontal: 20,

@@ -85,6 +85,8 @@ export interface AccountMovement {
   to_customer_id?: string;
   transfer_direction?: 'shop_to_customer' | 'customer_to_shop' | 'customer_to_customer';
   related_transfer_id?: string;
+  is_commission_movement?: boolean;
+  related_commission_movement_id?: string;
   created_at: string;
 }
 

@@ -126,30 +126,58 @@ function calculateBalanceByCurrency(
     }
 
     const amount = Number(movement.amount);
-    const commission =
-      movement.commission && Number(movement.commission) > 0
-        ? Number(movement.commission)
-        : 0;
-    const commissionCurrency = (movement as any).commission_currency || 'USD';
 
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
-      if (commission > 0 && commissionCurrency === currency) {
-        currencyMap[currency].outgoing += amount + commission;
-      } else {
-        currencyMap[currency].outgoing += amount;
-      }
+      currencyMap[currency].outgoing += amount;
     }
   });
 
   Object.values(currencyMap).forEach((item) => {
-    // الرصيد = التسليم - الاستلام
-    // رصيد موجب = "لنا عندك"، رصيد سالب = "لك عندنا"
     item.balance = item.incoming - item.outgoing;
   });
 
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
+}
+
+function getCombinedAmount(
+  movement: AccountMovement,
+  allMovements: AccountMovement[],
+): number {
+  const baseAmount = Number(movement.amount);
+
+  const relatedCommissions = allMovements.filter(
+    (m) =>
+      (m as any).is_commission_movement === true &&
+      (m as any).related_commission_movement_id === movement.id &&
+      m.customer_id === movement.customer_id &&
+      m.movement_type === movement.movement_type &&
+      m.currency === movement.currency
+  );
+
+  const commissionTotal = relatedCommissions.reduce(
+    (sum, m) => sum + Number(m.amount),
+    0,
+  );
+
+  return baseAmount + commissionTotal;
+}
+
+function getRelatedCommission(
+  movement: AccountMovement,
+  allMovements: AccountMovement[],
+): number {
+  const relatedCommissions = allMovements.filter(
+    (m) =>
+      (m as any).is_commission_movement === true &&
+      (m as any).related_commission_movement_id === movement.id &&
+      m.customer_id === movement.customer_id &&
+      m.movement_type === movement.movement_type &&
+      m.currency === movement.currency
+  );
+
+  return relatedCommissions.reduce((sum, m) => sum + Number(m.amount), 0);
 }
 
 export default function CustomerDetailsScreen() {
@@ -173,7 +201,7 @@ export default function CustomerDetailsScreen() {
         supabase.from('customers').select('*').eq('id', id).maybeSingle(),
         supabase
           .from('account_movements')
-          .select('*, is_internal_transfer, transfer_group_id')
+          .select('*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id')
           .eq('customer_id', id)
           .order('created_at', { ascending: false }),
       ]);
@@ -631,29 +659,31 @@ export default function CustomerDetailsScreen() {
 
   const balance = customer?.balance || 0;
 
-  const filteredMovements = movements.filter((movement) => {
-    if (!searchQuery.trim()) return true;
+  const filteredMovements = movements
+    .filter((movement) => (movement as any).is_commission_movement !== true)
+    .filter((movement) => {
+      if (!searchQuery.trim()) return true;
 
-    const query = searchQuery.toLowerCase();
-    const movementNumber = movement.movement_number.toLowerCase();
-    const notes = (movement.notes || '').toLowerCase();
-    const amount = movement.amount.toString();
-    const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-    const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
-    const senderName = (movement.sender_name || '').toLowerCase();
-    const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
+      const query = searchQuery.toLowerCase();
+      const movementNumber = movement.movement_number.toLowerCase();
+      const notes = (movement.notes || '').toLowerCase();
+      const amount = movement.amount.toString();
+      const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
+      const movementTypeText =
+        movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      const senderName = (movement.sender_name || '').toLowerCase();
+      const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
-    return (
-      movementNumber.includes(query) ||
-      notes.includes(query) ||
-      amount.includes(query) ||
-      date.includes(query) ||
-      movementTypeText.includes(query) ||
-      senderName.includes(query) ||
-      beneficiaryName.includes(query)
-    );
-  });
+      return (
+        movementNumber.includes(query) ||
+        notes.includes(query) ||
+        amount.includes(query) ||
+        date.includes(query) ||
+        movementTypeText.includes(query) ||
+        senderName.includes(query) ||
+        beneficiaryName.includes(query)
+      );
+    });
 
   const groupedMovements = groupMovementsByMonth(filteredMovements);
   const currencyBalances = calculateBalanceByCurrency(movements);
@@ -971,8 +1001,13 @@ export default function CustomerDetailsScreen() {
                             },
                           ]}
                         >
-                          {Math.round(Number(movement.amount))}
+                          {Math.round(getCombinedAmount(movement, movements))}
                         </Text>
+                        {getRelatedCommission(movement, movements) > 0 && (
+                          <Text style={styles.commissionBadge}>
+                            شامل {Math.round(getRelatedCommission(movement, movements))} عمولة
+                          </Text>
+                        )}
                         <Text style={styles.movementLabel}>
                           {(movement as any).is_internal_transfer
                             ? 'تحويل'
@@ -1399,6 +1434,12 @@ const styles = StyleSheet.create({
   movementLabel: {
     fontSize: 11,
     color: '#9CA3AF',
+  },
+  commissionBadge: {
+    fontSize: 9,
+    color: '#9CA3AF',
+    marginTop: 2,
+    textAlign: 'right',
   },
   emptyContainer: {
     padding: 32,

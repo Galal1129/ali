@@ -22,12 +22,32 @@ export function generateAccountStatementHTML(
   movements: AccountMovement[],
   logoDataUrl?: string
 ): string {
-  const sortedMovements = [...movements].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  );
+  const allMovements = [...movements];
+
+  const filteredMovements = allMovements
+    .filter((m) => !(m as any).is_commission_movement)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  // Helper function to get combined amount including related commission
+  const getCombinedAmount = (movement: AccountMovement): number => {
+    const baseAmount = Number(movement.amount);
+    const relatedCommissions = allMovements.filter(
+      (m) =>
+        (m as any).is_commission_movement === true &&
+        (m as any).related_commission_movement_id === movement.id &&
+        m.customer_id === movement.customer_id &&
+        m.movement_type === movement.movement_type &&
+        m.currency === movement.currency
+    );
+    const commissionTotal = relatedCommissions.reduce(
+      (sum, m) => sum + Number(m.amount),
+      0,
+    );
+    return baseAmount + commissionTotal;
+  };
 
   // Group movements by currency
-  const groupedByCurrency = sortedMovements.reduce((acc, movement) => {
+  const groupedByCurrency = filteredMovements.reduce((acc, movement) => {
     if (!acc[movement.currency]) {
       acc[movement.currency] = [];
     }
@@ -44,18 +64,12 @@ export function generateAccountStatementHTML(
     let runningBalance = 0;
 
     currMovements.forEach((movement) => {
-      const amount = Number(movement.amount);
-      const commission = movement.commission && Number(movement.commission) > 0
-        && movement.commission_currency === movement.currency
-        ? Number(movement.commission)
-        : 0;
+      const combinedAmount = getCombinedAmount(movement);
 
-      // incoming = استلام من العميل (يضيف للرصيد)
-      // outgoing = تسليم للعميل (يخصم من الرصيد + عمولة إذا كانت بنفس العملة)
       if (movement.movement_type === 'incoming') {
-        runningBalance += amount;
+        runningBalance += combinedAmount;
       } else {
-        runningBalance -= (amount + commission);
+        runningBalance -= combinedAmount;
       }
 
       movementsWithBalance.push({
@@ -66,21 +80,17 @@ export function generateAccountStatementHTML(
 
     const totalOutgoing = currMovements
       .filter(m => m.movement_type === 'outgoing')
-      .reduce((sum, m) => sum + Number(m.amount), 0);
+      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
 
     const totalIncoming = currMovements
       .filter(m => m.movement_type === 'incoming')
-      .reduce((sum, m) => sum + Number(m.amount), 0);
+      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
 
-    // الرصيد = الاستلام - التسليم
-    // رصيد موجب = "لنا عنده"، رصيد سالب = "له عندنا"
     const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
 
     const movementRows = movementsWithBalance
       .map((movement) => {
-        // رصيد موجب = "لنا عنده" (يعرض عليه)
-        // رصيد سالب = "له عندنا" (يعرض له)
         const balanceDisplay = movement.runningBalance > 0
           ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} - ${currencyName}`
           : movement.runningBalance < 0
@@ -88,11 +98,12 @@ export function generateAccountStatementHTML(
           : '-';
 
         const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
+        const combinedAmount = getCombinedAmount(movement);
         const incomingAmount = movement.movement_type === 'incoming'
-          ? Math.round(Number(movement.amount)).toLocaleString('en-US')
+          ? Math.round(combinedAmount).toLocaleString('en-US')
           : '-';
         const outgoingAmount = movement.movement_type === 'outgoing'
-          ? Math.round(Number(movement.amount)).toLocaleString('en-US')
+          ? Math.round(combinedAmount).toLocaleString('en-US')
           : '-';
 
         return `

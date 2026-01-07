@@ -323,7 +323,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          استلام
+                          تسليم
                         </Text>
                         <Text
                           style={[

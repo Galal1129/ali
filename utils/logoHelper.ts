@@ -12,7 +12,7 @@ async function getDefaultLogoBase64(): Promise<string> {
 
     if (Platform.OS === 'web') {
       try {
-        const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+        const asset = Asset.fromModule(require('@/assets/images/icon.png'));
         await asset.downloadAsync();
         console.log('[logoHelper] Platform is web, returning URI:', asset.uri);
         return asset.uri;
@@ -22,7 +22,7 @@ async function getDefaultLogoBase64(): Promise<string> {
       }
     }
 
-    const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
 
     if (!asset.downloaded) {
       console.log('[logoHelper] Downloading asset...');
@@ -192,7 +192,7 @@ export async function getLogoUrl(): Promise<string> {
       return dbLogoUrl;
     }
 
-    const asset = Asset.fromModule(require('@/assets/images/logo_1.png'));
+    const asset = Asset.fromModule(require('@/assets/images/icon.png'));
     await asset.downloadAsync();
     return asset.uri;
   } catch (error) {

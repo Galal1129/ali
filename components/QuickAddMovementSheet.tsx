@@ -281,7 +281,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          تسليم
+                          استلام
                         </Text>
                         <Text
                           style={[

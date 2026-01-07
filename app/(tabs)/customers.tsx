@@ -46,7 +46,11 @@ export default function CustomersScreen() {
   const loadCustomers = async () => {
     try {
       const [customersResult, balancesResult] = await Promise.all([
-        supabase.from('customers').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('customers_with_last_activity')
+          .select('*')
+          .order('is_profit_loss_account', { ascending: false })
+          .order('last_activity_date', { ascending: false }),
         supabase.from('customer_balances_by_currency').select('*'),
       ]);
 

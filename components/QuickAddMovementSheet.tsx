@@ -259,48 +259,6 @@ export default function QuickAddMovementSheet({
                       <TouchableOpacity
                         style={[
                           styles.typeButton,
-                          movementType === 'incoming' &&
-                            styles.typeButtonActiveBlue,
-                        ]}
-                        onPress={() => setMovementType('incoming')}
-                      >
-                        <ArrowUpCircle
-                          size={24}
-                          color={
-                            movementType === 'incoming' ? '#FFFFFF' : '#3B82F6'
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.typeButtonText,
-                            {
-                              color:
-                                movementType === 'incoming'
-                                  ? '#FFFFFF'
-                                  : '#3B82F6',
-                            },
-                          ]}
-                        >
-                          استلام
-                        </Text>
-                        <Text
-                          style={[
-                            styles.typeButtonSubtext,
-                            {
-                              color:
-                                movementType === 'incoming'
-                                  ? '#DBEAFE'
-                                  : '#93C5FD',
-                            },
-                          ]}
-                        >
-                          تسليم للعميل
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.typeButton,
                           movementType === 'outgoing' &&
                             styles.typeButtonActiveGreen,
                         ]}
@@ -337,6 +295,48 @@ export default function QuickAddMovementSheet({
                           ]}
                         >
                           استلام من العميل
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.typeButton,
+                          movementType === 'incoming' &&
+                            styles.typeButtonActiveBlue,
+                        ]}
+                        onPress={() => setMovementType('incoming')}
+                      >
+                        <ArrowUpCircle
+                          size={24}
+                          color={
+                            movementType === 'incoming' ? '#FFFFFF' : '#3B82F6'
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.typeButtonText,
+                            {
+                              color:
+                                movementType === 'incoming'
+                                  ? '#FFFFFF'
+                                  : '#3B82F6',
+                            },
+                          ]}
+                        >
+                          استلام
+                        </Text>
+                        <Text
+                          style={[
+                            styles.typeButtonSubtext,
+                            {
+                              color:
+                                movementType === 'incoming'
+                                  ? '#DBEAFE'
+                                  : '#93C5FD',
+                            },
+                          ]}
+                        >
+                          تسليم للعميل
                         </Text>
                       </TouchableOpacity>
                     </View>

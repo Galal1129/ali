@@ -267,7 +267,11 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setAddModalVisible(false)}
     >
-      <KeyboardAwareView contentContainerStyle={styles.modalOverlay}>
+      <KeyboardAwareView
+        contentContainerStyle={styles.modalOverlay}
+        useScrollView={false}
+        keyboardVerticalOffset={0}
+      >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -370,7 +374,11 @@ export default function UsersManagement() {
       animationType="slide"
       onRequestClose={() => setEditModalVisible(false)}
     >
-      <KeyboardAwareView contentContainerStyle={styles.modalOverlay}>
+      <KeyboardAwareView
+        contentContainerStyle={styles.modalOverlay}
+        useScrollView={false}
+        keyboardVerticalOffset={0}
+      >
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <TouchableOpacity

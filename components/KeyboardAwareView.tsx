@@ -7,6 +7,7 @@ import {
   ViewStyle,
   Keyboard,
   TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 
 interface KeyboardAwareViewProps {
@@ -14,6 +15,8 @@ interface KeyboardAwareViewProps {
   contentContainerStyle?: StyleProp<ViewStyle>;
   enableAutomaticScroll?: boolean;
   extraScrollHeight?: number;
+  keyboardVerticalOffset?: number;
+  useScrollView?: boolean;
 }
 
 export function KeyboardAwareView({
@@ -21,12 +24,34 @@ export function KeyboardAwareView({
   contentContainerStyle,
   enableAutomaticScroll = true,
   extraScrollHeight = 150,
+  keyboardVerticalOffset,
+  useScrollView = true,
 }: KeyboardAwareViewProps) {
+  const defaultOffset = Platform.OS === 'ios' ? 90 : 20;
+  const offset = keyboardVerticalOffset !== undefined ? keyboardVerticalOffset : defaultOffset;
+
+  if (!useScrollView) {
+    return (
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={offset}
+        enabled={enableAutomaticScroll}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={[{ flex: 1 }, contentContainerStyle]}>
+            {children}
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={offset}
       enabled={enableAutomaticScroll}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

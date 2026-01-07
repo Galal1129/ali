@@ -195,7 +195,7 @@ export default function MovementDetailsScreen() {
   const isTransfer = Boolean(movement.transfer_direction);
   const movementTypeText = isTransfer
     ? 'تحويل داخلي'
-    : movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
+    : movement.movement_type === 'incoming' ? 'تسليم' : 'استلام';
   const movementTypeColor = isTransfer
     ? '#F59E0B'
     : movement.movement_type === 'incoming' ? '#F97316' : '#3B82F6';
@@ -238,8 +238,8 @@ export default function MovementDetailsScreen() {
                 ? 'تحويل من المحل للعميل'
                 : 'تحويل من العميل للمحل'
               : movement.movement_type === 'incoming'
-              ? 'أنت أرسلت للعميل'
-              : 'العميل دفع لك'}
+              ? 'تسليم للعميل'
+              : 'استلام من العميل'}
           </Text>
         </View>
 

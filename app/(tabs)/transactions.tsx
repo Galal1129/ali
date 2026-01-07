@@ -138,7 +138,7 @@ export default function TransactionsScreen() {
         <Text style={styles.movementType}>
           {item.transfer_direction
             ? 'تحويل داخلي'
-            : item.movement_type === 'incoming' ? 'أرسلت له (صادر)' : 'استلمت منه (وارد)'}
+            : item.movement_type === 'incoming' ? 'تسليم (صادر)' : 'استلام (وارد)'}
         </Text>
         {item.transfer_direction && (
           <Text style={styles.movementNotes} numberOfLines={1}>

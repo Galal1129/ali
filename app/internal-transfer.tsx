@@ -225,12 +225,12 @@ export default function InternalTransferScreen() {
     } else if (formData.fromType === 'shop') {
       return {
         to: `${formData.toCustomerName}: سيزيد رصيده بمقدار +${amount} ${currencySymbol}`,
-        note: 'دفع من المحل للعميل',
+        note: 'تسليم للعميل',
       };
     } else if (formData.toType === 'shop') {
       return {
         from: `${formData.fromCustomerName}: سينقص رصيده بمقدار -${amount} ${currencySymbol}`,
-        note: 'قبض من العميل للمحل',
+        note: 'استلام من العميل',
       };
     }
 

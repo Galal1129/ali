@@ -227,7 +227,7 @@ export default function EditMovementScreen() {
                     { color: formData.movement_type === 'outgoing' ? '#FFFFFF' : '#6B7280' },
                   ]}
                 >
-                  دفع
+                  استلام
                 </Text>
                 <Text
                   style={[
@@ -235,7 +235,7 @@ export default function EditMovementScreen() {
                     { color: formData.movement_type === 'outgoing' ? '#DBEAFE' : '#9CA3AF' },
                   ]}
                 >
-                  العميل دفع لك
+                  استلام من العميل
                 </Text>
               </TouchableOpacity>
 
@@ -257,7 +257,7 @@ export default function EditMovementScreen() {
                     { color: formData.movement_type === 'incoming' ? '#FFFFFF' : '#6B7280' },
                   ]}
                 >
-                  إرسال
+                  تسليم
                 </Text>
                 <Text
                   style={[
@@ -265,7 +265,7 @@ export default function EditMovementScreen() {
                     { color: formData.movement_type === 'incoming' ? '#FFEDD5' : '#9CA3AF' },
                   ]}
                 >
-                  أنت أرسلت له
+                  تسليم للعميل
                 </Text>
               </TouchableOpacity>
             </View>

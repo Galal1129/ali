@@ -294,7 +294,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          قبض
+                          استلام من العميل
                         </Text>
                       </TouchableOpacity>
 
@@ -336,7 +336,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          صرف
+                          تسليم للعميل
                         </Text>
                       </TouchableOpacity>
                     </View>

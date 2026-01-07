@@ -141,45 +141,6 @@ function calculateBalanceByCurrency(
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
 }
 
-function getCombinedAmount(
-  movement: AccountMovement,
-  allMovements: AccountMovement[],
-): number {
-  const baseAmount = Number(movement.amount);
-
-  const relatedCommissions = allMovements.filter(
-    (m) =>
-      (m as any).is_commission_movement === true &&
-      (m as any).related_commission_movement_id === movement.id &&
-      m.customer_id === movement.customer_id &&
-      m.movement_type === movement.movement_type &&
-      m.currency === movement.currency
-  );
-
-  const commissionTotal = relatedCommissions.reduce(
-    (sum, m) => sum + Number(m.amount),
-    0,
-  );
-
-  return baseAmount + commissionTotal;
-}
-
-function getRelatedCommission(
-  movement: AccountMovement,
-  allMovements: AccountMovement[],
-): number {
-  const relatedCommissions = allMovements.filter(
-    (m) =>
-      (m as any).is_commission_movement === true &&
-      (m as any).related_commission_movement_id === movement.id &&
-      m.customer_id === movement.customer_id &&
-      m.movement_type === movement.movement_type &&
-      m.currency === movement.currency
-  );
-
-  return relatedCommissions.reduce((sum, m) => sum + Number(m.amount), 0);
-}
-
 export default function CustomerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -203,6 +164,7 @@ export default function CustomerDetailsScreen() {
           .from('account_movements')
           .select('*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id')
           .eq('customer_id', id)
+          .or('is_commission_movement.is.null,is_commission_movement.eq.false')
           .order('created_at', { ascending: false }),
       ]);
 
@@ -1001,11 +963,11 @@ export default function CustomerDetailsScreen() {
                             },
                           ]}
                         >
-                          {Math.round(getCombinedAmount(movement, movements))}
+                          {Math.round(Number(movement.amount))}
                         </Text>
-                        {getRelatedCommission(movement, movements) > 0 && (
+                        {movement.commission && Number(movement.commission) > 0 && (
                           <Text style={styles.commissionBadge}>
-                            شامل {Math.round(getRelatedCommission(movement, movements))} عمولة
+                            شامل {Math.round(Number(movement.commission))} عمولة
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>

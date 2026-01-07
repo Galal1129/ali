@@ -72,6 +72,7 @@ export class StatisticsService {
       supabase
         .from('account_movements')
         .select('amount, commission, commission_currency')
+        .or('is_commission_movement.is.null,is_commission_movement.eq.false')
         .gte('created_at', start)
         .lte('created_at', end),
     ]);
@@ -127,6 +128,7 @@ export class StatisticsService {
     const { data, error } = await supabase
       .from('account_movements')
       .select('commission, commission_currency')
+      .or('is_commission_movement.is.null,is_commission_movement.eq.false')
       .not('commission', 'is', null)
       .gt('commission', 0);
 
@@ -236,7 +238,8 @@ export class StatisticsService {
     const { data: movements, error } = await supabase
       .from('account_movements')
       .select('amount, currency, movement_type, is_internal_transfer')
-      .or('is_internal_transfer.is.null,is_internal_transfer.eq.false');
+      .or('is_internal_transfer.is.null,is_internal_transfer.eq.false')
+      .or('is_commission_movement.is.null,is_commission_movement.eq.false');
 
     if (error) {
       console.error('Error fetching cash flow:', error);
@@ -300,7 +303,10 @@ export class StatisticsService {
       ] = await Promise.all([
         supabase.from('customers').select('id', { count: 'exact' }),
         supabase.from('transactions').select('amount_sent'),
-        supabase.from('account_movements').select('amount'),
+        supabase
+          .from('account_movements')
+          .select('amount')
+          .or('is_commission_movement.is.null,is_commission_movement.eq.false'),
         supabase.from('total_balances_by_currency').select('*'),
         this.fetchPeriodStats(today, today),
         this.fetchPeriodStats(yesterday, yesterday),

@@ -29,18 +29,19 @@ export function generateAccountStatementHTML(
   const filteredMovements = allMovements
     .filter((m) => {
       if (isProfitLossAccount) {
+        // حساب الأرباح والخسائر: عرض حركات العمولة فقط
         return (m as any).is_commission_movement === true;
       } else {
-        return !(m as any).is_commission_movement;
+        // الحسابات العادية: عرض جميع الحركات بما فيها حركات العمولة
+        return true;
       }
     })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const getAmount = (movement: AccountMovement): number => {
-    if (isProfitLossAccount) {
-      return Number(movement.amount);
-    }
-    return getDisplayAmount(movement);
+    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات في PDF
+    // حيث أن حركات العمولة تظهر الآن كحركات منفصلة
+    return Number(movement.amount);
   };
 
   // Group movements by currency

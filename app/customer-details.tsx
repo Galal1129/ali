@@ -126,7 +126,9 @@ function calculateBalanceByCurrency(
       };
     }
 
-    const amount = getDisplayAmount(movement);
+    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات
+    // getDisplayAmount يُستخدم فقط للعرض في القائمة، وليس للحسابات
+    const amount = Number(movement.amount);
 
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
@@ -624,12 +626,8 @@ export default function CustomerDetailsScreen() {
 
   const filteredMovements = movements
     .filter((movement) => {
-      // إذا كان حساب الأرباح والخسائر، نعرض جميع الحركات بما فيها حركات العمولة
-      if (customer?.is_profit_loss_account === true) {
-        return true;
-      }
-      // للحسابات العادية، نخفي حركات العمولة
-      return (movement as any).is_commission_movement !== true;
+      // نعرض جميع الحركات بما فيها حركات العمولة للشفافية الكاملة
+      return true;
     })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
@@ -975,7 +973,11 @@ export default function CustomerDetailsScreen() {
                         </Text>
                         {movement.commission && Number(movement.commission) > 0 && (
                           <Text style={styles.commissionBadge}>
-                            شامل {Math.round(Number(movement.commission))} عمولة
+                            {(movement as any).commission_recipient_id === (movement as any).from_customer_id
+                              ? `بعد خصم ${Math.round(Number(movement.commission))} عمولة`
+                              : (movement as any).commission_recipient_id === (movement as any).to_customer_id
+                                ? `شامل ${Math.round(Number(movement.commission))} عمولة إضافية`
+                                : `عمولة ${Math.round(Number(movement.commission))}`}
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>

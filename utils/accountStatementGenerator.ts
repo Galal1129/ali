@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AccountMovement, CURRENCIES } from '@/types/database';
 import { generatePDFHeaderHTML, generatePDFHeaderStyles } from './pdfHeaderGenerator';
+import { getDisplayAmount } from './movementHelper';
 
 interface MovementWithBalance extends AccountMovement {
   runningBalance: number;
@@ -35,27 +36,11 @@ export function generateAccountStatementHTML(
     })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  // Helper function to get combined amount including related commission
-  const getCombinedAmount = (movement: AccountMovement): number => {
-    const baseAmount = Number(movement.amount);
-
+  const getAmount = (movement: AccountMovement): number => {
     if (isProfitLossAccount) {
-      return baseAmount;
+      return Number(movement.amount);
     }
-
-    const relatedCommissions = allMovements.filter(
-      (m) =>
-        (m as any).is_commission_movement === true &&
-        (m as any).related_commission_movement_id === movement.id &&
-        m.customer_id === movement.customer_id &&
-        m.movement_type === movement.movement_type &&
-        m.currency === movement.currency
-    );
-    const commissionTotal = relatedCommissions.reduce(
-      (sum, m) => sum + Number(m.amount),
-      0,
-    );
-    return baseAmount + commissionTotal;
+    return getDisplayAmount(movement);
   };
 
   // Group movements by currency
@@ -76,12 +61,12 @@ export function generateAccountStatementHTML(
     let runningBalance = 0;
 
     currMovements.forEach((movement) => {
-      const combinedAmount = getCombinedAmount(movement);
+      const amount = getAmount(movement);
 
       if (movement.movement_type === 'incoming') {
-        runningBalance += combinedAmount;
+        runningBalance += amount;
       } else {
-        runningBalance -= combinedAmount;
+        runningBalance -= amount;
       }
 
       movementsWithBalance.push({
@@ -92,11 +77,11 @@ export function generateAccountStatementHTML(
 
     const totalOutgoing = currMovements
       .filter(m => m.movement_type === 'outgoing')
-      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
+      .reduce((sum, m) => sum + getAmount(m), 0);
 
     const totalIncoming = currMovements
       .filter(m => m.movement_type === 'incoming')
-      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
+      .reduce((sum, m) => sum + getAmount(m), 0);
 
     const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
@@ -110,12 +95,12 @@ export function generateAccountStatementHTML(
           : '-';
 
         const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
-        const combinedAmount = getCombinedAmount(movement);
+        const amount = getAmount(movement);
         const incomingAmount = movement.movement_type === 'incoming'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
+          ? Math.round(amount).toLocaleString('en-US')
           : '-';
         const outgoingAmount = movement.movement_type === 'outgoing'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
+          ? Math.round(amount).toLocaleString('en-US')
           : '-';
 
         return `

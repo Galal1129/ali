@@ -387,7 +387,7 @@ export default function ShopSettingsScreen() {
             >
               <View style={styles.logoOptionImageContainer}>
                 <Image
-                  source={require('@/assets/images/icon.png')}
+                  source={require('@/assets/images/logo_1.png')}
                   style={styles.logoOptionImage}
                 />
               </View>

@@ -164,7 +164,6 @@ export default function CustomerDetailsScreen() {
           .from('account_movements')
           .select('*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id')
           .eq('customer_id', id)
-          .or('is_commission_movement.is.null,is_commission_movement.eq.false')
           .order('created_at', { ascending: false }),
       ]);
 
@@ -622,7 +621,14 @@ export default function CustomerDetailsScreen() {
   const balance = customer?.balance || 0;
 
   const filteredMovements = movements
-    .filter((movement) => (movement as any).is_commission_movement !== true)
+    .filter((movement) => {
+      // إذا كان حساب الأرباح والخسائر، نعرض جميع الحركات بما فيها حركات العمولة
+      if (customer?.is_profit_loss_account === true) {
+        return true;
+      }
+      // للحسابات العادية، نخفي حركات العمولة
+      return (movement as any).is_commission_movement !== true;
+    })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
 

@@ -274,7 +274,7 @@ export default function InternalTransferScreen() {
 
         <View style={styles.form}>
           <PartySelector
-            label="من (المُحوِّل)"
+            label="من (المرسل)"
             selectedType={formData.fromType}
             selectedCustomerId={formData.fromCustomerId}
             selectedCustomerName={formData.fromCustomerName}
@@ -300,7 +300,7 @@ export default function InternalTransferScreen() {
           </View>
 
           <PartySelector
-            label="إلى (المُحوَّل إليه)"
+            label="إلى (المستلم)"
             selectedType={formData.toType}
             selectedCustomerId={formData.toCustomerId}
             selectedCustomerName={formData.toCustomerName}
@@ -427,7 +427,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'from' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.fromCustomerName || 'المُحوِّل'}
+                      {formData.fromCustomerName || 'المرسل'}
                     </Text>
                     <Text
                       style={[
@@ -455,7 +455,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'to' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.toCustomerName || 'المُحوَّل إليه'}
+                      {formData.toCustomerName || 'المستلم'}
                     </Text>
                     <Text
                       style={[

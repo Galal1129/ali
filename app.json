@@ -14,7 +14,6 @@
     },
     "android": {
       "package": "com.altaraf.moneytransfer",
-      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#2E3A8E"
@@ -43,9 +42,9 @@
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4",
       "router": {},
       "eas": {
-        "projectId": "bbd1bb62-5792-48a0-aa21-a1ce69ad5936"
+        "projectId": "fd8c7b58-d09d-4b75-9024-59da6b20cf7f"
       }
     },
-    "owner": "arti_codeio"
+    "owner": "articodes-organization"
   }
 }

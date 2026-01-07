@@ -499,8 +499,8 @@ export default function CustomerDetailsScreen() {
           });
           const type =
             movement.movement_type === 'outgoing'
-              ? 'تسليم للعميل'
-              : 'استلام من العميل';
+              ? 'استلام من العميل'
+              : 'تسليم للعميل';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(getDisplayAmount(movement))} ${symbol}\n`;
@@ -534,7 +534,7 @@ export default function CustomerDetailsScreen() {
 
   const handleMovementPress = (movement: AccountMovement) => {
     const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -576,7 +576,7 @@ export default function CustomerDetailsScreen() {
 
   const handleDeleteMovement = (movement: AccountMovement) => {
     const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -638,7 +638,7 @@ export default function CustomerDetailsScreen() {
       const amount = movement.amount.toString();
       const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
       const movementTypeText =
-        movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+        movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
       const senderName = (movement.sender_name || '').toLowerCase();
       const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -781,7 +781,7 @@ export default function CustomerDetailsScreen() {
                         {getCurrencySymbol(total.currency)}
                       </Text>
                       <Text style={styles.currencyDetailsLabelGreen}>
-                        وارد:
+                        صادر:
                       </Text>
                     </View>
                     <View style={styles.currencyDetailsRow}>
@@ -789,7 +789,7 @@ export default function CustomerDetailsScreen() {
                         {total.outgoing.toFixed(2)}{' '}
                         {getCurrencySymbol(total.currency)}
                       </Text>
-                      <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
+                      <Text style={styles.currencyDetailsLabelRed}>وارد:</Text>
                     </View>
                   </View>
                 ))}
@@ -904,8 +904,8 @@ export default function CustomerDetailsScreen() {
                           {(movement as any).is_internal_transfer
                             ? 'تحويل داخلي'
                             : movement.movement_type === 'outgoing'
-                              ? 'تسليم'
-                              : 'استلام'}
+                              ? 'استلام'
+                              : 'تسليم'}
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>

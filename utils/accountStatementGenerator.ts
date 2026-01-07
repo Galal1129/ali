@@ -20,17 +20,29 @@ function getCurrencyName(code: string): string {
 export function generateAccountStatementHTML(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
   const allMovements = [...movements];
 
   const filteredMovements = allMovements
-    .filter((m) => !(m as any).is_commission_movement)
+    .filter((m) => {
+      if (isProfitLossAccount) {
+        return (m as any).is_commission_movement === true;
+      } else {
+        return !(m as any).is_commission_movement;
+      }
+    })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   // Helper function to get combined amount including related commission
   const getCombinedAmount = (movement: AccountMovement): number => {
     const baseAmount = Number(movement.amount);
+
+    if (isProfitLossAccount) {
+      return baseAmount;
+    }
+
     const relatedCommissions = allMovements.filter(
       (m) =>
         (m as any).is_commission_movement === true &&
@@ -127,10 +139,12 @@ export function generateAccountStatementHTML(
     const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';
     const totalOutgoingStr = totalOutgoing > 0 ? Math.round(totalOutgoing).toLocaleString('en-US') : '-';
 
+    const accountTypeLabel = isProfitLossAccount ? 'حساب الأرباح والخسائر' : `كشف حساب ${customerName}`;
+
     return `
     <div class="currency-section">
       <div class="section-title">
-        <h2>كشف حساب ${customerName} - ${currencyName}</h2>
+        <h2>${accountTypeLabel} - ${currencyName}</h2>
       </div>
       <table>
         <thead>
@@ -160,8 +174,12 @@ export function generateAccountStatementHTML(
     `;
   }).join('');
 
+  const headerTitle = isProfitLossAccount
+    ? 'كشف حساب الأرباح والخسائر'
+    : `كشف حساب العميل: ${customerName}`;
+
   const headerHTML = generatePDFHeaderHTML({
-    title: `كشف حساب العميل: ${customerName}`,
+    title: headerTitle,
     logoDataUrl,
     primaryColor: '#382de3',
     darkColor: '#2821b8',
@@ -351,7 +369,8 @@ export function generateAccountStatementHTML(
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
-  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl, isProfitLossAccount);
 }

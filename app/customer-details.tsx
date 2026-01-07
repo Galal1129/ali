@@ -288,6 +288,7 @@ export default function CustomerDetailsScreen() {
         customer.name,
         movements,
         logoDataUrl,
+        customer.is_profit_loss_account || false,
       );
 
       console.log('[CustomerDetails] Creating PDF file...');

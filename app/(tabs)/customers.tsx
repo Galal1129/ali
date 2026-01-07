@@ -266,7 +266,7 @@ export default function CustomersScreen() {
 
         <View style={styles.balanceContainer}>
           {!hasBalances ? (
-            <Text style={[styles.balanceText, { color: '#9CA3AF' }]}>ملخص</Text>
+            <Text style={[styles.balanceText, { color: '#9CA3AF' }]}>متساوي</Text>
           ) : (
             <>
               {displayBalances.map((balance, idx) => {

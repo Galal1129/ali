@@ -4,7 +4,6 @@
     "slug": "altarf-money-transfer",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
@@ -14,20 +13,14 @@
     },
     "android": {
       "package": "com.altaraf.moneytransfer",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#2E3A8E"
-      },
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ],
-      "userInterfaceStyle": "automatic"
+      ]
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single"
     },
     "plugins": [
       "expo-router",
@@ -42,9 +35,9 @@
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4",
       "router": {},
       "eas": {
-        "projectId": "fd8c7b58-d09d-4b75-9024-59da6b20cf7f"
+        "projectId": "bbd1bb62-5792-48a0-aa21-a1ce69ad5936"
       }
     },
-    "owner": "articodes-organization"
+    "owner": "arti_codeio"
   }
 }

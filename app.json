@@ -7,6 +7,7 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "icon": "./assets/images/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.altaraf.moneytransfer"
@@ -16,7 +17,11 @@
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#3b41c5"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -40,16 +45,4 @@
     },
     "owner": "arti_codetr"
   }
-  {
-  "expo": {
-    "icon": "./assets/images/icon.png",
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#3b41c5"
-      }
-    }
-  }
-}
-
 }

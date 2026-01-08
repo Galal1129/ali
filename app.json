@@ -40,4 +40,16 @@
     },
     "owner": "arti_codetr"
   }
+  {
+  "expo": {
+    "icon": "./assets/images/icon.png",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#3b41c5"
+      }
+    }
+  }
+}
+
 }

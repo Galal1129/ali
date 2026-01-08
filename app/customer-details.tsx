@@ -144,6 +144,28 @@ function calculateBalanceByCurrency(
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
 }
 
+function getMovementTypeText(
+  movementType: 'incoming' | 'outgoing',
+  isProfitLossAccount: boolean
+): string {
+  if (isProfitLossAccount) {
+    return movementType === 'incoming' ? 'استلام' : 'تسليم';
+  } else {
+    return movementType === 'outgoing' ? 'استلام' : 'تسليم';
+  }
+}
+
+function getMovementTypeTextWithContext(
+  movementType: 'incoming' | 'outgoing',
+  isProfitLossAccount: boolean
+): string {
+  if (isProfitLossAccount) {
+    return movementType === 'incoming' ? 'استلام' : 'تسليم';
+  } else {
+    return movementType === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+  }
+}
+
 export default function CustomerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -497,10 +519,10 @@ export default function CustomerDetailsScreen() {
           const date = format(new Date(movement.created_at), 'dd/MM/yyyy', {
             locale: ar,
           });
-          const type =
-            movement.movement_type === 'outgoing'
-              ? 'استلام من العميل'
-              : 'تسليم للعميل';
+          const type = getMovementTypeTextWithContext(
+            movement.movement_type,
+            customer?.is_profit_loss_account || false
+          );
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(getDisplayAmount(movement))} ${symbol}\n`;
@@ -533,8 +555,10 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleMovementPress = (movement: AccountMovement) => {
-    const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const movementTypeText = getMovementTypeText(
+      movement.movement_type,
+      customer?.is_profit_loss_account || false
+    );
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -575,8 +599,10 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleDeleteMovement = (movement: AccountMovement) => {
-    const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const movementTypeText = getMovementTypeText(
+      movement.movement_type,
+      customer?.is_profit_loss_account || false
+    );
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -637,8 +663,10 @@ export default function CustomerDetailsScreen() {
       const notes = (movement.notes || '').toLowerCase();
       const amount = movement.amount.toString();
       const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-      const movementTypeText =
-        movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+      const movementTypeText = getMovementTypeText(
+        movement.movement_type,
+        customer?.is_profit_loss_account || false
+      );
       const senderName = (movement.sender_name || '').toLowerCase();
       const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -903,9 +931,10 @@ export default function CustomerDetailsScreen() {
                         >
                           {(movement as any).is_internal_transfer
                             ? 'تحويل داخلي'
-                            : movement.movement_type === 'outgoing'
-                              ? 'استلام'
-                              : 'تسليم'}
+                            : getMovementTypeText(
+                                movement.movement_type,
+                                customer?.is_profit_loss_account || false
+                              )}
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>
@@ -983,9 +1012,13 @@ export default function CustomerDetailsScreen() {
                         <Text style={styles.movementLabel}>
                           {(movement as any).is_internal_transfer
                             ? 'تحويل'
-                            : movement.movement_type === 'outgoing'
-                              ? 'من العميل'
-                              : 'للعميل'}
+                            : customer?.is_profit_loss_account
+                              ? movement.movement_type === 'incoming'
+                                ? 'من العميل'
+                                : 'للعميل'
+                              : movement.movement_type === 'outgoing'
+                                ? 'من العميل'
+                                : 'للعميل'}
                         </Text>
                       </View>
                     </TouchableOpacity>

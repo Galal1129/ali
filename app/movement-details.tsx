@@ -35,6 +35,7 @@ export default function MovementDetailsScreen() {
   const [movement, setMovement] = useState<AccountMovement | null>(null);
   const [customerName, setCustomerName] = useState<string>('');
   const [customerAccountNumber, setCustomerAccountNumber] = useState<string>('');
+  const [isProfitLossAccount, setIsProfitLossAccount] = useState<boolean>(false);
   const [relatedCommissionMovements, setRelatedCommissionMovements] = useState<AccountMovement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,7 +52,7 @@ export default function MovementDetailsScreen() {
       const [movementResult, commissionsResult] = await Promise.all([
         supabase
           .from('account_movements')
-          .select('*, customers!customer_id(name, account_number)')
+          .select('*, customers!customer_id(name, account_number, is_profit_loss_account)')
           .eq('id', movementId)
           .maybeSingle(),
         supabase
@@ -73,6 +74,7 @@ export default function MovementDetailsScreen() {
       if (movementResult.data.customers) {
         setCustomerName((movementResult.data.customers as any).name);
         setCustomerAccountNumber((movementResult.data.customers as any).account_number);
+        setIsProfitLossAccount((movementResult.data.customers as any).is_profit_loss_account || false);
       }
 
       if (commissionsResult.data) {
@@ -96,7 +98,7 @@ export default function MovementDetailsScreen() {
   const handleDelete = () => {
     if (!movement) return;
 
-    const movementTypeText = movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
+    const movementTypeText = getMovementTypeText(movement.movement_type, isProfitLossAccount);
     const currencySymbol = getCurrencySymbol(movement.currency);
 
     Alert.alert(
@@ -170,6 +172,28 @@ export default function MovementDetailsScreen() {
     return currency?.symbol || code;
   };
 
+  const getMovementTypeText = (
+    movementType: 'incoming' | 'outgoing',
+    isProfitLoss: boolean
+  ): string => {
+    if (isProfitLoss) {
+      return movementType === 'incoming' ? 'استلام' : 'تسليم';
+    } else {
+      return movementType === 'outgoing' ? 'استلام' : 'تسليم';
+    }
+  };
+
+  const getMovementTypeTextWithContext = (
+    movementType: 'incoming' | 'outgoing',
+    isProfitLoss: boolean
+  ): string => {
+    if (isProfitLoss) {
+      return movementType === 'incoming' ? 'استلام' : 'تسليم';
+    } else {
+      return movementType === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -195,7 +219,7 @@ export default function MovementDetailsScreen() {
   const isTransfer = Boolean(movement.transfer_direction);
   const movementTypeText = isTransfer
     ? 'تحويل داخلي'
-    : movement.movement_type === 'incoming' ? 'تسليم' : 'استلام';
+    : getMovementTypeText(movement.movement_type, isProfitLossAccount);
   const movementTypeColor = isTransfer
     ? '#F59E0B'
     : movement.movement_type === 'incoming' ? '#F97316' : '#3B82F6';
@@ -237,9 +261,7 @@ export default function MovementDetailsScreen() {
                 : movement.transfer_direction === 'shop_to_customer'
                 ? 'تحويل من المحل للعميل'
                 : 'تحويل من العميل للمحل'
-              : movement.movement_type === 'incoming'
-              ? 'تسليم للعميل'
-              : 'استلام من العميل'}
+              : getMovementTypeTextWithContext(movement.movement_type, isProfitLossAccount)}
           </Text>
         </View>
 

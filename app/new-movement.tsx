@@ -160,8 +160,8 @@ export default function NewMovementScreen() {
         : formData.to_customer_id;
 
       const movementType = formData.operation_type === 'customer_to_shop'
-        ? 'incoming'
-        : 'outgoing';
+        ? 'outgoing'
+        : 'incoming';
 
       let commissionRecipientId = null;
       if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient === 'customer') {

@@ -71,7 +71,7 @@ export default function TransactionsScreen() {
     const amount = movement.amount.toString();
     const customerName = movement.customer_name.toLowerCase();
     const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
     const senderName = (movement.sender_name || '').toLowerCase();
     const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -138,7 +138,7 @@ export default function TransactionsScreen() {
         <Text style={styles.movementType}>
           {item.transfer_direction
             ? 'تحويل داخلي'
-            : item.movement_type === 'incoming' ? 'استلام (وارد)' : 'تسليم (صادر)'}
+            : item.movement_type === 'incoming' ? 'تسليم (صادر)' : 'استلام (وارد)'}
         </Text>
         {item.transfer_direction && (
           <Text style={styles.movementNotes} numberOfLines={1}>

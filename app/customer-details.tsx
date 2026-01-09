@@ -660,7 +660,12 @@ export default function CustomerDetailsScreen() {
   const balance = customer?.balance || 0;
 
   const filteredMovements = movements
-    .filter((movement) => (movement as any).is_commission_movement !== true)
+    .filter((movement) => {
+      if (customer?.is_profit_loss_account) {
+        return (movement as any).is_commission_movement === true;
+      }
+      return (movement as any).is_commission_movement !== true;
+    })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
 

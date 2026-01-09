@@ -70,10 +70,9 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
   const currencyName = getCurrencyName(currency);
   const commissionCurrencyName = getCurrencyName(commission_currency);
 
-  // في النظام الجديد، المبلغ محفوظ بالفعل بالمقدار الصحيح (بعد حساب العمولة)
-  const displayAmount = Number(amount);
+  const netAmount = Number(amount) - Number(commission || 0);
 
-  const amountInWords = numberToArabicTextWithCurrency(displayAmount, currency as Currency);
+  const amountInWords = numberToArabicTextWithCurrency(netAmount, currency as Currency);
 
   const actionTitle = isTransfer
     ? receiptData.transfer_direction === 'customer_to_customer'
@@ -879,13 +878,25 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
           <div class="four-cards-row">
             <div class="info-card">
-              <div class="card-label">المبلغ</div>
-              <div class="card-value">${displayAmount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
+              <div class="card-label">المبلغ الإجمالي</div>
+              <div class="card-value">${amount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
             </div>
 
             <div class="info-card">
-              <div class="card-label">العملة</div>
+              <div class="card-label">عملة الحساب</div>
               <div class="card-value">${currencyName}</div>
+            </div>
+
+            <div class="info-card">
+              <div class="card-label">العمولة</div>
+              <div class="card-value">
+                ${commission || 0} <span class="card-currency">${commission > 0 ? commissionCurrencyName : ''}</span>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <div class="card-label">الصافي</div>
+              <div class="card-value">${netAmount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
             </div>
           </div>
 
@@ -916,6 +927,12 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
                 <span class="detail-label">المستلم:</span>
                 <span class="detail-value">${beneficiary_name || 'غير محدد'}</span>
               </div>
+              ${commission && commission > 0 ? `
+              <div class="detail-row">
+                <span class="detail-label">مستلم العمولة:</span>
+                <span class="detail-value">${receiptData.commission_recipient_name || 'الأرباح والخسائر'}</span>
+              </div>
+              ` : ''}
               <div class="detail-row">
                 <span class="detail-label">ملاحظات:</span>
                 <span class="detail-value">${notes || 'لا توجد ملاحظات'}</span>

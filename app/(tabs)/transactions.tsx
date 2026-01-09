@@ -71,7 +71,7 @@ export default function TransactionsScreen() {
     const amount = movement.amount.toString();
     const customerName = movement.customer_name.toLowerCase();
     const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-    const movementTypeText = movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+    const movementTypeText = movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const senderName = (movement.sender_name || '').toLowerCase();
     const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -103,16 +103,16 @@ export default function TransactionsScreen() {
             {
               backgroundColor: item.transfer_direction
                 ? '#FEF3C7'
-                : item.movement_type === 'incoming' ? '#EF444415' : '#10B98115',
+                : item.movement_type === 'incoming' ? '#10B98115' : '#EF444415',
             },
           ]}
         >
           {item.transfer_direction ? (
             <ArrowLeftRight size={24} color="#F59E0B" />
           ) : item.movement_type === 'incoming' ? (
-            <ArrowUpCircle size={24} color="#EF4444" />
-          ) : (
             <ArrowDownCircle size={24} color="#10B981" />
+          ) : (
+            <ArrowUpCircle size={24} color="#EF4444" />
           )}
         </View>
       </View>
@@ -125,20 +125,20 @@ export default function TransactionsScreen() {
               {
                 color: item.transfer_direction
                   ? '#F59E0B'
-                  : item.movement_type === 'incoming' ? '#EF4444' : '#10B981',
+                  : item.movement_type === 'incoming' ? '#10B981' : '#EF4444',
               },
             ]}
           >
             {item.transfer_direction
               ? ''
-              : item.movement_type === 'incoming' ? '-' : '+'}
+              : item.movement_type === 'incoming' ? '+' : '-'}
             {Number(item.amount).toFixed(2)} {item.currency}
           </Text>
         </View>
         <Text style={styles.movementType}>
           {item.transfer_direction
             ? 'تحويل داخلي'
-            : item.movement_type === 'incoming' ? 'تسليم (صادر)' : 'استلام (وارد)'}
+            : item.movement_type === 'incoming' ? 'استلمت منه (وارد)' : 'أرسلت له (صادر)'}
         </Text>
         {item.transfer_direction && (
           <Text style={styles.movementNotes} numberOfLines={1}>

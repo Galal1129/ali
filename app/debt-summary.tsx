@@ -332,13 +332,13 @@ export default function DebtSummaryScreen() {
             <View key={`footer-${balance.currency}`} style={styles.currencySection}>
               <Text style={styles.footerCurrency}>{getCurrencyName(balance.currency)}:</Text>
               <View style={styles.currencyFooterRow}>
-                <Text style={styles.totalIncomingLabel}>صادر:</Text>
+                <Text style={styles.totalIncomingLabel}>وارد:</Text>
                 <Text style={styles.totalIncoming}>
                   {Number(balance.total_incoming).toFixed(2)} {getCurrencySymbol(balance.currency)}
                 </Text>
               </View>
               <View style={styles.currencyFooterRow}>
-                <Text style={styles.totalOutgoingLabel}>وارد:</Text>
+                <Text style={styles.totalOutgoingLabel}>صادر:</Text>
                 <Text style={styles.totalOutgoing}>
                   {Number(balance.total_outgoing).toFixed(2)} {getCurrencySymbol(balance.currency)}
                 </Text>
@@ -783,27 +783,27 @@ const styles = StyleSheet.create({
   },
   totalIncomingLabel: {
     fontSize: 11,
-    color: '#EF4444',
+    color: '#10B981',
     fontWeight: '600',
     textAlign: 'right',
     minWidth: 50,
   },
   totalIncoming: {
     fontSize: 11,
-    color: '#EF4444',
+    color: '#10B981',
     textAlign: 'left',
     flex: 1,
   },
   totalOutgoingLabel: {
     fontSize: 11,
-    color: '#10B981',
+    color: '#EF4444',
     fontWeight: '600',
     textAlign: 'right',
     minWidth: 50,
   },
   totalOutgoing: {
     fontSize: 11,
-    color: '#10B981',
+    color: '#EF4444',
     textAlign: 'left',
     flex: 1,
   },

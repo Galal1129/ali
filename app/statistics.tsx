@@ -20,6 +20,8 @@ import {
   Percent,
   Activity,
   Wallet,
+  Scale,
+  CheckCircle,
 } from 'lucide-react-native';
 import { CURRENCIES } from '@/types/database';
 import { StatisticsService, StatisticsData } from '@/services/statisticsService';
@@ -258,6 +260,148 @@ export default function StatisticsScreen() {
             })
           )}
         </View>
+
+        {stats.accountingBalance.length > 0 && (
+          <View style={styles.accountingBalanceSection}>
+            <View style={styles.sectionHeader}>
+              <Scale size={24} color="#8B5CF6" />
+              <Text style={styles.sectionTitle}>المطابقة المحاسبية</Text>
+            </View>
+
+            {stats.accountingBalanceSummary && (
+              <View
+                style={[
+                  styles.summaryBanner,
+                  stats.accountingBalanceSummary.unbalanced_currencies > 0
+                    ? styles.summaryBannerWarning
+                    : styles.summaryBannerSuccess,
+                ]}
+              >
+                <View style={styles.summaryBannerContent}>
+                  {stats.accountingBalanceSummary.unbalanced_currencies === 0 ? (
+                    <CheckCircle size={24} color="#10B981" />
+                  ) : (
+                    <AlertCircle size={24} color="#F59E0B" />
+                  )}
+                  <View style={styles.summaryBannerText}>
+                    <Text style={styles.summaryBannerTitle}>
+                      {stats.accountingBalanceSummary.overall_status}
+                    </Text>
+                    <Text style={styles.summaryBannerSubtitle}>
+                      {stats.accountingBalanceSummary.balanced_currencies} من{' '}
+                      {stats.accountingBalanceSummary.total_currencies} عملة متوازنة
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {stats.accountingBalance.map((balance, index) => {
+              const currencyInfo = getCurrencyInfo(balance.currency);
+              const isBalanced = balance.is_balanced;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.accountingBalanceCard,
+                    !isBalanced && styles.accountingBalanceCardUnbalanced,
+                  ]}
+                >
+                  <View style={styles.accountingBalanceHeader}>
+                    <View style={styles.accountingBalanceCurrency}>
+                      <Text style={styles.accountingBalanceCurrencySymbol}>
+                        {currencyInfo.symbol}
+                      </Text>
+                      <Text style={styles.accountingBalanceCurrencyName}>
+                        {currencyInfo.name}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.accountingBalanceStatusBadge,
+                        isBalanced
+                          ? styles.accountingBalanceStatusBadgeBalanced
+                          : styles.accountingBalanceStatusBadgeUnbalanced,
+                      ]}
+                    >
+                      {isBalanced ? (
+                        <CheckCircle size={16} color="#10B981" />
+                      ) : (
+                        <AlertCircle size={16} color="#F59E0B" />
+                      )}
+                      <Text
+                        style={[
+                          styles.accountingBalanceStatusText,
+                          isBalanced
+                            ? styles.accountingBalanceStatusTextBalanced
+                            : styles.accountingBalanceStatusTextUnbalanced,
+                        ]}
+                      >
+                        {isBalanced ? 'متوازن' : 'غير متوازن'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.accountingBalanceDetails}>
+                    <View style={styles.accountingBalanceRow}>
+                      <View style={styles.accountingBalanceItem}>
+                        <View style={styles.accountingBalanceItemHeader}>
+                          <TrendingDown size={16} color="#EF4444" />
+                          <Text style={styles.accountingBalanceItemLabel}>المدين (خروج)</Text>
+                        </View>
+                        <Text style={[styles.accountingBalanceItemValue, { color: '#EF4444' }]}>
+                          {balance.total_debits.toFixed(2)}
+                        </Text>
+                        <Text style={styles.accountingBalanceItemCount}>
+                          {balance.debit_count} حركة
+                        </Text>
+                      </View>
+
+                      <View style={styles.accountingBalanceDivider} />
+
+                      <View style={styles.accountingBalanceItem}>
+                        <View style={styles.accountingBalanceItemHeader}>
+                          <TrendingUp size={16} color="#10B981" />
+                          <Text style={styles.accountingBalanceItemLabel}>الدائن (دخول)</Text>
+                        </View>
+                        <Text style={[styles.accountingBalanceItemValue, { color: '#10B981' }]}>
+                          {balance.total_credits.toFixed(2)}
+                        </Text>
+                        <Text style={styles.accountingBalanceItemCount}>
+                          {balance.credit_count} حركة
+                        </Text>
+                      </View>
+                    </View>
+
+                    {!isBalanced && (
+                      <View style={styles.accountingBalanceDifferenceContainer}>
+                        <AlertCircle size={16} color="#F59E0B" />
+                        <Text style={styles.accountingBalanceDifferenceText}>
+                          فرق: {balance.absolute_difference.toFixed(2)} {currencyInfo.symbol}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.accountingBalanceEquation}>
+                      <Text style={styles.accountingBalanceEquationText}>
+                        المعادلة: {balance.total_debits.toFixed(2)} ={' '}
+                        {balance.total_credits.toFixed(2)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+
+            <View style={styles.accountingBalanceExplanation}>
+              <AlertCircle size={16} color="#6B7280" />
+              <Text style={styles.accountingBalanceExplanationText}>
+                في النظام المحاسبي الصحيح، يجب أن يكون مجموع المدين = مجموع الدائن لكل عملة
+              </Text>
+            </View>
+          </View>
+        )}
 
         {(stats.debtStats.owedToUsByCurrency.length > 0 ||
           stats.debtStats.weOweByCurrency.length > 0) && (
@@ -893,5 +1037,188 @@ const styles = StyleSheet.create({
   debtAmount: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  accountingBalanceSection: {
+    padding: 16,
+  },
+  summaryBanner: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryBannerSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  summaryBannerWarning: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  summaryBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  summaryBannerText: {
+    flex: 1,
+  },
+  summaryBannerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+    textAlign: 'right',
+  },
+  summaryBannerSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'right',
+  },
+  accountingBalanceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  accountingBalanceCardUnbalanced: {
+    borderWidth: 2,
+    borderColor: '#FCD34D',
+  },
+  accountingBalanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  accountingBalanceCurrency: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  accountingBalanceCurrencySymbol: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#8B5CF6',
+  },
+  accountingBalanceCurrencyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  accountingBalanceStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  accountingBalanceStatusBadgeBalanced: {
+    backgroundColor: '#D1FAE5',
+  },
+  accountingBalanceStatusBadgeUnbalanced: {
+    backgroundColor: '#FEF3C7',
+  },
+  accountingBalanceStatusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  accountingBalanceStatusTextBalanced: {
+    color: '#059669',
+  },
+  accountingBalanceStatusTextUnbalanced: {
+    color: '#D97706',
+  },
+  accountingBalanceDetails: {
+    gap: 12,
+  },
+  accountingBalanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  accountingBalanceItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  accountingBalanceItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  accountingBalanceItemLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  accountingBalanceItemValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  accountingBalanceItemCount: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  accountingBalanceDivider: {
+    width: 1,
+    height: 80,
+    backgroundColor: '#E5E7EB',
+  },
+  accountingBalanceDifferenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 8,
+  },
+  accountingBalanceDifferenceText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  accountingBalanceEquation: {
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+  },
+  accountingBalanceEquationText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: 'monospace',
+  },
+  accountingBalanceExplanation: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  accountingBalanceExplanationText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 20,
+    textAlign: 'right',
   },
 });

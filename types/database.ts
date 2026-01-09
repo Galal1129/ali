@@ -170,3 +170,21 @@ export interface InternalTransferResponse {
   success: boolean;
   message: string;
 }
+
+export interface AccountingBalanceCheck {
+  currency: string;
+  total_debits: number;
+  total_credits: number;
+  net_balance: number;
+  is_balanced: boolean;
+  absolute_difference: number;
+  debit_count: number;
+  credit_count: number;
+}
+
+export interface AccountingBalanceSummary {
+  total_currencies: number;
+  balanced_currencies: number;
+  unbalanced_currencies: number;
+  overall_status: string;
+}

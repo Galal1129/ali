@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
-import { TotalBalanceByCurrency } from '@/types/database';
+import { TotalBalanceByCurrency, AccountingBalanceCheck, AccountingBalanceSummary } from '@/types/database';
 
 export interface PeriodStats {
   transactions: number;
@@ -56,6 +56,8 @@ export interface StatisticsData {
   topCustomers: TopCustomer[];
   commissionStats: CommissionStats;
   debtStats: DebtStats;
+  accountingBalance: AccountingBalanceCheck[];
+  accountingBalanceSummary: AccountingBalanceSummary | null;
 }
 
 export class StatisticsService {
@@ -285,6 +287,54 @@ export class StatisticsService {
     return Object.values(flowByCurrency);
   }
 
+  static async fetchAccountingBalance(): Promise<AccountingBalanceCheck[]> {
+    const { data, error } = await supabase
+      .from('accounting_balance_check')
+      .select('*')
+      .order('currency');
+
+    if (error) {
+      console.error('Error fetching accounting balance:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    return data.map((item) => ({
+      currency: item.currency,
+      total_debits: Number(item.total_debits),
+      total_credits: Number(item.total_credits),
+      net_balance: Number(item.net_balance),
+      is_balanced: item.is_balanced,
+      absolute_difference: Number(item.absolute_difference),
+      debit_count: item.debit_count,
+      credit_count: item.credit_count,
+    }));
+  }
+
+  static async fetchAccountingBalanceSummary(): Promise<AccountingBalanceSummary | null> {
+    const { data, error } = await supabase.rpc('get_accounting_balance_summary');
+
+    if (error) {
+      console.error('Error fetching accounting balance summary:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    const summary = data[0];
+    return {
+      total_currencies: summary.total_currencies,
+      balanced_currencies: summary.balanced_currencies,
+      unbalanced_currencies: summary.unbalanced_currencies,
+      overall_status: summary.overall_status,
+    };
+  }
+
   static async fetchAllStatistics(): Promise<StatisticsData> {
     try {
       const now = new Date();
@@ -306,6 +356,8 @@ export class StatisticsService {
         commissionStats,
         debtStats,
         cashFlowByCurrency,
+        accountingBalance,
+        accountingBalanceSummary,
       ] = await Promise.all([
         supabase.from('customers').select('id', { count: 'exact' }),
         supabase.from('transactions').select('amount_sent'),
@@ -322,6 +374,8 @@ export class StatisticsService {
         this.fetchCommissionStats(),
         this.fetchDebtStats(),
         this.fetchCashFlowByCurrency(),
+        this.fetchAccountingBalance(),
+        this.fetchAccountingBalanceSummary(),
       ]);
 
       if (customersResult.error) {
@@ -358,6 +412,8 @@ export class StatisticsService {
         topCustomers,
         commissionStats,
         debtStats,
+        accountingBalance,
+        accountingBalanceSummary,
       };
     } catch (error) {
       console.error('Error in fetchAllStatistics:', error);

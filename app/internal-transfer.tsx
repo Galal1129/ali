@@ -55,6 +55,17 @@ export default function InternalTransferScreen() {
     }));
   }, [formData.currency]);
 
+  React.useEffect(() => {
+    if (formData.fromType === 'shop') {
+      setShowCommission(false);
+      setFormData((prev) => ({
+        ...prev,
+        commission: '',
+        commissionRecipient: null,
+      }));
+    }
+  }, [formData.fromType]);
+
   const validateTransfer = (): string | null => {
     if (!formData.fromType) {
       return 'يرجى اختيار الطرف المُحوِّل';
@@ -363,7 +374,16 @@ export default function InternalTransferScreen() {
             </ScrollView>
           </View>
 
-          {!showCommission ? (
+          {formData.fromType === 'shop' && (
+            <View style={styles.infoBox}>
+              <AlertCircle size={16} color="#6B7280" />
+              <Text style={styles.infoText}>
+                العمولة غير متاحة عند التحويل من المحل إلى العميل
+              </Text>
+            </View>
+          )}
+
+          {!showCommission && formData.fromType !== 'shop' ? (
             <TouchableOpacity
               style={styles.addCommissionButton}
               onPress={() => setShowCommission(true)}
@@ -371,7 +391,7 @@ export default function InternalTransferScreen() {
               <Plus size={16} color="#3B82F6" />
               <Text style={styles.addCommissionText}>إضافة عمولة</Text>
             </TouchableOpacity>
-          ) : (
+          ) : formData.fromType !== 'shop' ? (
             <View style={styles.commissionSection}>
               <View style={styles.commissionHeader}>
                 <TouchableOpacity
@@ -964,6 +984,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#1E40AF',
+    textAlign: 'right',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'right',
   },
 });

@@ -132,6 +132,16 @@ export default function NewMovementScreen() {
     }));
   }, [formData.currency]);
 
+  useEffect(() => {
+    if (formData.operation_type === 'shop_to_customer') {
+      setFormData((prev) => ({
+        ...prev,
+        commission: '',
+        commissionRecipient: null,
+      }));
+    }
+  }, [formData.operation_type]);
+
   const loadCustomers = async () => {
     try {
       const { data, error } = await supabase
@@ -181,9 +191,13 @@ export default function NewMovementScreen() {
         : 'incoming';
 
       let commissionRecipientId: string | null = null;
+      let commissionValue = null;
+      let commissionCurrencyValue = null;
 
-      if (formData.commission && parseFloat(formData.commission) > 0) {
-        commissionRecipientId = profitLossId; // ✅ العمولة دائمًا للأرباح والخسائر
+      if (formData.operation_type !== 'shop_to_customer' && formData.commission && parseFloat(formData.commission) > 0) {
+        commissionValue = Number(formData.commission);
+        commissionCurrencyValue = formData.commission_currency;
+        commissionRecipientId = profitLossId;
       }
 
 
@@ -196,8 +210,8 @@ export default function NewMovementScreen() {
             movement_type: movementType,
             amount: Number(formData.amount),
             currency: formData.currency,
-            commission: formData.commission ? Number(formData.commission) : null,
-            commission_currency: formData.commission_currency,
+            commission: commissionValue,
+            commission_currency: commissionCurrencyValue,
             commission_recipient_id: commissionRecipientId,
             notes: formData.notes.trim() || null,
             sender_name: formData.sender_name.trim() || null,
@@ -533,28 +547,38 @@ export default function NewMovementScreen() {
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
-          <View style={styles.commissionRow}>
-            <View style={styles.commissionCurrencyDisplay}>
-              <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
-              <Text style={styles.commissionCurrencySymbol}>
-                {getCurrencySymbol(formData.commission_currency)}
-              </Text>
-            </View>
-            <TextInput
-              style={styles.commissionInput}
-              value={formData.commission}
-              onChangeText={(text) => setFormData({ ...formData, commission: text })}
-              placeholder="0.00"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="decimal-pad"
-              textAlign="right"
-            />
+        {formData.operation_type === 'shop_to_customer' ? (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              العمولة غير متاحة عند التحويل من المحل إلى العميل
+            </Text>
           </View>
-        </View>
+        ) : (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
+              <View style={styles.commissionRow}>
+                <View style={styles.commissionCurrencyDisplay}>
+                  <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
+                  <Text style={styles.commissionCurrencySymbol}>
+                    {getCurrencySymbol(formData.commission_currency)}
+                  </Text>
+                </View>
+                <TextInput
+                  style={styles.commissionInput}
+                  value={formData.commission}
+                  onChangeText={(text) => setFormData({ ...formData, commission: text })}
+                  placeholder="0.00"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="decimal-pad"
+                  textAlign="right"
+                />
+              </View>
+            </View>
+          </>
+        )}
 
-        {formData.commission && parseFloat(formData.commission) > 0 && (
+        {formData.operation_type !== 'shop_to_customer' && formData.commission && parseFloat(formData.commission) > 0 && (
           <View style={styles.commissionRecipientSection}>
             <Text style={styles.label}>من يستلم العمولة؟</Text>
             <Text style={styles.commissionRecipientSubtitle}>
@@ -1404,6 +1428,17 @@ const styles = StyleSheet.create({
   },
   recipientButtonSubtextActive: {
     color: '#F3F4F6',
+  },
+  infoBox: {
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'right',
   },
   hidden: {
     position: 'absolute',

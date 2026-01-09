@@ -38,6 +38,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { generateAccountStatementHTML } from '@/utils/accountStatementGenerator';
 import { getLogoBase64 } from '@/utils/logoHelper';
+import { getDisplayAmount } from '@/utils/movementHelper';
 import QuickAddMovementSheet from '@/components/QuickAddMovementSheet';
 
 interface GroupedMovements {
@@ -98,7 +99,7 @@ function calculateCurrencyTotals(
       };
     }
 
-    const amount = Number(movement.amount);
+    const amount = getDisplayAmount(movement);
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
@@ -125,6 +126,8 @@ function calculateBalanceByCurrency(
       };
     }
 
+    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات
+    // getDisplayAmount يُستخدم فقط للعرض في القائمة، وليس للحسابات
     const amount = Number(movement.amount);
 
     if (movement.movement_type === 'incoming') {
@@ -179,12 +182,12 @@ export default function CustomerDetailsScreen() {
       const incoming =
         movementsResult.data
           ?.filter((m) => m.movement_type === 'incoming')
-          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+          .reduce((sum, m) => sum + getDisplayAmount(m), 0) || 0;
 
       const outgoing =
         movementsResult.data
           ?.filter((m) => m.movement_type === 'outgoing')
-          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+          .reduce((sum, m) => sum + getDisplayAmount(m), 0) || 0;
 
       setTotalIncoming(incoming);
       setTotalOutgoing(outgoing);
@@ -288,6 +291,7 @@ export default function CustomerDetailsScreen() {
         customer.name,
         movements,
         logoDataUrl,
+        customer.is_profit_loss_account || false,
       );
 
       console.log('[CustomerDetails] Creating PDF file...');
@@ -499,7 +503,7 @@ export default function CustomerDetailsScreen() {
               : 'استلام من العميل';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
-          accountText += `المبلغ: ${Math.round(Number(movement.amount))} ${symbol}\n`;
+          accountText += `المبلغ: ${Math.round(getDisplayAmount(movement))} ${symbol}\n`;
           if (movement.notes) {
             accountText += `الملاحظات: ${movement.notes}\n`;
           }
@@ -532,7 +536,7 @@ export default function CustomerDetailsScreen() {
     const movementTypeText =
       movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const currencySymbol = getCurrencySymbol(movement.currency);
-    const amount = Math.round(Number(movement.amount));
+    const amount = Math.round(getDisplayAmount(movement));
 
     Alert.alert(
       `${movementTypeText} - ${movement.movement_number}`,
@@ -574,7 +578,7 @@ export default function CustomerDetailsScreen() {
     const movementTypeText =
       movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
     const currencySymbol = getCurrencySymbol(movement.currency);
-    const amount = Math.round(Number(movement.amount));
+    const amount = Math.round(getDisplayAmount(movement));
 
     Alert.alert(
       'تأكيد الحذف',
@@ -622,12 +626,8 @@ export default function CustomerDetailsScreen() {
 
   const filteredMovements = movements
     .filter((movement) => {
-      // إذا كان حساب الأرباح والخسائر، نعرض جميع الحركات بما فيها حركات العمولة
-      if (customer?.is_profit_loss_account === true) {
-        return true;
-      }
-      // للحسابات العادية، نخفي حركات العمولة
-      return (movement as any).is_commission_movement !== true;
+      // نعرض جميع الحركات بما فيها حركات العمولة للشفافية الكاملة
+      return true;
     })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
@@ -969,11 +969,15 @@ export default function CustomerDetailsScreen() {
                             },
                           ]}
                         >
-                          {Math.round(Number(movement.amount))}
+                          {Math.round(getDisplayAmount(movement))}
                         </Text>
                         {movement.commission && Number(movement.commission) > 0 && (
                           <Text style={styles.commissionBadge}>
-                            شامل {Math.round(Number(movement.commission))} عمولة
+                            {(movement as any).commission_recipient_id === (movement as any).from_customer_id
+                              ? `بعد خصم ${Math.round(Number(movement.commission))} عمولة`
+                              : (movement as any).commission_recipient_id === (movement as any).to_customer_id
+                                ? `شامل ${Math.round(Number(movement.commission))} عمولة إضافية`
+                                : `عمولة ${Math.round(Number(movement.commission))}`}
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>

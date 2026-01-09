@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AccountMovement, CURRENCIES } from '@/types/database';
 import { generatePDFHeaderHTML, generatePDFHeaderStyles } from './pdfHeaderGenerator';
+import { getDisplayAmount } from './movementHelper';
 
 interface MovementWithBalance extends AccountMovement {
   runningBalance: number;
@@ -20,30 +21,27 @@ function getCurrencyName(code: string): string {
 export function generateAccountStatementHTML(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
   const allMovements = [...movements];
 
   const filteredMovements = allMovements
-    .filter((m) => !(m as any).is_commission_movement)
+    .filter((m) => {
+      if (isProfitLossAccount) {
+        // حساب الأرباح والخسائر: عرض حركات العمولة فقط
+        return (m as any).is_commission_movement === true;
+      } else {
+        // الحسابات العادية: عرض جميع الحركات بما فيها حركات العمولة
+        return true;
+      }
+    })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  // Helper function to get combined amount including related commission
-  const getCombinedAmount = (movement: AccountMovement): number => {
-    const baseAmount = Number(movement.amount);
-    const relatedCommissions = allMovements.filter(
-      (m) =>
-        (m as any).is_commission_movement === true &&
-        (m as any).related_commission_movement_id === movement.id &&
-        m.customer_id === movement.customer_id &&
-        m.movement_type === movement.movement_type &&
-        m.currency === movement.currency
-    );
-    const commissionTotal = relatedCommissions.reduce(
-      (sum, m) => sum + Number(m.amount),
-      0,
-    );
-    return baseAmount + commissionTotal;
+  const getAmount = (movement: AccountMovement): number => {
+    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات في PDF
+    // حيث أن حركات العمولة تظهر الآن كحركات منفصلة
+    return Number(movement.amount);
   };
 
   // Group movements by currency
@@ -64,12 +62,12 @@ export function generateAccountStatementHTML(
     let runningBalance = 0;
 
     currMovements.forEach((movement) => {
-      const combinedAmount = getCombinedAmount(movement);
+      const amount = getAmount(movement);
 
       if (movement.movement_type === 'incoming') {
-        runningBalance += combinedAmount;
+        runningBalance += amount;
       } else {
-        runningBalance -= combinedAmount;
+        runningBalance -= amount;
       }
 
       movementsWithBalance.push({
@@ -80,11 +78,11 @@ export function generateAccountStatementHTML(
 
     const totalOutgoing = currMovements
       .filter(m => m.movement_type === 'outgoing')
-      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
+      .reduce((sum, m) => sum + getAmount(m), 0);
 
     const totalIncoming = currMovements
       .filter(m => m.movement_type === 'incoming')
-      .reduce((sum, m) => sum + getCombinedAmount(m), 0);
+      .reduce((sum, m) => sum + getAmount(m), 0);
 
     const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
@@ -98,12 +96,12 @@ export function generateAccountStatementHTML(
           : '-';
 
         const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
-        const combinedAmount = getCombinedAmount(movement);
+        const amount = getAmount(movement);
         const incomingAmount = movement.movement_type === 'incoming'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
+          ? Math.round(amount).toLocaleString('en-US')
           : '-';
         const outgoingAmount = movement.movement_type === 'outgoing'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
+          ? Math.round(amount).toLocaleString('en-US')
           : '-';
 
         return `
@@ -127,10 +125,12 @@ export function generateAccountStatementHTML(
     const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';
     const totalOutgoingStr = totalOutgoing > 0 ? Math.round(totalOutgoing).toLocaleString('en-US') : '-';
 
+    const accountTypeLabel = isProfitLossAccount ? 'حساب الأرباح والخسائر' : `كشف حساب ${customerName}`;
+
     return `
     <div class="currency-section">
       <div class="section-title">
-        <h2>كشف حساب ${customerName} - ${currencyName}</h2>
+        <h2>${accountTypeLabel} - ${currencyName}</h2>
       </div>
       <table>
         <thead>
@@ -160,8 +160,12 @@ export function generateAccountStatementHTML(
     `;
   }).join('');
 
+  const headerTitle = isProfitLossAccount
+    ? 'كشف حساب الأرباح والخسائر'
+    : `كشف حساب العميل: ${customerName}`;
+
   const headerHTML = generatePDFHeaderHTML({
-    title: `كشف حساب العميل: ${customerName}`,
+    title: headerTitle,
     logoDataUrl,
     primaryColor: '#382de3',
     darkColor: '#2821b8',
@@ -351,7 +355,8 @@ export function generateAccountStatementHTML(
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
-  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl, isProfitLossAccount);
 }

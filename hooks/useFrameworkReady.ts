@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
 
 declare global {
   interface Window {
@@ -6,8 +7,19 @@ declare global {
   }
 }
 
+SplashScreen.preventAutoHideAsync();
+
 export function useFrameworkReady() {
   useEffect(() => {
-    window.frameworkReady?.();
-  });
+    const prepare = async () => {
+      try {
+        window.frameworkReady?.();
+        await SplashScreen.hideAsync();
+      } catch (error) {
+        console.error('Error hiding splash screen:', error);
+      }
+    };
+
+    prepare();
+  }, []);
 }

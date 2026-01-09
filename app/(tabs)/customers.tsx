@@ -128,9 +128,9 @@ export default function CustomersScreen() {
         const balanceAmount = Number(balance.balance);
         const symbol = getCurrencySymbol(balance.currency);
         if (balanceAmount > 0) {
-          message += `• له عندنا ${Math.round(balanceAmount)} ${symbol}\n`;
+          message += `• لنا عنده ${Math.round(balanceAmount)} ${symbol}\n`;
         } else {
-          message += `• عليه ${Math.round(Math.abs(balanceAmount))} ${symbol}\n`;
+          message += `• له عندنا ${Math.round(Math.abs(balanceAmount))} ${symbol}\n`;
         }
       });
       message += '\n';
@@ -276,12 +276,12 @@ export default function CustomersScreen() {
                     key={balance.currency}
                     style={[
                       styles.balanceText,
-                      { color: balanceAmount > 0 ? '#EF4444' : '#10B981' },
+                      { color: balanceAmount > 0 ? '#10B981' : '#EF4444' },
                       idx > 0 && { fontSize: 13 },
                     ]}
                   >
                     {balanceAmount > 0
-                      ? `${Math.round(balanceAmount)}`
+                      ? `+${Math.round(balanceAmount)}`
                       : `${Math.round(balanceAmount)}`}{' '}
                     {getCurrencySymbol(balance.currency)}
                   </Text>

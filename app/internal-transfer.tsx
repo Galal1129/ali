@@ -128,32 +128,35 @@ export default function InternalTransferScreen() {
 
       if (data && data.length > 0) {
         const result = data[0];
-        // الدالة الجديدة ترجع sender_movement_id و recipient_movement_id
-        const movementId = result.recipient_movement_id || result.sender_movement_id;
+        if (result.success) {
+          const movementId = result.to_movement_id || result.from_movement_id;
 
-        if (withPrint && movementId) {
-          const customerName = formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName;
-          const customerAccountNumber = formData.toType === 'customer' ? formData.toCustomerAccount : formData.fromCustomerAccount;
+          if (withPrint && movementId) {
+            const customerName = formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName;
+            const customerAccountNumber = formData.toType === 'customer' ? formData.toCustomerAccount : formData.fromCustomerAccount;
 
-          router.push({
-            pathname: '/receipt-preview',
-            params: {
-              movementId: movementId,
-              customerName: customerName,
-              customerAccountNumber: customerAccountNumber || '000000',
-            },
-          });
-        } else {
-          Alert.alert(
-            'تم التحويل بنجاح',
-            'تم إجراء التحويل الداخلي بنجاح',
-            [
-              {
-                text: 'حسناً',
-                onPress: () => router.back(),
+            router.push({
+              pathname: '/receipt-preview',
+              params: {
+                movementId: movementId,
+                customerName: customerName,
+                customerAccountNumber: customerAccountNumber || '000000',
               },
-            ]
-          );
+            });
+          } else {
+            Alert.alert(
+              'نجح التحويل',
+              result.message,
+              [
+                {
+                  text: 'حسناً',
+                  onPress: () => router.back(),
+                },
+              ]
+            );
+          }
+        } else {
+          Alert.alert('خطأ', result.message);
         }
       }
     } catch (error: any) {

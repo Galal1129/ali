@@ -335,14 +335,14 @@ export default function StatisticsScreen() {
                         {
                           color:
                             customer.balance > 0
-                              ? '#EF4444'
+                              ? '#10B981'
                               : customer.balance < 0
-                                ? '#10B981'
+                                ? '#EF4444'
                                 : '#6B7280',
                         },
                       ]}
                     >
-                      {customer.balance > 0 ? 'له' : customer.balance < 0 ? 'لنا' : '-'}
+                      {customer.balance > 0 ? 'لنا' : customer.balance < 0 ? 'له' : '-'}
                     </Text>
                   </View>
                 </View>

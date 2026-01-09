@@ -761,17 +761,17 @@ export default function CustomerDetailsScreen() {
                 style={styles.currencyBalanceContainer}
               >
                 {currBalance.balance > 0 ? (
-                  <Text style={styles.summaryLineRed}>
+                  <Text style={styles.summaryLineGreen}>
                     {customer.name} له عندنا{' '}
-                    <Text style={styles.summaryAmountRed}>
+                    <Text style={styles.summaryAmountGreen}>
                       {Math.round(currBalance.balance)}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 ) : (
-                  <Text style={styles.summaryLineGreen}>
+                  <Text style={styles.summaryLineRed}>
                     لنا عند {customer.name}{' '}
-                    <Text style={styles.summaryAmountGreen}>
+                    <Text style={styles.summaryAmountRed}>
                       {Math.round(Math.abs(currBalance.balance))}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>

@@ -276,7 +276,7 @@ export default function CustomersScreen() {
                     key={balance.currency}
                     style={[
                       styles.balanceText,
-                      { color: balanceAmount > 0 ? '#EF4444' : '#10B981' },
+                      { color: balanceAmount > 0 ? '#10B981' : '#EF4444' },
                       idx > 0 && { fontSize: 13 },
                     ]}
                   >

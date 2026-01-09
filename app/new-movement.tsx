@@ -168,6 +168,22 @@ export default function NewMovementScreen() {
         commissionRecipientId = customerId;
       }
 
+      // حساب المبلغ الفعلي بعد خصم/إضافة العمولة
+      const baseAmount = Number(formData.amount);
+      const commissionAmount = formData.commission ? Number(formData.commission) : 0;
+      let actualAmount = baseAmount;
+
+      // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
+      if (commissionAmount > 0 && formData.commission_currency === formData.currency) {
+        if (movementType === 'incoming') {
+          // له: نخصم العمولة من المبلغ
+          actualAmount = baseAmount - commissionAmount;
+        } else if (movementType === 'outgoing') {
+          // عليه: نضيف العمولة للمبلغ
+          actualAmount = baseAmount + commissionAmount;
+        }
+      }
+
       const { data: insertedData, error } = await supabase
         .from('account_movements')
         .insert([
@@ -175,7 +191,7 @@ export default function NewMovementScreen() {
             movement_number: movementNumber || `MOV-${Date.now()}`,
             customer_id: customerId,
             movement_type: movementType,
-            amount: Number(formData.amount),
+            amount: actualAmount,
             currency: formData.currency,
             commission: formData.commission ? Number(formData.commission) : null,
             commission_currency: formData.commission_currency,

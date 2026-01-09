@@ -109,13 +109,27 @@ export default function QuickAddMovementSheet({
 
   const calculateNewBalance = () => {
     const amountNum = parseFloat(amount) || 0;
+    const commissionAmount = commission ? parseFloat(commission) : 0;
     const currentBalance =
       currentBalances.find((b) => b.currency === currency)?.balance || 0;
 
+    let actualAmount = amountNum;
+
+    // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
+    if (commissionAmount > 0 && commissionCurrency === currency) {
+      if (movementType === 'incoming') {
+        // له: نخصم العمولة من المبلغ
+        actualAmount = amountNum - commissionAmount;
+      } else if (movementType === 'outgoing') {
+        // عليه: نضيف العمولة للمبلغ
+        actualAmount = amountNum + commissionAmount;
+      }
+    }
+
     if (movementType === 'incoming') {
-      return currentBalance + amountNum;
+      return currentBalance + actualAmount;
     } else if (movementType === 'outgoing') {
-      return currentBalance - amountNum;
+      return currentBalance - actualAmount;
     }
     return currentBalance;
   };
@@ -145,6 +159,22 @@ export default function QuickAddMovementSheet({
         'generate_transfer_number',
       );
 
+      // حساب المبلغ الفعلي بعد خصم/إضافة العمولة
+      const baseAmount = parseFloat(amount);
+      const commissionAmount = commission ? parseFloat(commission) : 0;
+      let actualAmount = baseAmount;
+
+      // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
+      if (commissionAmount > 0 && commissionCurrency === currency) {
+        if (movementType === 'incoming') {
+          // له: نخصم العمولة من المبلغ
+          actualAmount = baseAmount - commissionAmount;
+        } else if (movementType === 'outgoing') {
+          // عليه: نضيف العمولة للمبلغ
+          actualAmount = baseAmount + commissionAmount;
+        }
+      }
+
       const { data: insertedData, error } = await supabase
         .from('account_movements')
         .insert([
@@ -152,7 +182,7 @@ export default function QuickAddMovementSheet({
             movement_number: movementNumber || `MOV-${Date.now()}`,
             customer_id: customerId,
             movement_type: movementType,
-            amount: parseFloat(amount),
+            amount: actualAmount,
             currency: currency,
             commission: commission ? parseFloat(commission) : null,
             commission_currency: commissionCurrency,

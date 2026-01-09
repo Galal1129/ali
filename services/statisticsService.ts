@@ -237,7 +237,7 @@ export class StatisticsService {
   static async fetchCashFlowByCurrency(): Promise<CashFlowByCurrency[]> {
     const { data: movements, error } = await supabase
       .from('account_movements')
-      .select('amount, currency, movement_type, is_internal_transfer, customers!customer_id(is_profit_loss_account)')
+      .select('amount, currency, movement_type, is_internal_transfer')
       .or('is_internal_transfer.is.null,is_internal_transfer.eq.false')
       .or('is_commission_movement.is.null,is_commission_movement.eq.false');
 
@@ -253,12 +253,6 @@ export class StatisticsService {
     const flowByCurrency: { [key: string]: CashFlowByCurrency } = {};
 
     movements.forEach((movement) => {
-      // استبعاد حساب الأرباح والخسائر من إحصائيات التدفق النقدي
-      const isProfitLossAccount = (movement as any).customers?.is_profit_loss_account || false;
-      if (isProfitLossAccount) {
-        return;
-      }
-
       const currency = movement.currency;
       const amount = Number(movement.amount);
 

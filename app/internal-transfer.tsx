@@ -225,12 +225,12 @@ export default function InternalTransferScreen() {
     } else if (formData.fromType === 'shop') {
       return {
         to: `${formData.toCustomerName}: سيزيد رصيده بمقدار +${amount} ${currencySymbol}`,
-        note: 'تسليم للعميل',
+        note: 'دفع من المحل للعميل',
       };
     } else if (formData.toType === 'shop') {
       return {
         from: `${formData.fromCustomerName}: سينقص رصيده بمقدار -${amount} ${currencySymbol}`,
-        note: 'استلام من العميل',
+        note: 'قبض من العميل للمحل',
       };
     }
 
@@ -274,7 +274,7 @@ export default function InternalTransferScreen() {
 
         <View style={styles.form}>
           <PartySelector
-            label="من (المرسل)"
+            label="من (المُحوِّل)"
             selectedType={formData.fromType}
             selectedCustomerId={formData.fromCustomerId}
             selectedCustomerName={formData.fromCustomerName}
@@ -300,7 +300,7 @@ export default function InternalTransferScreen() {
           </View>
 
           <PartySelector
-            label="إلى (المستلم)"
+            label="إلى (المُحوَّل إليه)"
             selectedType={formData.toType}
             selectedCustomerId={formData.toCustomerId}
             selectedCustomerName={formData.toCustomerName}
@@ -427,7 +427,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'from' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.fromCustomerName || 'المرسل'}
+                      {formData.fromCustomerName || 'المُحوِّل'}
                     </Text>
                     <Text
                       style={[
@@ -455,7 +455,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'to' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.toCustomerName || 'المستلم'}
+                      {formData.toCustomerName || 'المُحوَّل إليه'}
                     </Text>
                     <Text
                       style={[

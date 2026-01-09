@@ -281,7 +281,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          استلام
+                          تسليم
                         </Text>
                         <Text
                           style={[
@@ -294,7 +294,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          استلام من العميل
+                          قبض
                         </Text>
                       </TouchableOpacity>
 
@@ -323,7 +323,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          تسليم
+                          استلام
                         </Text>
                         <Text
                           style={[
@@ -336,7 +336,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          تسليم للعميل
+                          صرف
                         </Text>
                       </TouchableOpacity>
                     </View>

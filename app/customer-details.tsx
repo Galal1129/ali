@@ -90,6 +90,11 @@ function calculateCurrencyTotals(
   const currencyMap: { [key: string]: CurrencyTotals } = {};
 
   movements.forEach((movement) => {
+    // تجاهل حركات العمولة المنفصلة
+    if ((movement as any).is_commission_movement) {
+      return;
+    }
+
     const currency = movement.currency;
     if (!currencyMap[currency]) {
       currencyMap[currency] = {
@@ -116,6 +121,11 @@ function calculateBalanceByCurrency(
   const currencyMap: { [key: string]: CurrencyBalance } = {};
 
   movements.forEach((movement) => {
+    // تجاهل حركات العمولة المنفصلة
+    if ((movement as any).is_commission_movement) {
+      return;
+    }
+
     const currency = movement.currency;
     if (!currencyMap[currency]) {
       currencyMap[currency] = {
@@ -126,8 +136,6 @@ function calculateBalanceByCurrency(
       };
     }
 
-    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات
-    // getDisplayAmount يُستخدم فقط للعرض في القائمة، وليس للحسابات
     const amount = Number(movement.amount);
 
     if (movement.movement_type === 'incoming') {
@@ -138,10 +146,52 @@ function calculateBalanceByCurrency(
   });
 
   Object.values(currencyMap).forEach((item) => {
+    // المنطق الصحيح:
+    // incoming (تسليم للعميل) = له عندنا = موجب
+    // outgoing (استلام من العميل) = لنا عنده/عليه = سالب
     item.balance = item.incoming - item.outgoing;
   });
 
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
+}
+
+function getMovementTypeText(
+  movement: AccountMovement,
+  isProfitLossAccount: boolean
+): string {
+  // للتحويلات الداخلية، استخدم منطق خاص
+  const isInternalTransfer = movement.from_customer_id && movement.to_customer_id;
+
+  if (isInternalTransfer) {
+    // في التحويل الداخلي:
+    // - outgoing = نسلم نيابة عن العميل = "تسليم"
+    // - incoming = نستلم نيابة عن العميل = "استلام"
+    return movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+  }
+
+  if (isProfitLossAccount) {
+    return movement.movement_type === 'incoming' ? 'استلام' : 'تسليم';
+  } else {
+    return movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
+  }
+}
+
+function getMovementTypeTextWithContext(
+  movement: AccountMovement,
+  isProfitLossAccount: boolean
+): string {
+  // للتحويلات الداخلية، استخدم منطق خاص
+  const isInternalTransfer = movement.from_customer_id && movement.to_customer_id;
+
+  if (isInternalTransfer) {
+    return movement.movement_type === 'outgoing' ? 'تسليم نيابة عن العميل' : 'استلام نيابة عن العميل';
+  }
+
+  if (isProfitLossAccount) {
+    return movement.movement_type === 'incoming' ? 'استلام' : 'تسليم';
+  } else {
+    return movement.movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+  }
 }
 
 export default function CustomerDetailsScreen() {
@@ -240,9 +290,9 @@ export default function CustomerDetailsScreen() {
         balances.forEach((currBalance) => {
           const symbol = getCurrencySymbol(currBalance.currency);
           if (currBalance.balance > 0) {
-            message += `• لنا عندك ${Math.round(currBalance.balance)} ${symbol}\n`;
+            message += `• لك عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
           } else {
-            message += `• لك عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+            message += `• عليك ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
           }
         });
       }
@@ -392,9 +442,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          warningMessage += `• لنا عنده ${Math.round(currBalance.balance)} ${symbol}\n`;
+          warningMessage += `• له عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
         } else {
-          warningMessage += `• له عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          warningMessage += `• عليه ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       warningMessage += '\n';
@@ -477,9 +527,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          accountText += `• لنا عند العميل: ${Math.round(currBalance.balance)} ${symbol}\n`;
+          accountText += `• للعميل عندنا: ${Math.round(currBalance.balance)} ${symbol}\n`;
         } else {
-          accountText += `• للعميل عندنا: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          accountText += `• على العميل: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       accountText += `\n`;
@@ -497,10 +547,10 @@ export default function CustomerDetailsScreen() {
           const date = format(new Date(movement.created_at), 'dd/MM/yyyy', {
             locale: ar,
           });
-          const type =
-            movement.movement_type === 'outgoing'
-              ? 'تسليم للعميل'
-              : 'استلام من العميل';
+          const type = getMovementTypeTextWithContext(
+            movement,
+            customer?.is_profit_loss_account || false
+          );
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(getDisplayAmount(movement))} ${symbol}\n`;
@@ -533,8 +583,10 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleMovementPress = (movement: AccountMovement) => {
-    const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText = getMovementTypeText(
+      movement,
+      customer?.is_profit_loss_account || false
+    );
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -575,8 +627,10 @@ export default function CustomerDetailsScreen() {
   };
 
   const handleDeleteMovement = (movement: AccountMovement) => {
-    const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+    const movementTypeText = getMovementTypeText(
+      movement,
+      customer?.is_profit_loss_account || false
+    );
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(getDisplayAmount(movement));
 
@@ -626,8 +680,9 @@ export default function CustomerDetailsScreen() {
 
   const filteredMovements = movements
     .filter((movement) => {
-      // نعرض جميع الحركات بما فيها حركات العمولة للشفافية الكاملة
-      return true;
+      // إخفاء حركات العمولة المنفصلة لأنها تظهر فقط في حساب الأرباح والخسائر
+      // العمولة محسوبة بالفعل في المبلغ الصافي للحركة الأصلية
+      return !(movement as any).is_commission_movement;
     })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
@@ -637,8 +692,10 @@ export default function CustomerDetailsScreen() {
       const notes = (movement.notes || '').toLowerCase();
       const amount = movement.amount.toString();
       const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
-      const movementTypeText =
-        movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      const movementTypeText = getMovementTypeText(
+        movement,
+        customer?.is_profit_loss_account || false
+      );
       const senderName = (movement.sender_name || '').toLowerCase();
       const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -729,20 +786,17 @@ export default function CustomerDetailsScreen() {
                 style={styles.currencyBalanceContainer}
               >
                 {currBalance.balance > 0 ? (
-                  <Text style={styles.summaryLineGreen}>
-                    لنا عند {customer.name}{' '}
-                    <Text style={styles.summaryAmountGreen}>
+                  <Text style={styles.summaryLineRed}>
+                    {customer.name} له عندنا{' '}
+                    <Text style={styles.summaryAmountRed}>
                       {Math.round(currBalance.balance)}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 ) : (
-                  <Text style={styles.summaryLineRed}>
-                    {customer.name} له عندنا{' '}
-                    <Text style={styles.summaryAmountRed}>
-                      {Math.round(Math.abs(currBalance.balance))}{' '}
-                      {getCurrencySymbol(currBalance.currency)}
-                    </Text>
+                  <Text style={styles.summaryLineGreen}>
+                    عليه {Math.round(Math.abs(currBalance.balance))}{' '}
+                    {getCurrencySymbol(currBalance.currency)}
                   </Text>
                 )}
               </View>
@@ -781,7 +835,7 @@ export default function CustomerDetailsScreen() {
                         {getCurrencySymbol(total.currency)}
                       </Text>
                       <Text style={styles.currencyDetailsLabelGreen}>
-                        وارد:
+                        صادر:
                       </Text>
                     </View>
                     <View style={styles.currencyDetailsRow}>
@@ -789,7 +843,7 @@ export default function CustomerDetailsScreen() {
                         {total.outgoing.toFixed(2)}{' '}
                         {getCurrencySymbol(total.currency)}
                       </Text>
-                      <Text style={styles.currencyDetailsLabelRed}>صادر:</Text>
+                      <Text style={styles.currencyDetailsLabelRed}>وارد:</Text>
                     </View>
                   </View>
                 ))}
@@ -903,9 +957,10 @@ export default function CustomerDetailsScreen() {
                         >
                           {(movement as any).is_internal_transfer
                             ? 'تحويل داخلي'
-                            : movement.movement_type === 'outgoing'
-                              ? 'تسليم'
-                              : 'استلام'}
+                            : getMovementTypeText(
+                                movement,
+                                customer?.is_profit_loss_account || false
+                              )}
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>
@@ -971,21 +1026,25 @@ export default function CustomerDetailsScreen() {
                         >
                           {Math.round(getDisplayAmount(movement))}
                         </Text>
-                        {movement.commission && Number(movement.commission) > 0 && (
+                        {/* العمولة تظهر فقط في حساب الأرباح والخسائر */}
+                        {customer?.is_profit_loss_account &&
+                         movement.commission &&
+                         Number(movement.commission) > 0 &&
+                         (movement as any).is_commission_movement && (
                           <Text style={styles.commissionBadge}>
-                            {(movement as any).commission_recipient_id === (movement as any).from_customer_id
-                              ? `بعد خصم ${Math.round(Number(movement.commission))} عمولة`
-                              : (movement as any).commission_recipient_id === (movement as any).to_customer_id
-                                ? `شامل ${Math.round(Number(movement.commission))} عمولة إضافية`
-                                : `عمولة ${Math.round(Number(movement.commission))}`}
+                            عمولة
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>
                           {(movement as any).is_internal_transfer
                             ? 'تحويل'
-                            : movement.movement_type === 'outgoing'
-                              ? 'من العميل'
-                              : 'للعميل'}
+                            : customer?.is_profit_loss_account
+                              ? movement.movement_type === 'incoming'
+                                ? 'من العميل'
+                                : 'للعميل'
+                              : movement.movement_type === 'outgoing'
+                                ? 'من العميل'
+                                : 'للعميل'}
                         </Text>
                       </View>
                     </TouchableOpacity>

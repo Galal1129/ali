@@ -128,35 +128,32 @@ export default function InternalTransferScreen() {
 
       if (data && data.length > 0) {
         const result = data[0];
-        if (result.success) {
-          const movementId = result.to_movement_id || result.from_movement_id;
+        // الدالة الجديدة ترجع sender_movement_id و recipient_movement_id
+        const movementId = result.recipient_movement_id || result.sender_movement_id;
 
-          if (withPrint && movementId) {
-            const customerName = formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName;
-            const customerAccountNumber = formData.toType === 'customer' ? formData.toCustomerAccount : formData.fromCustomerAccount;
+        if (withPrint && movementId) {
+          const customerName = formData.toType === 'customer' ? formData.toCustomerName : formData.fromCustomerName;
+          const customerAccountNumber = formData.toType === 'customer' ? formData.toCustomerAccount : formData.fromCustomerAccount;
 
-            router.push({
-              pathname: '/receipt-preview',
-              params: {
-                movementId: movementId,
-                customerName: customerName,
-                customerAccountNumber: customerAccountNumber || '000000',
-              },
-            });
-          } else {
-            Alert.alert(
-              'نجح التحويل',
-              result.message,
-              [
-                {
-                  text: 'حسناً',
-                  onPress: () => router.back(),
-                },
-              ]
-            );
-          }
+          router.push({
+            pathname: '/receipt-preview',
+            params: {
+              movementId: movementId,
+              customerName: customerName,
+              customerAccountNumber: customerAccountNumber || '000000',
+            },
+          });
         } else {
-          Alert.alert('خطأ', result.message);
+          Alert.alert(
+            'تم التحويل بنجاح',
+            'تم إجراء التحويل الداخلي بنجاح',
+            [
+              {
+                text: 'حسناً',
+                onPress: () => router.back(),
+              },
+            ]
+          );
         }
       }
     } catch (error: any) {
@@ -225,12 +222,12 @@ export default function InternalTransferScreen() {
     } else if (formData.fromType === 'shop') {
       return {
         to: `${formData.toCustomerName}: سيزيد رصيده بمقدار +${amount} ${currencySymbol}`,
-        note: 'دفع من المحل للعميل',
+        note: 'تسليم للعميل',
       };
     } else if (formData.toType === 'shop') {
       return {
         from: `${formData.fromCustomerName}: سينقص رصيده بمقدار -${amount} ${currencySymbol}`,
-        note: 'قبض من العميل للمحل',
+        note: 'استلام من العميل',
       };
     }
 
@@ -274,7 +271,7 @@ export default function InternalTransferScreen() {
 
         <View style={styles.form}>
           <PartySelector
-            label="من (المُحوِّل)"
+            label="من (المرسل)"
             selectedType={formData.fromType}
             selectedCustomerId={formData.fromCustomerId}
             selectedCustomerName={formData.fromCustomerName}
@@ -300,7 +297,7 @@ export default function InternalTransferScreen() {
           </View>
 
           <PartySelector
-            label="إلى (المُحوَّل إليه)"
+            label="إلى (المستلم)"
             selectedType={formData.toType}
             selectedCustomerId={formData.toCustomerId}
             selectedCustomerName={formData.toCustomerName}
@@ -427,7 +424,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'from' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.fromCustomerName || 'المُحوِّل'}
+                      {formData.fromCustomerName || 'المرسل'}
                     </Text>
                     <Text
                       style={[
@@ -455,7 +452,7 @@ export default function InternalTransferScreen() {
                         formData.commissionRecipient === 'to' && styles.recipientButtonTextActive,
                       ]}
                     >
-                      {formData.toCustomerName || 'المُحوَّل إليه'}
+                      {formData.toCustomerName || 'المستلم'}
                     </Text>
                     <Text
                       style={[

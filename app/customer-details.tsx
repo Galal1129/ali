@@ -105,7 +105,6 @@ function calculateCurrencyTotals(
     }
 
     const amount = getDisplayAmount(movement);
-    console.log('[calculateCurrencyTotals]', movement.movement_number, 'amount:', amount, 'raw amount:', movement.amount);
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
@@ -113,9 +112,7 @@ function calculateCurrencyTotals(
     }
   });
 
-  const result = Object.values(currencyMap);
-  console.log('[calculateCurrencyTotals] Final totals:', result);
-  return result;
+  return Object.values(currencyMap);
 }
 
 function calculateBalanceByCurrency(
@@ -232,14 +229,6 @@ export default function CustomerDetailsScreen() {
       setCustomer(customerResult.data);
       setMovements(movementsResult.data || []);
 
-      console.log('[CustomerDetails] Loaded movements:', movementsResult.data?.map(m => ({
-        number: m.movement_number,
-        type: m.movement_type,
-        amount: m.amount,
-        displayAmount: getDisplayAmount(m),
-        commission: m.commission
-      })));
-
       const incoming =
         movementsResult.data
           ?.filter((m) => m.movement_type === 'incoming')
@@ -249,8 +238,6 @@ export default function CustomerDetailsScreen() {
         movementsResult.data
           ?.filter((m) => m.movement_type === 'outgoing')
           .reduce((sum, m) => sum + getDisplayAmount(m), 0) || 0;
-
-      console.log('[CustomerDetails] Totals - incoming:', incoming, 'outgoing:', outgoing);
 
       setTotalIncoming(incoming);
       setTotalOutgoing(outgoing);
@@ -1039,13 +1026,13 @@ export default function CustomerDetailsScreen() {
                         >
                           {Math.round(getDisplayAmount(movement))}
                         </Text>
-                        {movement.commission && Number(movement.commission) > 0 && (
+                        {/* العمولة تظهر فقط في حساب الأرباح والخسائر */}
+                        {customer?.is_profit_loss_account &&
+                         movement.commission &&
+                         Number(movement.commission) > 0 &&
+                         (movement as any).is_commission_movement && (
                           <Text style={styles.commissionBadge}>
-                            {(movement as any).commission_recipient_id === (movement as any).from_customer_id
-                              ? `بعد خصم ${Math.round(Number(movement.commission))} عمولة`
-                              : (movement as any).commission_recipient_id === (movement as any).to_customer_id
-                                ? `شامل ${Math.round(Number(movement.commission))} عمولة إضافية`
-                                : `عمولة ${Math.round(Number(movement.commission))}`}
+                            عمولة
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>

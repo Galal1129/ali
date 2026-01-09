@@ -204,11 +204,13 @@ export default function InternalTransferScreen() {
           toAmount = amount - commission;
           profitLossImpact = `الأرباح والخسائر: سيزيد رصيده بمقدار +${commission} ${commissionSymbol}`;
         } else if (formData.commissionRecipient === 'from') {
-          // العمولة للمرسل
-          // الأرباح تدفع العمولة للمرسل
+          // ✅ العمولة لصالح المرسل
+          // المرسل يُخصم منه أقل (amount - commission)
+          // ولا يوجد تأثير على الأرباح والخسائر في هذه الحالة
           fromAmount = amount - commission;
-          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol} (يدفع للمرسل)`;
-        } else if (formData.commissionRecipient === 'to') {
+          profitLossImpact = null;
+        }
+        else if (formData.commissionRecipient === 'to') {
           // العمولة للمستلم
           // الأرباح تدفع العمولة للمستلم
           toAmount = amount + commission;
@@ -255,15 +257,15 @@ export default function InternalTransferScreen() {
       />
 
       <KeyboardAwareView contentContainerStyle={{ paddingBottom: 40 }}>
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <ArrowLeftRight size={32} color="#3B82F6" />
-            </View>
-            <Text style={styles.headerTitle}>تحويل داخلي</Text>
-            <Text style={styles.headerSubtitle}>
-              قم بتحويل الأموال بين العملاء أو بين العميل والمحل
-            </Text>
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <ArrowLeftRight size={32} color="#3B82F6" />
           </View>
+          <Text style={styles.headerTitle}>تحويل داخلي</Text>
+          <Text style={styles.headerSubtitle}>
+            قم بتحويل الأموال بين العملاء أو بين العميل والمحل
+          </Text>
+        </View>
 
         {validationError && (
           <View style={styles.errorContainer}>

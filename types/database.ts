@@ -72,6 +72,7 @@ export interface AccountMovement {
   customer_id: string;
   movement_type: 'incoming' | 'outgoing';
   amount: number;
+  original_amount?: number; // ✅ NEW
   currency: string;
   commission?: number;
   commission_currency?: string;

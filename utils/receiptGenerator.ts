@@ -70,9 +70,15 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
   const currencyName = getCurrencyName(currency);
   const commissionCurrencyName = getCurrencyName(commission_currency);
 
-  const netAmount = Number(amount) - Number(commission || 0);
+  const effectiveAmount = Number(amount); // ✅ هذا هو المبلغ المؤثر على رصيد العميل بعد التوحيد
+const originalAmount =
+  receiptData.original_amount !== undefined && receiptData.original_amount !== null
+    ? Number(receiptData.original_amount)
+    : null;
 
-  const amountInWords = numberToArabicTextWithCurrency(netAmount, currency as Currency);
+const commissionValue = Number(commission || 0);
+
+const amountInWords = numberToArabicTextWithCurrency(effectiveAmount, currency as Currency);
 
   const actionTitle = isTransfer
     ? receiptData.transfer_direction === 'customer_to_customer'
@@ -896,7 +902,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
 
             <div class="info-card">
               <div class="card-label">الصافي</div>
-              <div class="card-value">${netAmount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
+              <div class="card-value">${amount} <span class="card-currency">${getCurrencySymbol(currency)}</span></div>
             </div>
           </div>
 

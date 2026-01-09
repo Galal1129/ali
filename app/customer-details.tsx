@@ -105,6 +105,7 @@ function calculateCurrencyTotals(
     }
 
     const amount = getDisplayAmount(movement);
+    console.log('[calculateCurrencyTotals]', movement.movement_number, 'amount:', amount, 'raw amount:', movement.amount);
     if (movement.movement_type === 'incoming') {
       currencyMap[currency].incoming += amount;
     } else {
@@ -112,7 +113,9 @@ function calculateCurrencyTotals(
     }
   });
 
-  return Object.values(currencyMap);
+  const result = Object.values(currencyMap);
+  console.log('[calculateCurrencyTotals] Final totals:', result);
+  return result;
 }
 
 function calculateBalanceByCurrency(
@@ -229,6 +232,14 @@ export default function CustomerDetailsScreen() {
       setCustomer(customerResult.data);
       setMovements(movementsResult.data || []);
 
+      console.log('[CustomerDetails] Loaded movements:', movementsResult.data?.map(m => ({
+        number: m.movement_number,
+        type: m.movement_type,
+        amount: m.amount,
+        displayAmount: getDisplayAmount(m),
+        commission: m.commission
+      })));
+
       const incoming =
         movementsResult.data
           ?.filter((m) => m.movement_type === 'incoming')
@@ -238,6 +249,8 @@ export default function CustomerDetailsScreen() {
         movementsResult.data
           ?.filter((m) => m.movement_type === 'outgoing')
           .reduce((sum, m) => sum + getDisplayAmount(m), 0) || 0;
+
+      console.log('[CustomerDetails] Totals - incoming:', incoming, 'outgoing:', outgoing);
 
       setTotalIncoming(incoming);
       setTotalOutgoing(outgoing);

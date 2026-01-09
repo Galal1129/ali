@@ -103,16 +103,16 @@ export default function TransactionsScreen() {
             {
               backgroundColor: item.transfer_direction
                 ? '#FEF3C7'
-                : item.movement_type === 'incoming' ? '#10B98115' : '#EF444415',
+                : item.movement_type === 'incoming' ? '#ECFDF5' : '#FEE2E2',
             },
           ]}
         >
           {item.transfer_direction ? (
             <ArrowLeftRight size={24} color="#F59E0B" />
           ) : item.movement_type === 'incoming' ? (
-            <ArrowDownCircle size={24} color="#10B981" />
+            <ArrowUpCircle size={24} color="#10B981" />
           ) : (
-            <ArrowUpCircle size={24} color="#EF4444" />
+            <ArrowDownCircle size={24} color="#EF4444" />
           )}
         </View>
       </View>
@@ -138,7 +138,7 @@ export default function TransactionsScreen() {
         <Text style={styles.movementType}>
           {item.transfer_direction
             ? 'تحويل داخلي'
-            : item.movement_type === 'incoming' ? 'استلمت منه (وارد)' : 'أرسلت له (صادر)'}
+            : item.movement_type === 'incoming' ? 'له (وارد)' : 'عليه (صادر)'}
         </Text>
         {item.transfer_direction && (
           <Text style={styles.movementNotes} numberOfLines={1}>

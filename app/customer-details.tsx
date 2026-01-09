@@ -928,8 +928,8 @@ export default function CustomerDetailsScreen() {
                               color: (movement as any).is_internal_transfer
                                 ? '#F59E0B'
                                 : movement.movement_type === 'outgoing'
-                                  ? '#10B981'
-                                  : '#3B82F6',
+                                  ? '#EF4444'
+                                  : '#10B981',
                             },
                           ]}
                         >
@@ -967,8 +967,8 @@ export default function CustomerDetailsScreen() {
                               .is_internal_transfer
                               ? '#FEF3C7'
                               : movement.movement_type === 'outgoing'
-                                ? '#ECFDF5'
-                                : '#EFF6FF',
+                                ? '#FEE2E2'
+                                : '#ECFDF5',
                           },
                         ]}
                       >
@@ -979,8 +979,8 @@ export default function CustomerDetailsScreen() {
                               color: (movement as any).is_internal_transfer
                                 ? '#F59E0B'
                                 : movement.movement_type === 'outgoing'
-                                  ? '#10B981'
-                                  : '#3B82F6',
+                                  ? '#EF4444'
+                                  : '#10B981',
                             },
                           ]}
                         >
@@ -996,8 +996,8 @@ export default function CustomerDetailsScreen() {
                               color: (movement as any).is_internal_transfer
                                 ? '#F59E0B'
                                 : movement.movement_type === 'outgoing'
-                                  ? '#10B981'
-                                  : '#3B82F6',
+                                  ? '#EF4444'
+                                  : '#10B981',
                             },
                           ]}
                         >

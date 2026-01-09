@@ -260,14 +260,14 @@ export default function QuickAddMovementSheet({
                         style={[
                           styles.typeButton,
                           movementType === 'outgoing' &&
-                            styles.typeButtonActiveGreen,
+                            styles.typeButtonActiveRed,
                         ]}
                         onPress={() => setMovementType('outgoing')}
                       >
                         <ArrowDownCircle
                           size={24}
                           color={
-                            movementType === 'outgoing' ? '#FFFFFF' : '#10B981'
+                            movementType === 'outgoing' ? '#FFFFFF' : '#EF4444'
                           }
                         />
                         <Text
@@ -277,7 +277,7 @@ export default function QuickAddMovementSheet({
                               color:
                                 movementType === 'outgoing'
                                   ? '#FFFFFF'
-                                  : '#10B981',
+                                  : '#EF4444',
                             },
                           ]}
                         >
@@ -289,8 +289,8 @@ export default function QuickAddMovementSheet({
                             {
                               color:
                                 movementType === 'outgoing'
-                                  ? '#D1FAE5'
-                                  : '#6EE7B7',
+                                  ? '#FECACA'
+                                  : '#FCA5A5',
                             },
                           ]}
                         >
@@ -302,14 +302,14 @@ export default function QuickAddMovementSheet({
                         style={[
                           styles.typeButton,
                           movementType === 'incoming' &&
-                            styles.typeButtonActiveBlue,
+                            styles.typeButtonActiveGreen,
                         ]}
                         onPress={() => setMovementType('incoming')}
                       >
                         <ArrowUpCircle
                           size={24}
                           color={
-                            movementType === 'incoming' ? '#FFFFFF' : '#3B82F6'
+                            movementType === 'incoming' ? '#FFFFFF' : '#10B981'
                           }
                         />
                         <Text
@@ -319,7 +319,7 @@ export default function QuickAddMovementSheet({
                               color:
                                 movementType === 'incoming'
                                   ? '#FFFFFF'
-                                  : '#3B82F6',
+                                  : '#10B981',
                             },
                           ]}
                         >
@@ -331,8 +331,8 @@ export default function QuickAddMovementSheet({
                             {
                               color:
                                 movementType === 'incoming'
-                                  ? '#DBEAFE'
-                                  : '#93C5FD',
+                                  ? '#D1FAE5'
+                                  : '#6EE7B7',
                             },
                           ]}
                         >
@@ -592,13 +592,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E7EB',
   },
+  typeButtonActiveRed: {
+    backgroundColor: '#EF4444',
+    borderColor: '#EF4444',
+  },
   typeButtonActiveGreen: {
     backgroundColor: '#10B981',
     borderColor: '#10B981',
-  },
-  typeButtonActiveBlue: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
   },
   typeButtonText: {
     fontSize: 16,

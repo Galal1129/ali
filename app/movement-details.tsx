@@ -96,7 +96,7 @@ export default function MovementDetailsScreen() {
   const handleDelete = () => {
     if (!movement) return;
 
-    const movementTypeText = movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
+    const movementTypeText = movement.movement_type === 'incoming' ? 'له' : 'عليه';
     const currencySymbol = getCurrencySymbol(movement.currency);
 
     Alert.alert(
@@ -195,10 +195,10 @@ export default function MovementDetailsScreen() {
   const isTransfer = Boolean(movement.transfer_direction);
   const movementTypeText = isTransfer
     ? 'تحويل داخلي'
-    : movement.movement_type === 'incoming' ? 'إرسال' : 'دفع';
+    : movement.movement_type === 'incoming' ? 'له' : 'عليه';
   const movementTypeColor = isTransfer
     ? '#F59E0B'
-    : movement.movement_type === 'incoming' ? '#F97316' : '#3B82F6';
+    : movement.movement_type === 'incoming' ? '#10B981' : '#EF4444';
   const movementTypeIcon = isTransfer
     ? ArrowLeftRight
     : movement.movement_type === 'incoming' ? ArrowUpCircle : ArrowDownCircle;
@@ -238,8 +238,8 @@ export default function MovementDetailsScreen() {
                 ? 'تحويل من المحل للعميل'
                 : 'تحويل من العميل للمحل'
               : movement.movement_type === 'incoming'
-              ? 'أنت أرسلت للعميل'
-              : 'العميل دفع لك'}
+              ? 'صرف للعميل'
+              : 'قبض من العميل'}
           </Text>
         </View>
 

@@ -92,9 +92,9 @@ export function generateAccountStatementHTML(
     const movementRows = movementsWithBalance
       .map((movement) => {
         const balanceDisplay = movement.runningBalance > 0
-          ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} - ${currencyName}`
+          ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} ${currencyName} (له)`
           : movement.runningBalance < 0
-          ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName}`
+          ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
           : '-';
 
         const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
@@ -119,9 +119,9 @@ export function generateAccountStatementHTML(
       .join('');
 
     const finalBalanceDisplay = finalBalance > 0
-      ? `${Math.round(finalBalance).toLocaleString('en-US')} - ${currencyName}`
+      ? `${Math.round(finalBalance).toLocaleString('en-US')} ${currencyName} (له)`
       : finalBalance < 0
-      ? `${Math.round(Math.abs(finalBalance)).toLocaleString('en-US')} ${currencyName}`
+      ? `${Math.round(Math.abs(finalBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
       : '-';
 
     const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';

@@ -39,9 +39,10 @@ export function generateAccountStatementHTML(
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const getAmount = (movement: AccountMovement): number => {
-  return getDisplayAmount(movement);
-};
-
+    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات في PDF
+    // حيث أن حركات العمولة تظهر الآن كحركات منفصلة
+    return Number(movement.amount);
+  };
 
   // Group movements by currency
   const groupedByCurrency = filteredMovements.reduce((acc, movement) => {

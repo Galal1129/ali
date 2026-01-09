@@ -6,8 +6,7 @@
     "orientation": "portrait",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "icon": "./assets/images/icon.png",
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.altaraf.moneytransfer"
@@ -17,11 +16,7 @@
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
-      ],
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#3b41c5"
-      }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -40,9 +35,9 @@
       "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZ2J5cWptaW16ZGZnYXhwYWJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzNDU5NDIsImV4cCI6MjA4MTkyMTk0Mn0.NNi0IABE9H35wVHpDh2bNET8vLcKgCG4tKun9nI6ZB4",
       "router": {},
       "eas": {
-        "projectId": "e882c2a8-6dd9-459f-88da-b57f96684e6f"
+        "projectId": "bbd1bb62-5792-48a0-aa21-a1ce69ad5936"
       }
     },
-    "owner": "arti_codetr"
+    "owner": "arti_codeio"
   }
 }

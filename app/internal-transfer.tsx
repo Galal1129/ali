@@ -55,17 +55,6 @@ export default function InternalTransferScreen() {
     }));
   }, [formData.currency]);
 
-  React.useEffect(() => {
-    if (formData.fromType === 'shop') {
-      setShowCommission(false);
-      setFormData((prev) => ({
-        ...prev,
-        commission: '',
-        commissionRecipient: null,
-      }));
-    }
-  }, [formData.fromType]);
-
   const validateTransfer = (): string | null => {
     if (!formData.fromType) {
       return 'يرجى اختيار الطرف المُحوِّل';
@@ -215,13 +204,11 @@ export default function InternalTransferScreen() {
           toAmount = amount - commission;
           profitLossImpact = `الأرباح والخسائر: سيزيد رصيده بمقدار +${commission} ${commissionSymbol}`;
         } else if (formData.commissionRecipient === 'from') {
-          // ✅ العمولة لصالح المرسل
-          // المرسل يُخصم منه أقل (amount - commission)
-          // ولا يوجد تأثير على الأرباح والخسائر في هذه الحالة
+          // العمولة للمرسل
+          // الأرباح تدفع العمولة للمرسل
           fromAmount = amount - commission;
-          profitLossImpact = null;
-        }
-        else if (formData.commissionRecipient === 'to') {
+          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol} (يدفع للمرسل)`;
+        } else if (formData.commissionRecipient === 'to') {
           // العمولة للمستلم
           // الأرباح تدفع العمولة للمستلم
           toAmount = amount + commission;
@@ -268,15 +255,15 @@ export default function InternalTransferScreen() {
       />
 
       <KeyboardAwareView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <ArrowLeftRight size={32} color="#3B82F6" />
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <ArrowLeftRight size={32} color="#3B82F6" />
+            </View>
+            <Text style={styles.headerTitle}>تحويل داخلي</Text>
+            <Text style={styles.headerSubtitle}>
+              قم بتحويل الأموال بين العملاء أو بين العميل والمحل
+            </Text>
           </View>
-          <Text style={styles.headerTitle}>تحويل داخلي</Text>
-          <Text style={styles.headerSubtitle}>
-            قم بتحويل الأموال بين العملاء أو بين العميل والمحل
-          </Text>
-        </View>
 
         {validationError && (
           <View style={styles.errorContainer}>
@@ -374,16 +361,7 @@ export default function InternalTransferScreen() {
             </ScrollView>
           </View>
 
-          {formData.fromType === 'shop' && (
-            <View style={styles.infoBox}>
-              <AlertCircle size={16} color="#6B7280" />
-              <Text style={styles.infoText}>
-                العمولة غير متاحة عند التحويل من المحل إلى العميل
-              </Text>
-            </View>
-          )}
-
-          {!showCommission && formData.fromType !== 'shop' ? (
+          {!showCommission ? (
             <TouchableOpacity
               style={styles.addCommissionButton}
               onPress={() => setShowCommission(true)}
@@ -391,7 +369,7 @@ export default function InternalTransferScreen() {
               <Plus size={16} color="#3B82F6" />
               <Text style={styles.addCommissionText}>إضافة عمولة</Text>
             </TouchableOpacity>
-          ) : formData.fromType !== 'shop' ? (
+          ) : (
             <View style={styles.commissionSection}>
               <View style={styles.commissionHeader}>
                 <TouchableOpacity
@@ -984,21 +962,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#1E40AF',
-    textAlign: 'right',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F3F4F6',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#6B7280',
     textAlign: 'right',
   },
 });

@@ -259,21 +259,22 @@ export default function MovementDetailsScreen() {
               ? movement.transfer_direction === 'customer_to_customer'
                 ? 'تحويل بين عميلين'
                 : movement.transfer_direction === 'shop_to_customer'
-                  ? 'تحويل من المحل للعميل'
-                  : 'تحويل من العميل للمحل'
+                ? 'تحويل من المحل للعميل'
+                : 'تحويل من العميل للمحل'
               : getMovementTypeTextWithContext(movement.movement_type, isProfitLossAccount)}
           </Text>
         </View>
+
         <View style={styles.amountCard}>
           <Text style={styles.amountLabel}>المبلغ الإجمالي</Text>
           <View style={styles.amountRow}>
             <Text style={[styles.amountValue, { color: movementTypeColor }]}>
               {Math.round(
                 Number(movement.amount) +
-                relatedCommissionMovements.reduce(
-                  (sum, c) => sum + Number(c.amount),
-                  0,
-                ),
+                  relatedCommissionMovements.reduce(
+                    (sum, c) => sum + Number(c.amount),
+                    0,
+                  ),
               )}
             </Text>
             <Text style={[styles.currencyText, { color: movementTypeColor }]}>

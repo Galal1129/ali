@@ -276,9 +276,9 @@ export default function CustomerDetailsScreen() {
         balances.forEach((currBalance) => {
           const symbol = getCurrencySymbol(currBalance.currency);
           if (currBalance.balance > 0) {
-            message += `• لنا عندك ${Math.round(currBalance.balance)} ${symbol}\n`;
+            message += `• لك عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
           } else {
-            message += `• لك عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+            message += `• لنا عندك ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
           }
         });
       }
@@ -427,9 +427,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          warningMessage += `• لنا عنده ${Math.round(currBalance.balance)} ${symbol}\n`;
+          warningMessage += `• له عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
         } else {
-          warningMessage += `• له عندنا ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          warningMessage += `• لنا عنده ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       warningMessage += '\n';
@@ -512,9 +512,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          accountText += `• لنا عند العميل: ${Math.round(currBalance.balance)} ${symbol}\n`;
+          accountText += `• للعميل عندنا: ${Math.round(currBalance.balance)} ${symbol}\n`;
         } else {
-          accountText += `• للعميل عندنا: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          accountText += `• لنا عند العميل: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       accountText += `\n`;
@@ -761,17 +761,17 @@ export default function CustomerDetailsScreen() {
                 style={styles.currencyBalanceContainer}
               >
                 {currBalance.balance > 0 ? (
-                  <Text style={styles.summaryLineGreen}>
-                    لنا عند {customer.name}{' '}
-                    <Text style={styles.summaryAmountGreen}>
+                  <Text style={styles.summaryLineRed}>
+                    {customer.name} له عندنا{' '}
+                    <Text style={styles.summaryAmountRed}>
                       {Math.round(currBalance.balance)}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
                 ) : (
-                  <Text style={styles.summaryLineRed}>
-                    {customer.name} له عندنا{' '}
-                    <Text style={styles.summaryAmountRed}>
+                  <Text style={styles.summaryLineGreen}>
+                    لنا عند {customer.name}{' '}
+                    <Text style={styles.summaryAmountGreen}>
                       {Math.round(Math.abs(currBalance.balance))}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>

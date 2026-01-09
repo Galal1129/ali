@@ -123,9 +123,9 @@ export default function QuickAddMovementSheet({
   const formatBalance = (balance: number) => {
     const absBalance = Math.abs(balance);
     if (balance > 0) {
-      return `لنا عنده: ${absBalance.toFixed(2)} ${getCurrencySymbol(currency)}`;
-    } else if (balance < 0) {
       return `له عندنا: ${absBalance.toFixed(2)} ${getCurrencySymbol(currency)}`;
+    } else if (balance < 0) {
+      return `لنا عنده: ${absBalance.toFixed(2)} ${getCurrencySymbol(currency)}`;
     }
     return `متساوي`;
   };
@@ -435,7 +435,7 @@ export default function QuickAddMovementSheet({
                           style={[
                             styles.previewValue,
                             styles.previewValueBold,
-                            { color: newBalance >= 0 ? '#10B981' : '#EF4444' },
+                            { color: newBalance > 0 ? '#EF4444' : newBalance < 0 ? '#10B981' : '#6B7280' },
                           ]}
                         >
                           {formatBalance(newBalance)}

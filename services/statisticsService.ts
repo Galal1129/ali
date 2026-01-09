@@ -206,9 +206,9 @@ export class StatisticsService {
       const currency = balance.currency;
 
       if (amount > 0) {
-        owedToUsByCurrency[currency] = (owedToUsByCurrency[currency] || 0) + amount;
+        weOweByCurrency[currency] = (weOweByCurrency[currency] || 0) + amount;
       } else if (amount < 0) {
-        weOweByCurrency[currency] = (weOweByCurrency[currency] || 0) + Math.abs(amount);
+        owedToUsByCurrency[currency] = (owedToUsByCurrency[currency] || 0) + Math.abs(amount);
       }
     });
 

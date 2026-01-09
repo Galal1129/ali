@@ -266,39 +266,15 @@ export default function MovementDetailsScreen() {
         </View>
 
         <View style={styles.amountCard}>
-          <Text style={styles.amountLabel}>المبلغ الإجمالي</Text>
+          <Text style={styles.amountLabel}>المبلغ</Text>
           <View style={styles.amountRow}>
             <Text style={[styles.amountValue, { color: movementTypeColor }]}>
-              {Math.round(
-                Number(movement.amount) +
-                  relatedCommissionMovements.reduce(
-                    (sum, c) => sum + Number(c.amount),
-                    0,
-                  ),
-              )}
+              {Math.round(Number(movement.amount))}
             </Text>
             <Text style={[styles.currencyText, { color: movementTypeColor }]}>
               {getCurrencySymbol(movement.currency)}
             </Text>
           </View>
-          {relatedCommissionMovements.length > 0 && (
-            <View style={styles.amountBreakdown}>
-              <Text style={styles.breakdownLabel}>
-                المبلغ الأساسي: {Math.round(Number(movement.amount))}{' '}
-                {getCurrencySymbol(movement.currency)}
-              </Text>
-              <Text style={styles.breakdownLabel}>
-                العمولة:{' '}
-                {Math.round(
-                  relatedCommissionMovements.reduce(
-                    (sum, c) => sum + Number(c.amount),
-                    0,
-                  ),
-                )}{' '}
-                {getCurrencySymbol(movement.currency)}
-              </Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.section}>
@@ -362,7 +338,8 @@ export default function MovementDetailsScreen() {
               </View>
             </View>
 
-            {movement.commission && Number(movement.commission) > 0 && (
+            {/* العمولة تظهر فقط في حساب الأرباح والخسائر */}
+            {isProfitLossAccount && movement.commission && Number(movement.commission) > 0 && (
               <View style={styles.infoRow}>
                 <View style={styles.infoIconContainer}>
                   <DollarSign size={20} color="#10B981" />

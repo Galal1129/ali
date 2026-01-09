@@ -32,8 +32,8 @@ export function generateAccountStatementHTML(
         // حساب الأرباح والخسائر: عرض حركات العمولة فقط
         return (m as any).is_commission_movement === true;
       } else {
-        // الحسابات العادية: عرض جميع الحركات بما فيها حركات العمولة
-        return true;
+        // الحسابات العادية: عرض الحركات العادية فقط (بدون حركات العمولة المنفصلة)
+        return (m as any).is_commission_movement !== true;
       }
     })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());

@@ -207,7 +207,7 @@ export default function StatisticsScreen() {
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
                           <TrendingUp size={18} color="#10B981" />
-                          <Text style={styles.balanceItemLabel}>قبض (استلام)</Text>
+                          <Text style={styles.balanceItemLabel}>قبض (له)</Text>
                         </View>
                         <Text style={[styles.balanceItemValue, { color: '#10B981' }]}>
                           {flow.totalReceived.toFixed(2)}
@@ -219,7 +219,7 @@ export default function StatisticsScreen() {
                       <View style={styles.balanceItem}>
                         <View style={styles.balanceItemHeader}>
                           <TrendingDown size={18} color="#EF4444" />
-                          <Text style={styles.balanceItemLabel}>صرف (تسليم)</Text>
+                          <Text style={styles.balanceItemLabel}>صرف (عليه)</Text>
                         </View>
                         <Text style={[styles.balanceItemValue, { color: '#EF4444' }]}>
                           {flow.totalPaid.toFixed(2)}

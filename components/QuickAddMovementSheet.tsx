@@ -281,7 +281,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          تسليم
+                          عليه
                         </Text>
                         <Text
                           style={[
@@ -323,7 +323,7 @@ export default function QuickAddMovementSheet({
                             },
                           ]}
                         >
-                          استلام
+                          له
                         </Text>
                         <Text
                           style={[

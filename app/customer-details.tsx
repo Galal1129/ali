@@ -534,8 +534,8 @@ export default function CustomerDetailsScreen() {
           });
           const type =
             movement.movement_type === 'outgoing'
-              ? 'تسليم للعميل'
-              : 'استلام من العميل';
+              ? 'عليه'
+              : 'له';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
           accountText += `المبلغ: ${Math.round(Number(movement.amount))} ${symbol}\n`;
@@ -569,7 +569,7 @@ export default function CustomerDetailsScreen() {
 
   const handleMovementPress = (movement: AccountMovement) => {
     const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      movement.movement_type === 'outgoing' ? 'عليه' : 'له';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(Number(movement.amount));
 
@@ -611,7 +611,7 @@ export default function CustomerDetailsScreen() {
 
   const handleDeleteMovement = (movement: AccountMovement) => {
     const movementTypeText =
-      movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+      movement.movement_type === 'outgoing' ? 'عليه' : 'له';
     const currencySymbol = getCurrencySymbol(movement.currency);
     const amount = Math.round(Number(movement.amount));
 
@@ -670,7 +670,7 @@ export default function CustomerDetailsScreen() {
       const amount = movement.amount.toString();
       const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
       const movementTypeText =
-        movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
+        movement.movement_type === 'outgoing' ? 'عليه' : 'له';
       const senderName = (movement.sender_name || '').toLowerCase();
       const beneficiaryName = (movement.beneficiary_name || '').toLowerCase();
 
@@ -936,8 +936,8 @@ export default function CustomerDetailsScreen() {
                           {(movement as any).is_internal_transfer
                             ? 'تحويل داخلي'
                             : movement.movement_type === 'outgoing'
-                              ? 'تسليم'
-                              : 'استلام'}
+                              ? 'عليه'
+                              : 'له'}
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>

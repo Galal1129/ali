@@ -145,24 +145,41 @@ function calculateBalanceByCurrency(
 }
 
 function getMovementTypeText(
-  movementType: 'incoming' | 'outgoing',
+  movement: AccountMovement,
   isProfitLossAccount: boolean
 ): string {
+  // للتحويلات الداخلية، استخدم منطق خاص
+  const isInternalTransfer = movement.from_customer_id && movement.to_customer_id;
+
+  if (isInternalTransfer) {
+    // في التحويل الداخلي:
+    // - incoming = نسلم نيابة عن العميل = "تسليم"
+    // - outgoing = نستلم نيابة عن العميل = "استلام"
+    return movement.movement_type === 'incoming' ? 'تسليم' : 'استلام';
+  }
+
   if (isProfitLossAccount) {
-    return movementType === 'incoming' ? 'استلام' : 'تسليم';
+    return movement.movement_type === 'incoming' ? 'استلام' : 'تسليم';
   } else {
-    return movementType === 'outgoing' ? 'استلام' : 'تسليم';
+    return movement.movement_type === 'outgoing' ? 'استلام' : 'تسليم';
   }
 }
 
 function getMovementTypeTextWithContext(
-  movementType: 'incoming' | 'outgoing',
+  movement: AccountMovement,
   isProfitLossAccount: boolean
 ): string {
+  // للتحويلات الداخلية، استخدم منطق خاص
+  const isInternalTransfer = movement.from_customer_id && movement.to_customer_id;
+
+  if (isInternalTransfer) {
+    return movement.movement_type === 'incoming' ? 'تسليم نيابة عن العميل' : 'استلام نيابة عن العميل';
+  }
+
   if (isProfitLossAccount) {
-    return movementType === 'incoming' ? 'استلام' : 'تسليم';
+    return movement.movement_type === 'incoming' ? 'استلام' : 'تسليم';
   } else {
-    return movementType === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
+    return movement.movement_type === 'outgoing' ? 'استلام من العميل' : 'تسليم للعميل';
   }
 }
 
@@ -520,7 +537,7 @@ export default function CustomerDetailsScreen() {
             locale: ar,
           });
           const type = getMovementTypeTextWithContext(
-            movement.movement_type,
+            movement,
             customer?.is_profit_loss_account || false
           );
           const symbol = getCurrencySymbol(movement.currency);
@@ -556,7 +573,7 @@ export default function CustomerDetailsScreen() {
 
   const handleMovementPress = (movement: AccountMovement) => {
     const movementTypeText = getMovementTypeText(
-      movement.movement_type,
+      movement,
       customer?.is_profit_loss_account || false
     );
     const currencySymbol = getCurrencySymbol(movement.currency);
@@ -600,7 +617,7 @@ export default function CustomerDetailsScreen() {
 
   const handleDeleteMovement = (movement: AccountMovement) => {
     const movementTypeText = getMovementTypeText(
-      movement.movement_type,
+      movement,
       customer?.is_profit_loss_account || false
     );
     const currencySymbol = getCurrencySymbol(movement.currency);
@@ -652,8 +669,9 @@ export default function CustomerDetailsScreen() {
 
   const filteredMovements = movements
     .filter((movement) => {
-      // نعرض جميع الحركات بما فيها حركات العمولة للشفافية الكاملة
-      return true;
+      // إخفاء حركات العمولة المنفصلة لأنها تظهر فقط في حساب الأرباح والخسائر
+      // العمولة محسوبة بالفعل في المبلغ الصافي للحركة الأصلية
+      return !(movement as any).is_commission_movement;
     })
     .filter((movement) => {
       if (!searchQuery.trim()) return true;
@@ -664,7 +682,7 @@ export default function CustomerDetailsScreen() {
       const amount = movement.amount.toString();
       const date = format(new Date(movement.created_at), 'dd/MM/yyyy');
       const movementTypeText = getMovementTypeText(
-        movement.movement_type,
+        movement,
         customer?.is_profit_loss_account || false
       );
       const senderName = (movement.sender_name || '').toLowerCase();
@@ -932,13 +950,13 @@ export default function CustomerDetailsScreen() {
                           {(movement as any).is_internal_transfer
                             ? 'تحويل داخلي'
                             : getMovementTypeText(
-                                movement.movement_type,
+                                movement,
                                 customer?.is_profit_loss_account || false
                               )}
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>
-                            {movement.movement_type === 'outgoing'
+                            {movement.movement_type === 'incoming'
                               ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
                               : `من: ${movement.sender_name || 'عميل آخر'}`}
                           </Text>

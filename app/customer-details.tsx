@@ -90,6 +90,11 @@ function calculateCurrencyTotals(
   const currencyMap: { [key: string]: CurrencyTotals } = {};
 
   movements.forEach((movement) => {
+    // تجاهل حركات العمولة المنفصلة
+    if ((movement as any).is_commission_movement) {
+      return;
+    }
+
     const currency = movement.currency;
     if (!currencyMap[currency]) {
       currencyMap[currency] = {
@@ -116,6 +121,11 @@ function calculateBalanceByCurrency(
   const currencyMap: { [key: string]: CurrencyBalance } = {};
 
   movements.forEach((movement) => {
+    // تجاهل حركات العمولة المنفصلة
+    if ((movement as any).is_commission_movement) {
+      return;
+    }
+
     const currency = movement.currency;
     if (!currencyMap[currency]) {
       currencyMap[currency] = {
@@ -126,8 +136,6 @@ function calculateBalanceByCurrency(
       };
     }
 
-    // استخدام المبلغ الفعلي من قاعدة البيانات لضمان دقة الحسابات
-    // getDisplayAmount يُستخدم فقط للعرض في القائمة، وليس للحسابات
     const amount = Number(movement.amount);
 
     if (movement.movement_type === 'incoming') {
@@ -138,7 +146,10 @@ function calculateBalanceByCurrency(
   });
 
   Object.values(currencyMap).forEach((item) => {
-    item.balance = item.incoming - item.outgoing;
+    // المنطق الصحيح:
+    // outgoing (استلام من العميل) = لنا عنده = موجب
+    // incoming (تسليم للعميل) = له عندنا = سالب
+    item.balance = item.outgoing - item.incoming;
   });
 
   return Object.values(currencyMap).filter((item) => item.balance !== 0);
@@ -153,9 +164,9 @@ function getMovementTypeText(
 
   if (isInternalTransfer) {
     // في التحويل الداخلي:
-    // - incoming = نسلم نيابة عن العميل = "تسليم"
-    // - outgoing = نستلم نيابة عن العميل = "استلام"
-    return movement.movement_type === 'incoming' ? 'تسليم' : 'استلام';
+    // - outgoing = نسلم نيابة عن العميل = "تسليم"
+    // - incoming = نستلم نيابة عن العميل = "استلام"
+    return movement.movement_type === 'outgoing' ? 'تسليم' : 'استلام';
   }
 
   if (isProfitLossAccount) {
@@ -173,7 +184,7 @@ function getMovementTypeTextWithContext(
   const isInternalTransfer = movement.from_customer_id && movement.to_customer_id;
 
   if (isInternalTransfer) {
-    return movement.movement_type === 'incoming' ? 'تسليم نيابة عن العميل' : 'استلام نيابة عن العميل';
+    return movement.movement_type === 'outgoing' ? 'تسليم نيابة عن العميل' : 'استلام نيابة عن العميل';
   }
 
   if (isProfitLossAccount) {
@@ -956,7 +967,7 @@ export default function CustomerDetailsScreen() {
                         </Text>
                         {(movement as any).is_internal_transfer && (
                           <Text style={styles.movementNotes} numberOfLines={1}>
-                            {movement.movement_type === 'incoming'
+                            {movement.movement_type === 'outgoing'
                               ? `إلى: ${movement.beneficiary_name || 'عميل آخر'}`
                               : `من: ${movement.sender_name || 'عميل آخر'}`}
                           </Text>

@@ -30,7 +30,7 @@ interface TransferFormData {
   notes: string;
   commission: string;
   commissionCurrency: Currency;
-  commissionRecipient: 'from' | 'to' | null;
+  commissionRecipient: 'to' | null;
 }
 
 export default function InternalTransferScreen() {
@@ -102,12 +102,8 @@ export default function InternalTransferScreen() {
 
     try {
       let commissionRecipientId = null;
-      if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient) {
-        if (formData.commissionRecipient === 'from') {
-          commissionRecipientId = formData.fromCustomerId;
-        } else if (formData.commissionRecipient === 'to') {
-          commissionRecipientId = formData.toCustomerId;
-        }
+      if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient === 'to') {
+        commissionRecipientId = formData.toCustomerId;
       }
 
       const { data, error: rpcError } = await supabase.rpc(
@@ -203,11 +199,6 @@ export default function InternalTransferScreen() {
           // المبلغ المستلم ينقص بمقدار العمولة
           toAmount = amount - commission;
           profitLossImpact = `الأرباح والخسائر: سيزيد رصيده بمقدار +${commission} ${commissionSymbol}`;
-        } else if (formData.commissionRecipient === 'from') {
-          // العمولة للمرسل
-          // الأرباح تدفع العمولة للمرسل
-          fromAmount = amount - commission;
-          profitLossImpact = `الأرباح والخسائر: سينقص بمقدار -${commission} ${commissionSymbol} (يدفع للمرسل)`;
         } else if (formData.commissionRecipient === 'to') {
           // العمولة للمستلم
           // الأرباح تدفع العمولة للمستلم
@@ -412,34 +403,6 @@ export default function InternalTransferScreen() {
               </Text>
 
               <View style={styles.commissionRecipientButtons}>
-                {formData.fromType === 'customer' && (
-                  <TouchableOpacity
-                    style={[
-                      styles.recipientButton,
-                      styles.recipientButtonFrom,
-                      formData.commissionRecipient === 'from' && styles.recipientButtonFromActive,
-                    ]}
-                    onPress={() => setFormData({ ...formData, commissionRecipient: 'from' })}
-                  >
-                    <Text
-                      style={[
-                        styles.recipientButtonText,
-                        formData.commissionRecipient === 'from' && styles.recipientButtonTextActive,
-                      ]}
-                    >
-                      {formData.fromCustomerName || 'المُحوِّل'}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.recipientButtonSubtext,
-                        formData.commissionRecipient === 'from' && styles.recipientButtonSubtextActive,
-                      ]}
-                    >
-                      يحصل على العمولة
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
                 {formData.toType === 'customer' && (
                   <TouchableOpacity
                     style={[
@@ -495,14 +458,11 @@ export default function InternalTransferScreen() {
                 </TouchableOpacity>
               </View>
 
-              {formData.commissionRecipient !== null ? (
+              {formData.commissionRecipient === 'to' ? (
                 <View style={styles.commissionImpactInfo}>
                   <AlertCircle size={16} color="#3B82F6" />
                   <Text style={styles.commissionImpactText}>
-                    {formData.commissionRecipient === 'from'
-                      ? `حساب الأرباح والخسائر سيدفع عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} إلى ${formData.fromCustomerName}`
-                      : `حساب الأرباح والخسائر سيدفع عمولة ${formData.commission} ${CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} إلى ${formData.toCustomerName}`
-                    }
+                    حساب الأرباح والخسائر سيدفع عمولة {formData.commission} {CURRENCIES.find(c => c.code === formData.commissionCurrency)?.symbol} إلى {formData.toCustomerName}
                   </Text>
                 </View>
               ) : (

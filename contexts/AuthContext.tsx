@@ -73,10 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         pin
       );
 
-      console.log('Login attempt for:', userName);
-      console.log('Generated hash:', hashHex);
-      console.log('Hash length:', hashHex.length);
-
       const { data, error } = await supabase
         .from('app_security')
         .select('id, pin_hash, is_active, role, user_name')
@@ -84,17 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error || !data) {
-        console.log('User not found or error:', error);
         return false;
       }
 
       if (!data.is_active) {
-        console.log('User is not active');
         return false;
       }
-
-      console.log('Database hash:', data.pin_hash);
-      console.log('Hashes match:', data.pin_hash === hashHex);
 
       if (data.pin_hash === hashHex) {
         await supabase

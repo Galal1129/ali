@@ -42,13 +42,7 @@ export default function LoginScreen() {
     if (success) {
       router.replace('/(tabs)');
     } else {
-      console.log('Login failed for user:', userName.trim());
-      console.log('PIN length:', pin.length);
-      Alert.alert(
-        'خطأ في تسجيل الدخول',
-        `اسم المستخدم أو كلمة المرور غير صحيحة\n\nاسم المستخدم المدخل: "${userName.trim()}"\nطول كلمة المرور: ${pin.length}`,
-        [{ text: 'حسناً', style: 'default' }]
-      );
+      Alert.alert('خطأ', 'اسم المستخدم أو كلمة المرور غير صحيحة');
       setPin('');
     }
   };

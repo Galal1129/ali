@@ -171,51 +171,15 @@ export default function DebtSummaryScreen() {
       const headerHTML = generatePDFHeaderHTML({
         title: 'تقرير - حركة الحسابات',
         logoDataUrl,
-      });
-
-      // Fetch all movements for each customer
-      const { data: allMovements, error: movementsError } = await supabase
-        .from('account_movements')
-        .select('*')
-        .in('customer_id', filteredData.map(c => c.customerId))
-        .order('created_at', { ascending: true });
-
-      if (movementsError) {
-        console.error('[DebtSummary] Error fetching movements:', movementsError);
-        Alert.alert('خطأ', 'حدث خطأ أثناء تحميل الحركات');
-        return;
-      }
-
-      // Group movements by customer
-      const movementsByCustomer = new Map<string, any[]>();
-      allMovements?.forEach((movement) => {
-        if (!movementsByCustomer.has(movement.customer_id)) {
-          movementsByCustomer.set(movement.customer_id, []);
-        }
-        movementsByCustomer.get(movement.customer_id)!.push(movement);
+        primaryColor: '#382de3',
+        darkColor: '#2821b8',
+        height: 150,
+        showPhones: true,
       });
 
       const tableRows = filteredData
-        .map((customer) => {
-          const customerMovements = movementsByCustomer.get(customer.customerId) || [];
-
-          // Filter out commission movements
-          const regularMovements = customerMovements.filter(m => !m.is_commission_movement);
-
-          // Group movements by currency
-          const movementsByCurrency = regularMovements.reduce((acc, movement) => {
-            if (!acc[movement.currency]) {
-              acc[movement.currency] = [];
-            }
-            acc[movement.currency].push(movement);
-            return acc;
-          }, {} as Record<string, any[]>);
-
-          return Object.entries(movementsByCurrency).map(([currency, movements]) => {
-            const movementList = movements as any[];
-            const balance = customer.balances.find(b => b.currency === currency);
-            if (!balance) return '';
-
+        .flatMap((customer) =>
+          customer.balances.map((balance) => {
             const amount = Number(balance.balance);
             const totalIncoming = Number(balance.total_incoming);
             const totalOutgoing = Number(balance.total_outgoing);
@@ -223,48 +187,18 @@ export default function DebtSummaryScreen() {
             const owedToMe = amount < 0 ? Math.abs(amount) : 0;
             const owedByMe = amount > 0 ? amount : 0;
 
-            // Build movement details rows
-            const movementDetailsRows = movementList
-              .map((m: any) => {
-                const movementAmount = Number(m.amount);
-                const date = new Date(m.created_at).toLocaleDateString('ar-EG', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit'
-                });
-
-                return `
-                  <tr style="background-color: #f9fafb;">
-                    <td colspan="2" style="padding: 4px 8px 4px 24px; border: 1px solid #ddd; text-align: right; font-size: 10px;">
-                      ${date} - ${m.movement_number || ''} ${m.notes ? `- ${m.notes}` : ''}
-                    </td>
-                    <td style="padding: 4px 8px; border: 1px solid #ddd; text-align: center; font-size: 10px;">
-                      ${m.movement_type === 'outgoing' ? movementAmount.toFixed(2) : ''}
-                    </td>
-                    <td style="padding: 4px 8px; border: 1px solid #ddd; text-align: center; font-size: 10px;">
-                      ${m.movement_type === 'incoming' ? movementAmount.toFixed(2) : ''}
-                    </td>
-                    <td colspan="2" style="padding: 4px 8px; border: 1px solid #ddd; text-align: center; font-size: 10px;">
-                      ${m.sender_name || m.beneficiary_name || '-'}
-                    </td>
-                  </tr>
-                `;
-              })
-              .join('');
-
             return `
-              <tr style="background-color: #e5e7eb; font-weight: bold;">
+              <tr>
                 <td style="padding: 8px; border: 1px solid #000; text-align: right;">${customer.customerName}</td>
-                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${getCurrencyName(currency)}</td>
-                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${totalOutgoing.toFixed(2)}</td>
-                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${totalIncoming.toFixed(2)}</td>
+                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${getCurrencyName(balance.currency)}</td>
+                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedToMe > 0 ? owedToMe.toFixed(2) : ''}</td>
+                <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedByMe > 0 ? owedByMe.toFixed(2) : ''}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedToMe > 0 ? owedToMe.toFixed(2) : ''}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedByMe > 0 ? owedByMe.toFixed(2) : ''}</td>
               </tr>
-              ${movementDetailsRows}
             `;
-          }).join('');
-        })
+          })
+        )
         .join('');
 
       const html = `

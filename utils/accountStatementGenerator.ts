@@ -20,17 +20,12 @@ function getCurrencyName(code: string): string {
 export function generateAccountStatementHTML(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string,
-  isProfitLossAccount: boolean = false
+  logoDataUrl?: string
 ): string {
   const allMovements = [...movements];
 
-  // For profit/loss account, show commission movements; for others, hide them
   const filteredMovements = allMovements
-    .filter((m) => isProfitLossAccount
-      ? (m as any).is_commission_movement === true
-      : !(m as any).is_commission_movement
-    )
+    .filter((m) => !(m as any).is_commission_movement)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   // Helper function to get combined amount including related commission
@@ -168,6 +163,10 @@ export function generateAccountStatementHTML(
   const headerHTML = generatePDFHeaderHTML({
     title: `كشف حساب العميل: ${customerName}`,
     logoDataUrl,
+    primaryColor: '#382de3',
+    darkColor: '#2821b8',
+    height: 150,
+    showPhones: true,
   });
 
   return `
@@ -352,8 +351,7 @@ export function generateAccountStatementHTML(
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string,
-  isProfitLossAccount: boolean = false
+  logoDataUrl?: string
 ): string {
-  return generateAccountStatementHTML(customerName, movements, logoDataUrl, isProfitLossAccount);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
 }

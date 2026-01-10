@@ -1,6 +1,6 @@
 export const COMPANY_INFO = {
-  nameAr: 'أبو أحمد',
-  nameEn: 'Abu Ahmed',
+  nameAr: 'الترف للصرافة والتحويلات',
+  nameEn: 'Al-Taraf Exchange & Money Transfer',
   addressAr: 'اليمن صنعاء',
   addressEn: 'Yemen Sanaa',
   mainOfficeAr: 'اليمن صنعاء',

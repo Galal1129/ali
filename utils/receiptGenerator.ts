@@ -160,39 +160,30 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       position: relative;
       width: 100%;
       height: 150px;
-      background: #FFFFFF;
-      border: 1px solid rgba(220, 38, 38, 0.25);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${darkColor} 100%);
       border-radius: 18px 18px 0 0;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       padding: 20px 40px;
       flex-shrink: 0;
       overflow: visible;
     }
 
-    .receipt-header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 10%;
-      height: 100%;
-      background: linear-gradient(to left, rgba(220, 38, 38, 0.15), transparent);
-      pointer-events: none;
-      border-radius: 0 18px 0 0;
+    .header-left,
+    .header-right {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
     }
 
-    .receipt-header::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 10%;
-      height: 100%;
-      background: linear-gradient(to right, rgba(220, 38, 38, 0.15), transparent);
-      pointer-events: none;
-      border-radius: 18px 0 0 0;
+    .header-left {
+      justify-content: flex-start;
+    }
+
+    .header-right {
+      justify-content: flex-end;
     }
 
     .header-center {
@@ -202,28 +193,62 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 2px;
+    }
+
+    .contact-box {
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(12px);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 20px;
+      padding: 15px 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      min-width: 240px;
+    }
+
+    .contact-box-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      text-align: center;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .contact-box-phone {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      text-align: center;
+      direction: ltr;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
     }
 
     .company-logo {
       height: 60px;
       width: auto;
       object-fit: contain;
-      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.1));
+      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.4));
     }
 
     .company-name-ar-line {
-      font-size: 28px;
+      font-size: 20px;
       font-weight: 800;
-      color: #dc2626;
+      color: #ffffff;
       line-height: 1.4;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
       text-align: center;
       white-space: nowrap;
     }
 
     .company-name-en {
-      background: rgba(220, 38, 38, 0.05);
-      color: #dc2626;
+      background: #ffffff;
+      color: ${primaryColor};
       font-size: 15px;
       font-weight: 700;
       padding: 8px 30px;
@@ -231,6 +256,7 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       margin-top: 8px;
       letter-spacing: 0.8px;
       text-align: center;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
       white-space: nowrap;
       line-height: 1;
     }
@@ -628,6 +654,8 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
       transform: translateY(-1px) !important;
     }
 
+    .receipt-container.exporting .contact-box-title,
+    .receipt-container.exporting .contact-box-phone,
     .receipt-container.exporting .company-name-ar-line,
     .receipt-container.exporting .company-name-en,
     .receipt-container.exporting .pill-label,
@@ -784,12 +812,29 @@ export function generateReceiptHTML(receiptData: ReceiptData, qrCodeDataUrl: str
     <div class="receipt-container">
       <div class="receipt-inner-frame">
         <div class="receipt-header">
+          <div class="header-right">
+            <div class="contact-box">
+              <div class="contact-box-title">Yemen - Sana'a</div>
+              <div class="contact-box-phone">${COMPANY_INFO.phone1}</div>
+              <div class="contact-box-phone">${COMPANY_INFO.phone2}</div>
+            </div>
+          </div>
+
           <div class="header-center">
             ${logoDataUrl
               ? `<img src="${logoDataUrl}" alt="Logo" class="company-logo" />`
-              : `<div class="company-name-ar-line">أبو أحمد</div>`
+              : `<div class="company-name-ar-line">الترف</div>
+                 <div class="company-name-ar-line">للتحويلات المالية</div>`
             }
-            <div class="company-name-en">Abu Ahmed</div>
+            <div class="company-name-en">Al-Taraf</div>
+          </div>
+
+          <div class="header-left">
+            <div class="contact-box">
+              <div class="contact-box-title">اليمن - صنعاء</div>
+              <div class="contact-box-phone">${COMPANY_INFO.phone1}</div>
+              <div class="contact-box-phone">${COMPANY_INFO.phone2}</div>
+            </div>
           </div>
         </div>
 

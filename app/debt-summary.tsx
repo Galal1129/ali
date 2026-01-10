@@ -171,10 +171,6 @@ export default function DebtSummaryScreen() {
       const headerHTML = generatePDFHeaderHTML({
         title: 'تقرير - حركة الحسابات',
         logoDataUrl,
-        primaryColor: '#382de3',
-        darkColor: '#2821b8',
-        height: 150,
-        showPhones: true,
       });
 
       const tableRows = filteredData

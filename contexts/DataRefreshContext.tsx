@@ -16,7 +16,6 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   const triggerRefresh = useCallback((type: 'movements' | 'customers' | 'all' = 'all') => {
-    console.log('[DataRefresh] Triggering refresh:', type);
     setIsRefreshing(true);
     setLastRefreshTime(Date.now());
 
@@ -26,8 +25,6 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    console.log('[DataRefresh] Setting up realtime subscriptions...');
-
     const realtimeChannel = supabase
       .channel('data-changes')
       .on(
@@ -38,7 +35,6 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
           table: 'account_movements',
         },
         (payload) => {
-          console.log('[DataRefresh] Account movement changed:', payload);
           triggerRefresh('movements');
         }
       )
@@ -50,7 +46,6 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
           table: 'customers',
         },
         (payload) => {
-          console.log('[DataRefresh] Customer changed:', payload);
           triggerRefresh('customers');
         }
       )
@@ -62,18 +57,14 @@ export function DataRefreshProvider({ children }: { children: React.ReactNode })
           table: 'transactions',
         },
         (payload) => {
-          console.log('[DataRefresh] Transaction changed:', payload);
           triggerRefresh('all');
         }
       )
-      .subscribe((status) => {
-        console.log('[DataRefresh] Subscription status:', status);
-      });
+      .subscribe();
 
     setChannel(realtimeChannel);
 
     return () => {
-      console.log('[DataRefresh] Cleaning up realtime subscriptions...');
       if (realtimeChannel) {
         supabase.removeChannel(realtimeChannel);
       }

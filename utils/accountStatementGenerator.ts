@@ -20,12 +20,17 @@ function getCurrencyName(code: string): string {
 export function generateAccountStatementHTML(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
   const allMovements = [...movements];
 
+  // For profit/loss account, show commission movements; for others, hide them
   const filteredMovements = allMovements
-    .filter((m) => !(m as any).is_commission_movement)
+    .filter((m) => isProfitLossAccount
+      ? (m as any).is_commission_movement === true
+      : !(m as any).is_commission_movement
+    )
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   // Helper function to get combined amount including related commission
@@ -347,7 +352,8 @@ export function generateAccountStatementHTML(
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  isProfitLossAccount: boolean = false
 ): string {
-  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl, isProfitLossAccount);
 }

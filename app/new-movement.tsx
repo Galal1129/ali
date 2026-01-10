@@ -115,6 +115,16 @@ export default function NewMovementScreen() {
     }));
   }, [formData.currency]);
 
+  useEffect(() => {
+    if (formData.operation_type === 'customer_to_shop') {
+      setFormData((prev) => ({
+        ...prev,
+        commission: '',
+        commissionRecipient: null,
+      }));
+    }
+  }, [formData.operation_type]);
+
   const loadCustomers = async () => {
     try {
       const { data, error } = await supabase
@@ -164,24 +174,19 @@ export default function NewMovementScreen() {
         : 'incoming';
 
       let commissionRecipientId = null;
-      if (formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient === 'customer') {
+      if (movementType === 'incoming' && formData.commission && parseFloat(formData.commission) > 0 && formData.commissionRecipient === 'customer') {
         commissionRecipientId = customerId;
       }
 
       // حساب المبلغ الفعلي بعد خصم/إضافة العمولة
       const baseAmount = Number(formData.amount);
-      const commissionAmount = formData.commission ? Number(formData.commission) : 0;
+      const commissionAmount = movementType === 'incoming' && formData.commission ? Number(formData.commission) : 0;
       let actualAmount = baseAmount;
 
       // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
-      if (commissionAmount > 0 && formData.commission_currency === formData.currency) {
-        if (movementType === 'incoming') {
-          // له: نخصم العمولة من المبلغ
-          actualAmount = baseAmount - commissionAmount;
-        } else if (movementType === 'outgoing') {
-          // عليه: نضيف العمولة للمبلغ
-          actualAmount = baseAmount + commissionAmount;
-        }
+      if (commissionAmount > 0 && formData.commission_currency === formData.currency && movementType === 'incoming') {
+        // له: نخصم العمولة من المبلغ
+        actualAmount = baseAmount - commissionAmount;
       }
 
       const { data: insertedData, error } = await supabase
@@ -193,7 +198,7 @@ export default function NewMovementScreen() {
             movement_type: movementType,
             amount: actualAmount,
             currency: formData.currency,
-            commission: formData.commission ? Number(formData.commission) : null,
+            commission: movementType === 'incoming' && formData.commission ? Number(formData.commission) : null,
             commission_currency: formData.commission_currency,
             commission_recipient_id: commissionRecipientId,
             notes: formData.notes.trim() || null,
@@ -530,91 +535,92 @@ export default function NewMovementScreen() {
             </View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
-            <View style={styles.commissionRow}>
-              <View style={styles.commissionCurrencyDisplay}>
-                <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
-                <Text style={styles.commissionCurrencySymbol}>
-                  {getCurrencySymbol(formData.commission_currency)}
-                </Text>
+          {formData.operation_type === 'shop_to_customer' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>عمولة الحوالة (اختياري)</Text>
+                <View style={styles.commissionRow}>
+                  <View style={styles.commissionCurrencyDisplay}>
+                    <Text style={styles.commissionCurrencyText}>{formData.commission_currency}</Text>
+                    <Text style={styles.commissionCurrencySymbol}>
+                      {getCurrencySymbol(formData.commission_currency)}
+                    </Text>
+                  </View>
+                  <TextInput
+                    style={styles.commissionInput}
+                    value={formData.commission}
+                    onChangeText={(text) => setFormData({ ...formData, commission: text })}
+                    placeholder="0.00"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="decimal-pad"
+                    textAlign="right"
+                  />
+                </View>
               </View>
-              <TextInput
-                style={styles.commissionInput}
-                value={formData.commission}
-                onChangeText={(text) => setFormData({ ...formData, commission: text })}
-                placeholder="0.00"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="decimal-pad"
-                textAlign="right"
-              />
-            </View>
-          </View>
 
-          {formData.commission && parseFloat(formData.commission) > 0 && (
-            <View style={styles.commissionRecipientSection}>
-              <Text style={styles.label}>من يستلم العمولة؟</Text>
-              <Text style={styles.commissionRecipientSubtitle}>
-                اختر من سيستفيد من العمولة
-              </Text>
+              {formData.commission && parseFloat(formData.commission) > 0 && (
+                <View style={styles.commissionRecipientSection}>
+                  <Text style={styles.label}>من يستلم العمولة؟</Text>
+                  <Text style={styles.commissionRecipientSubtitle}>
+                    اختر من سيستفيد من العمولة
+                  </Text>
 
-              <View style={styles.commissionRecipientButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.recipientButton,
-                    styles.recipientButtonCustomer,
-                    formData.commissionRecipient === 'customer' && styles.recipientButtonCustomerActive,
-                  ]}
-                  onPress={() => setFormData({ ...formData, commissionRecipient: 'customer' })}
-                >
-                  <Text
-                    style={[
-                      styles.recipientButtonText,
-                      formData.commissionRecipient === 'customer' && styles.recipientButtonTextActive,
-                    ]}
-                  >
-                    {formData.operation_type === 'customer_to_shop'
-                      ? formData.from_customer_name || 'العميل'
-                      : formData.to_customer_name || 'العميل'
-                    }
-                  </Text>
-                  <Text
-                    style={[
-                      styles.recipientButtonSubtext,
-                      formData.commissionRecipient === 'customer' && styles.recipientButtonSubtextActive,
-                    ]}
-                  >
-                    يحصل على العمولة
-                  </Text>
-                </TouchableOpacity>
+                  <View style={styles.commissionRecipientButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.recipientButton,
+                        styles.recipientButtonCustomer,
+                        formData.commissionRecipient === 'customer' && styles.recipientButtonCustomerActive,
+                      ]}
+                      onPress={() => setFormData({ ...formData, commissionRecipient: 'customer' })}
+                    >
+                      <Text
+                        style={[
+                          styles.recipientButtonText,
+                          formData.commissionRecipient === 'customer' && styles.recipientButtonTextActive,
+                        ]}
+                      >
+                        {formData.to_customer_name || 'العميل'}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.recipientButtonSubtext,
+                          formData.commissionRecipient === 'customer' && styles.recipientButtonSubtextActive,
+                        ]}
+                      >
+                        يحصل على العمولة
+                      </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.recipientButton,
-                    styles.recipientButtonDefault,
-                    formData.commissionRecipient === null && styles.recipientButtonDefaultActive,
-                  ]}
-                  onPress={() => setFormData({ ...formData, commissionRecipient: null })}
-                >
-                  <Text
-                    style={[
-                      styles.recipientButtonText,
-                      formData.commissionRecipient === null && styles.recipientButtonTextActive,
-                    ]}
-                  >
-                    الأرباح والخسائر
-                  </Text>
-                  <Text
-                    style={[
-                      styles.recipientButtonSubtext,
-                      formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
-                    ]}
-                  >
-                    تحصل على العمولة
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+                    <TouchableOpacity
+                      style={[
+                        styles.recipientButton,
+                        styles.recipientButtonDefault,
+                        formData.commissionRecipient === null && styles.recipientButtonDefaultActive,
+                      ]}
+                      onPress={() => setFormData({ ...formData, commissionRecipient: null })}
+                    >
+                      <Text
+                        style={[
+                          styles.recipientButtonText,
+                          formData.commissionRecipient === null && styles.recipientButtonTextActive,
+                        ]}
+                      >
+                        الأرباح والخسائر
+                      </Text>
+                      <Text
+                        style={[
+                          styles.recipientButtonSubtext,
+                          formData.commissionRecipient === null && styles.recipientButtonSubtextActive,
+                        ]}
+                      >
+                        تحصل على العمولة
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </>
           )}
 
           <View style={styles.inputGroup}>

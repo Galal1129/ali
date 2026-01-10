@@ -75,6 +75,13 @@ export default function QuickAddMovementSheet({
     setCommissionCurrency(currency);
   }, [currency]);
 
+  useEffect(() => {
+    if (movementType === 'outgoing') {
+      setShowCommission(false);
+      setCommission('');
+    }
+  }, [movementType]);
+
   const loadLastUsedCurrency = async () => {
     try {
       const lastCurrency = await AsyncStorage.getItem('@last_used_currency');
@@ -109,21 +116,16 @@ export default function QuickAddMovementSheet({
 
   const calculateNewBalance = () => {
     const amountNum = parseFloat(amount) || 0;
-    const commissionAmount = commission ? parseFloat(commission) : 0;
+    const commissionAmount = movementType === 'incoming' && commission ? parseFloat(commission) : 0;
     const currentBalance =
       currentBalances.find((b) => b.currency === currency)?.balance || 0;
 
     let actualAmount = amountNum;
 
     // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
-    if (commissionAmount > 0 && commissionCurrency === currency) {
-      if (movementType === 'incoming') {
-        // له: نخصم العمولة من المبلغ
-        actualAmount = amountNum - commissionAmount;
-      } else if (movementType === 'outgoing') {
-        // عليه: نضيف العمولة للمبلغ
-        actualAmount = amountNum + commissionAmount;
-      }
+    if (commissionAmount > 0 && commissionCurrency === currency && movementType === 'incoming') {
+      // له: نخصم العمولة من المبلغ
+      actualAmount = amountNum - commissionAmount;
     }
 
     if (movementType === 'incoming') {
@@ -161,18 +163,13 @@ export default function QuickAddMovementSheet({
 
       // حساب المبلغ الفعلي بعد خصم/إضافة العمولة
       const baseAmount = parseFloat(amount);
-      const commissionAmount = commission ? parseFloat(commission) : 0;
+      const commissionAmount = movementType === 'incoming' && commission ? parseFloat(commission) : 0;
       let actualAmount = baseAmount;
 
       // إذا كانت العمولة من نفس العملة، نطبق الخصم/الإضافة
-      if (commissionAmount > 0 && commissionCurrency === currency) {
-        if (movementType === 'incoming') {
-          // له: نخصم العمولة من المبلغ
-          actualAmount = baseAmount - commissionAmount;
-        } else if (movementType === 'outgoing') {
-          // عليه: نضيف العمولة للمبلغ
-          actualAmount = baseAmount + commissionAmount;
-        }
+      if (commissionAmount > 0 && commissionCurrency === currency && movementType === 'incoming') {
+        // له: نخصم العمولة من المبلغ
+        actualAmount = baseAmount - commissionAmount;
       }
 
       const { data: insertedData, error } = await supabase
@@ -184,7 +181,7 @@ export default function QuickAddMovementSheet({
             movement_type: movementType,
             amount: actualAmount,
             currency: currency,
-            commission: commission ? parseFloat(commission) : null,
+            commission: movementType === 'incoming' && commission ? parseFloat(commission) : null,
             commission_currency: commissionCurrency,
             notes: notes.trim() || null,
             sender_name:
@@ -397,46 +394,48 @@ export default function QuickAddMovementSheet({
                     </View>
                   </View>
 
-                  {!showCommission ? (
-                    <TouchableOpacity
-                      style={styles.addCommissionButton}
-                      onPress={() => setShowCommission(true)}
-                    >
-                      <Plus size={16} color="#3B82F6" />
-                      <Text style={styles.addCommissionText}>إضافة عمولة</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <View style={styles.section}>
-                      <View style={styles.commissionHeader}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setShowCommission(false);
-                            setCommission('');
-                          }}
-                        >
-                          <X size={18} color="#EF4444" />
-                        </TouchableOpacity>
-                        <Text style={styles.sectionTitle}>عمولة</Text>
-                      </View>
-                      <View style={styles.amountRow}>
-                        <View style={styles.commissionCurrencyDisplay}>
-                          <Text style={styles.currencyCode}>
-                            {commissionCurrency}
-                          </Text>
-                          <Text style={styles.currencySymbol}>
-                            {getCurrencySymbol(commissionCurrency)}
-                          </Text>
+                  {movementType === 'incoming' && (
+                    !showCommission ? (
+                      <TouchableOpacity
+                        style={styles.addCommissionButton}
+                        onPress={() => setShowCommission(true)}
+                      >
+                        <Plus size={16} color="#3B82F6" />
+                        <Text style={styles.addCommissionText}>إضافة عمولة</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.section}>
+                        <View style={styles.commissionHeader}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setShowCommission(false);
+                              setCommission('');
+                            }}
+                          >
+                            <X size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                          <Text style={styles.sectionTitle}>عمولة</Text>
                         </View>
-                        <TextInput
-                          style={styles.amountInput}
-                          value={commission}
-                          onChangeText={setCommission}
-                          placeholder="0.00"
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="decimal-pad"
-                        />
+                        <View style={styles.amountRow}>
+                          <View style={styles.commissionCurrencyDisplay}>
+                            <Text style={styles.currencyCode}>
+                              {commissionCurrency}
+                            </Text>
+                            <Text style={styles.currencySymbol}>
+                              {getCurrencySymbol(commissionCurrency)}
+                            </Text>
+                          </View>
+                          <TextInput
+                            style={styles.amountInput}
+                            value={commission}
+                            onChangeText={setCommission}
+                            placeholder="0.00"
+                            placeholderTextColor="#9CA3AF"
+                            keyboardType="decimal-pad"
+                          />
+                        </View>
                       </View>
-                    </View>
+                    )
                   )}
 
                   <View style={styles.section}>

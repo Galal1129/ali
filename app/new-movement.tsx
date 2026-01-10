@@ -91,7 +91,7 @@ export default function NewMovementScreen() {
   }, [customerId, customerName]);
 
   useEffect(() => {
-    const shopName = 'علي هادي علي الرازحي';
+    const shopName = 'أبو أحمد';
 
     if (formData.operation_type === 'customer_to_shop') {
       setFormData((prev) => ({

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "الترف للتحويلات المالية",
-    "slug": "altarf-money-transfer",
+    "name": "أبو أحمد",
+    "slug": "abuahmed-money-transfer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,10 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.altaraf.moneytransfer"
+      "bundleIdentifier": "com.abuahmed.moneytransfer"
     },
     "android": {
-      "package": "com.altaraf.moneytransfer",
+      "package": "com.abuahmed.moneytransfer",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",

@@ -187,10 +187,10 @@ export default function QuickAddMovementSheet({
             sender_name:
               movementType === 'outgoing'
                 ? customerName
-                : 'علي هادي علي الرازحي',
+                : 'أبو أحمد',
             beneficiary_name:
               movementType === 'outgoing'
-                ? 'علي هادي علي الرازحي'
+                ? 'أبو أحمد'
                 : customerName,
             transfer_number: transferNumber || null,
             is_internal_transfer: false,

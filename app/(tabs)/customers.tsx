@@ -55,19 +55,11 @@ export default function CustomersScreen() {
 
   const loadCustomers = async () => {
     try {
-      const [customersResult, balancesResult, movementsResult] = await Promise.all([
-        supabase
-          .from('customers_with_last_activity')
-          .select('*')
-          .order('is_profit_loss_account', { ascending: false })
-          .order('last_activity_date', { ascending: false }),
-        supabase
-          .from('customer_balances_by_currency')
-          .select('*'),
-        supabase
-          .from('account_movements')
-          .select('customer_id, movement_type, amount, currency, is_commission_movement'),
-      ]);
+      const customersResult = await supabase
+        .from('customers_with_last_activity')
+        .select('*')
+        .order('is_profit_loss_account', { ascending: false })
+        .order('last_activity_date', { ascending: false });
 
       if (customersResult.error) {
         console.error('Error loading customers:', customersResult.error);
@@ -75,51 +67,31 @@ export default function CustomersScreen() {
       }
 
       const customersData = customersResult.data || [];
-      const customerIds = new Set(customersData.map((customer) => customer.id));
-      const customerNames = new Map(customersData.map((customer) => [customer.id, customer.name]));
       const balancesMap = new Map<string, CustomerBalanceByCurrency[]>();
-      const movementsBalancesMap = new Map<string, CustomerBalanceByCurrency[]>();
 
-      if (balancesResult.error) {
-        console.error('Error loading customer balances:', balancesResult.error);
-      } else {
-        (balancesResult.data || []).forEach((balance) => {
-          if (!customerIds.has(balance.customer_id)) {
-            return;
-          }
-
-          const balanceAmount = Number(balance.balance || 0);
-
-          if (Math.abs(balanceAmount) <= ZERO_BALANCE_THRESHOLD) {
-            return;
-          }
-
-          if (!balancesMap.has(balance.customer_id)) {
-            balancesMap.set(balance.customer_id, []);
-          }
-
-          balancesMap.get(balance.customer_id)?.push({
+      const normalizeBalances = (rows: any[] = []) =>
+        rows
+          .map((balance) => ({
             ...balance,
             total_incoming: Number(balance.total_incoming || 0),
             total_outgoing: Number(balance.total_outgoing || 0),
-            balance: balanceAmount,
-          });
-        });
-      }
+            balance: Number(balance.balance || 0),
+          }))
+          .filter(
+            (balance) => Math.abs(Number(balance.balance || 0)) > ZERO_BALANCE_THRESHOLD,
+          );
 
-      if (movementsResult.error) {
-        console.error('Error loading customer movement fallback balances:', movementsResult.error);
-      } else {
-        const movementTotals = new Map<string, Map<string, CustomerBalanceByCurrency>>();
+      const calculateBalancesFromMovements = (
+        customer: Customer,
+        movements: MovementBalanceRow[] = [],
+      ): CustomerBalanceByCurrency[] => {
+        const currencyMap = new Map<string, CustomerBalanceByCurrency>();
 
-        ((movementsResult.data || []) as MovementBalanceRow[]).forEach((movement) => {
-          const customerId = movement.customer_id;
+        movements.forEach((movement) => {
           const currency = movement.currency;
           const amount = Number(movement.amount || 0);
 
           if (
-            !customerId ||
-            !customerIds.has(customerId) ||
             !currency ||
             movement.is_commission_movement === true ||
             Math.abs(amount) <= ZERO_BALANCE_THRESHOLD
@@ -127,16 +99,10 @@ export default function CustomersScreen() {
             return;
           }
 
-          if (!movementTotals.has(customerId)) {
-            movementTotals.set(customerId, new Map<string, CustomerBalanceByCurrency>());
-          }
-
-          const customerCurrencyMap = movementTotals.get(customerId)!;
-
-          if (!customerCurrencyMap.has(currency)) {
-            customerCurrencyMap.set(currency, {
-              customer_id: customerId,
-              customer_name: customerNames.get(customerId) || '',
+          if (!currencyMap.has(currency)) {
+            currencyMap.set(currency, {
+              customer_id: customer.id,
+              customer_name: customer.name,
               currency,
               total_incoming: 0,
               total_outgoing: 0,
@@ -144,7 +110,7 @@ export default function CustomersScreen() {
             });
           }
 
-          const currencyBalance = customerCurrencyMap.get(currency)!;
+          const currencyBalance = currencyMap.get(currency)!;
 
           if (movement.movement_type === 'incoming') {
             currencyBalance.total_incoming += amount;
@@ -155,26 +121,61 @@ export default function CustomersScreen() {
           }
         });
 
-        movementTotals.forEach((currencyMap, customerId) => {
-          const nonZeroBalances = Array.from(currencyMap.values()).filter(
-            (balance) => Math.abs(Number(balance.balance || 0)) > ZERO_BALANCE_THRESHOLD,
-          );
+        return Array.from(currencyMap.values()).filter(
+          (balance) => Math.abs(Number(balance.balance || 0)) > ZERO_BALANCE_THRESHOLD,
+        );
+      };
 
-          if (nonZeroBalances.length > 0) {
-            movementsBalancesMap.set(customerId, nonZeroBalances);
+      const fetchBalancesForCustomer = async (customer: Customer) => {
+        const balancesResult = await supabase
+          .from('customer_balances_by_currency')
+          .select('customer_id, customer_name, currency, total_incoming, total_outgoing, balance')
+          .eq('customer_id', customer.id);
+
+        if (!balancesResult.error) {
+          const balances = normalizeBalances(balancesResult.data || []);
+
+          if (balances.length > 0) {
+            balancesMap.set(customer.id, balances);
+            return;
           }
-        });
+        } else {
+          console.error(`Error loading balances for customer ${customer.id}:`, balancesResult.error);
+        }
+
+        const movementsResult = await supabase
+          .from('account_movements')
+          .select('customer_id, movement_type, amount, currency, is_commission_movement')
+          .eq('customer_id', customer.id);
+
+        if (movementsResult.error) {
+          console.error(
+            `Error loading movement fallback balances for customer ${customer.id}:`,
+            movementsResult.error,
+          );
+          return;
+        }
+
+        const fallbackBalances = calculateBalancesFromMovements(
+          customer,
+          (movementsResult.data || []) as MovementBalanceRow[],
+        );
+
+        if (fallbackBalances.length > 0) {
+          balancesMap.set(customer.id, fallbackBalances);
+        }
+      };
+
+      const BALANCE_FETCH_BATCH_SIZE = 10;
+      for (let i = 0; i < customersData.length; i += BALANCE_FETCH_BATCH_SIZE) {
+        const batch = customersData.slice(i, i + BALANCE_FETCH_BATCH_SIZE);
+        await Promise.all(batch.map((customer) => fetchBalancesForCustomer(customer)));
       }
 
-      const customersWithBalances: CustomerWithBalances[] = customersData.map((customer) => {
-        const viewBalances = balancesMap.get(customer.id) || [];
-        const fallbackBalances = movementsBalancesMap.get(customer.id) || [];
-
-        return {
-          ...customer,
-          balances: viewBalances.length > 0 ? viewBalances : fallbackBalances,
-        };
-      });
+      const customersWithBalances: CustomerWithBalances[] = customersData.map((customer) => ({
+        ...customer,
+        balances: balancesMap.get(customer.id) || [],
+      }));
 
       setCustomers(customersWithBalances);
     } catch (error) {

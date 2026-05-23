@@ -54,24 +54,33 @@ export default function CustomersScreen() {
 
   const loadCustomers = async () => {
     try {
-      const [customersResult, balancesResult, movementsResult] = await Promise.all([
-        supabase
-          .from('customers_with_last_activity')
-          .select('*')
-          .order('is_profit_loss_account', { ascending: false })
-          .order('last_activity_date', { ascending: false }),
-        supabase.from('customer_balances_by_currency').select('*'),
-        supabase
-          .from('account_movements')
-          .select('customer_id, movement_type, amount, currency'),
-      ]);
+      const customersResult = await supabase
+        .from('customers_with_last_activity')
+        .select('*')
+        .order('is_profit_loss_account', { ascending: false })
+        .order('last_activity_date', { ascending: false });
 
-      if (!customersResult.error && customersResult.data) {
-        const balancesMap = new Map<string, CustomerBalanceByCurrency[]>();
-        const movementsBalancesMap = new Map<string, CustomerBalanceByCurrency[]>();
+      if (customersResult.error) {
+        console.error('Error loading customers:', customersResult.error);
+        return;
+      }
 
-        if (!balancesResult.error && balancesResult.data) {
-          balancesResult.data.forEach((balance) => {
+      const customersData = customersResult.data || [];
+      const customerIds = customersData.map((customer) => customer.id);
+      const balancesMap = new Map<string, CustomerBalanceByCurrency[]>();
+      const movementsBalancesMap = new Map<string, CustomerBalanceByCurrency[]>();
+
+      if (customerIds.length > 0) {
+        const balancesResult = await supabase
+          .from('customer_balances_by_currency')
+          .select('customer_id, customer_name, currency, total_incoming, total_outgoing, balance')
+          .in('customer_id', customerIds)
+          .limit(10000);
+
+        if (balancesResult.error) {
+          console.error('Error loading customer balances:', balancesResult.error);
+        } else {
+          (balancesResult.data || []).forEach((balance) => {
             const balanceAmount = Number(balance.balance || 0);
 
             if (Math.abs(balanceAmount) <= ZERO_BALANCE_THRESHOLD) {
@@ -81,6 +90,7 @@ export default function CustomersScreen() {
             if (!balancesMap.has(balance.customer_id)) {
               balancesMap.set(balance.customer_id, []);
             }
+
             balancesMap.get(balance.customer_id)?.push({
               ...balance,
               total_incoming: Number(balance.total_incoming || 0),
@@ -90,13 +100,25 @@ export default function CustomersScreen() {
           });
         }
 
-        if (!movementsResult.error && movementsResult.data) {
+        const movementsResult = await supabase
+          .from('account_movements')
+          .select('customer_id, movement_type, amount, currency')
+          .in('customer_id', customerIds)
+          .limit(10000);
+
+        if (movementsResult.error) {
+          console.error('Error loading customer movement fallback balances:', movementsResult.error);
+        } else {
           const movementTotals = new Map<string, Map<string, CustomerBalanceByCurrency>>();
 
-          (movementsResult.data as MovementBalanceRow[]).forEach((movement) => {
+          ((movementsResult.data || []) as MovementBalanceRow[]).forEach((movement) => {
             const customerId = movement.customer_id;
             const currency = movement.currency;
             const amount = Number(movement.amount || 0);
+
+            if (!customerId || !currency || Math.abs(amount) <= ZERO_BALANCE_THRESHOLD) {
+              return;
+            }
 
             if (!movementTotals.has(customerId)) {
               movementTotals.set(customerId, new Map<string, CustomerBalanceByCurrency>());
@@ -136,19 +158,19 @@ export default function CustomersScreen() {
             }
           });
         }
-
-        const customersWithBalances: CustomerWithBalances[] = customersResult.data.map((customer) => {
-          const viewBalances = balancesMap.get(customer.id) || [];
-          const fallbackBalances = movementsBalancesMap.get(customer.id) || [];
-
-          return {
-            ...customer,
-            balances: viewBalances.length > 0 ? viewBalances : fallbackBalances,
-          };
-        });
-
-        setCustomers(customersWithBalances);
       }
+
+      const customersWithBalances: CustomerWithBalances[] = customersData.map((customer) => {
+        const viewBalances = balancesMap.get(customer.id) || [];
+        const fallbackBalances = movementsBalancesMap.get(customer.id) || [];
+
+        return {
+          ...customer,
+          balances: viewBalances.length > 0 ? viewBalances : fallbackBalances,
+        };
+      });
+
+      setCustomers(customersWithBalances);
     } catch (error) {
       console.error('Error loading customers:', error);
     } finally {
@@ -165,7 +187,7 @@ export default function CustomersScreen() {
     const filtered = customers.filter(
       (customer) =>
         customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        customer.phone.includes(searchQuery)
+        (customer.phone || '').includes(searchQuery)
     );
     setFilteredCustomers(filtered);
   };
@@ -357,7 +379,7 @@ export default function CustomersScreen() {
 
         <View style={styles.balanceContainer}>
           {!hasBalances ? (
-            <Text style={[styles.balanceText, { color: '#9CA3AF' }]}>ملخص</Text>
+            <Text style={[styles.balanceText, { color: '#9CA3AF' }]}>متساوي</Text>
           ) : (
             <>
               {displayBalances.map((balance, idx) => {

@@ -46,7 +46,12 @@
         "projectId": "02872fc5-9439-4cc4-a96c-8b1ad33bd1a4"
       }
     },
-    "owner": "arti_code"
+    "owner": "arti_code",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/02872fc5-9439-4cc4-a96c-8b1ad33bd1a4"
+    }
   }
 }
-

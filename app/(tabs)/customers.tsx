@@ -19,6 +19,15 @@ interface CustomerWithBalances extends Customer {
   balances: CustomerBalanceByCurrency[];
 }
 
+interface MovementBalanceRow {
+  customer_id: string;
+  movement_type: 'incoming' | 'outgoing';
+  amount: number | string;
+  currency: string;
+}
+
+const ZERO_BALANCE_THRESHOLD = 0.000001;
+
 export default function CustomersScreen() {
   const router = useRouter();
   const { lastRefreshTime } = useDataRefresh();
@@ -45,31 +54,98 @@ export default function CustomersScreen() {
 
   const loadCustomers = async () => {
     try {
-      const [customersResult, balancesResult] = await Promise.all([
+      const [customersResult, balancesResult, movementsResult] = await Promise.all([
         supabase
           .from('customers_with_last_activity')
           .select('*')
           .order('is_profit_loss_account', { ascending: false })
           .order('last_activity_date', { ascending: false }),
         supabase.from('customer_balances_by_currency').select('*'),
+        supabase
+          .from('account_movements')
+          .select('customer_id, movement_type, amount, currency'),
       ]);
 
       if (!customersResult.error && customersResult.data) {
         const balancesMap = new Map<string, CustomerBalanceByCurrency[]>();
+        const movementsBalancesMap = new Map<string, CustomerBalanceByCurrency[]>();
 
         if (!balancesResult.error && balancesResult.data) {
           balancesResult.data.forEach((balance) => {
+            const balanceAmount = Number(balance.balance || 0);
+
+            if (Math.abs(balanceAmount) <= ZERO_BALANCE_THRESHOLD) {
+              return;
+            }
+
             if (!balancesMap.has(balance.customer_id)) {
               balancesMap.set(balance.customer_id, []);
             }
-            balancesMap.get(balance.customer_id)?.push(balance);
+            balancesMap.get(balance.customer_id)?.push({
+              ...balance,
+              total_incoming: Number(balance.total_incoming || 0),
+              total_outgoing: Number(balance.total_outgoing || 0),
+              balance: balanceAmount,
+            });
           });
         }
 
-        const customersWithBalances: CustomerWithBalances[] = customersResult.data.map((customer) => ({
-          ...customer,
-          balances: balancesMap.get(customer.id) || [],
-        }));
+        if (!movementsResult.error && movementsResult.data) {
+          const movementTotals = new Map<string, Map<string, CustomerBalanceByCurrency>>();
+
+          (movementsResult.data as MovementBalanceRow[]).forEach((movement) => {
+            const customerId = movement.customer_id;
+            const currency = movement.currency;
+            const amount = Number(movement.amount || 0);
+
+            if (!movementTotals.has(customerId)) {
+              movementTotals.set(customerId, new Map<string, CustomerBalanceByCurrency>());
+            }
+
+            const customerCurrencyMap = movementTotals.get(customerId)!;
+
+            if (!customerCurrencyMap.has(currency)) {
+              customerCurrencyMap.set(currency, {
+                customer_id: customerId,
+                customer_name: '',
+                currency,
+                total_incoming: 0,
+                total_outgoing: 0,
+                balance: 0,
+              });
+            }
+
+            const currencyBalance = customerCurrencyMap.get(currency)!;
+
+            if (movement.movement_type === 'incoming') {
+              currencyBalance.total_incoming += amount;
+              currencyBalance.balance += amount;
+            } else {
+              currencyBalance.total_outgoing += amount;
+              currencyBalance.balance -= amount;
+            }
+          });
+
+          movementTotals.forEach((currencyMap, customerId) => {
+            const nonZeroBalances = Array.from(currencyMap.values()).filter(
+              (balance) => Math.abs(Number(balance.balance || 0)) > ZERO_BALANCE_THRESHOLD,
+            );
+
+            if (nonZeroBalances.length > 0) {
+              movementsBalancesMap.set(customerId, nonZeroBalances);
+            }
+          });
+        }
+
+        const customersWithBalances: CustomerWithBalances[] = customersResult.data.map((customer) => {
+          const viewBalances = balancesMap.get(customer.id) || [];
+          const fallbackBalances = movementsBalancesMap.get(customer.id) || [];
+
+          return {
+            ...customer,
+            balances: viewBalances.length > 0 ? viewBalances : fallbackBalances,
+          };
+        });
 
         setCustomers(customersWithBalances);
       }
@@ -120,7 +196,7 @@ export default function CustomersScreen() {
 
   const formatAmount = (amount: number) => {
     const numericAmount = Number(amount);
-    const hasFraction = Math.abs(numericAmount % 1) > 0.000001;
+    const hasFraction = Math.abs(numericAmount % 1) > ZERO_BALANCE_THRESHOLD;
 
     return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: hasFraction ? 2 : 0,
@@ -128,13 +204,17 @@ export default function CustomersScreen() {
     }).format(numericAmount);
   };
 
+  const getNonZeroBalances = (balances: CustomerBalanceByCurrency[]) =>
+    balances.filter((balance) => Math.abs(Number(balance.balance || 0)) > ZERO_BALANCE_THRESHOLD);
+
   const handleDeleteCustomer = async (customer: CustomerWithBalances) => {
-    const hasBalances = customer.balances.length > 0;
+    const nonZeroBalances = getNonZeroBalances(customer.balances);
+    const hasBalances = nonZeroBalances.length > 0;
     let message = `هل تريد حذف ${customer.name}؟\n\n`;
 
     if (hasBalances) {
       message += 'تحذير: العميل لديه رصيد!\n';
-      customer.balances.forEach((balance) => {
+      nonZeroBalances.forEach((balance) => {
         const balanceAmount = Number(balance.balance);
         const symbol = getCurrencySymbol(balance.currency);
         if (balanceAmount > 0) {
@@ -246,8 +326,9 @@ export default function CustomersScreen() {
   };
 
   const renderCustomer = ({ item, index }: { item: CustomerWithBalances; index: number }) => {
-    const hasBalances = item.balances.length > 0;
-    const displayBalances = item.balances.slice(0, 2);
+    const nonZeroBalances = getNonZeroBalances(item.balances);
+    const hasBalances = nonZeroBalances.length > 0;
+    const displayBalances = nonZeroBalances.slice(0, 2);
     const isProfitLoss = item.is_profit_loss_account;
 
     return (
@@ -297,9 +378,9 @@ export default function CustomersScreen() {
                   </Text>
                 );
               })}
-              {item.balances.length > 2 && (
+              {nonZeroBalances.length > 2 && (
                 <Text style={[styles.balanceText, { fontSize: 12, color: '#6B7280' }]}>
-                  +{item.balances.length - 2} المزيد
+                  +{nonZeroBalances.length - 2} المزيد
                 </Text>
               )}
             </>

@@ -32,7 +32,7 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { Customer, AccountMovement, CURRENCIES } from '@/types/database';
-import { format, isSameMonth, isSameYear } from 'date-fns';
+import { format, isSameMonth, isSameYear, startOfDay, subDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -53,6 +53,14 @@ interface CurrencyBalance {
 
 const MOVEMENTS_PAGE_SIZE = 100;
 const PDF_FETCH_PAGE_SIZE = 1000;
+type PrintPeriod = 'today' | 'lastTwoDays' | 'lastWeek' | 'lastMonth' | 'custom' | 'all';
+
+interface PrintPeriodConfig {
+  periodLabel: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
 const MOVEMENT_SELECT_FIELDS =
   '*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id';
 
@@ -87,6 +95,51 @@ function formatWhatsAppAmount(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+function buildPrintPeriodConfig(
+  period: PrintPeriod,
+  customDaysText: string,
+): PrintPeriodConfig | null {
+  const now = new Date();
+  const formatDate = (date: Date) => format(date, 'dd/MM/yyyy');
+
+  if (period === 'all') {
+    return {
+      periodLabel: 'الكل (التقرير الكامل)',
+    };
+  }
+
+  if (period === 'custom') {
+    const days = Number.parseInt(customDaysText, 10);
+
+    if (!Number.isFinite(days) || days <= 0) {
+      return null;
+    }
+
+    const startDate = startOfDay(subDays(now, days - 1));
+    return {
+      periodLabel: `آخر ${days} يوم (من ${formatDate(startDate)} إلى ${formatDate(now)})`,
+      startDate,
+      endDate: now,
+    };
+  }
+
+  const periodMap: Record<Exclude<PrintPeriod, 'custom' | 'all'>, { label: string; days: number }> = {
+    today: { label: 'اليوم', days: 1 },
+    lastTwoDays: { label: 'آخر يومين', days: 2 },
+    lastWeek: { label: 'آخر أسبوع', days: 7 },
+    lastMonth: { label: 'آخر شهر', days: 30 },
+  };
+
+  const selectedPeriod = periodMap[period];
+  const startDate = startOfDay(subDays(now, selectedPeriod.days - 1));
+
+  return {
+    periodLabel: `${selectedPeriod.label} (من ${formatDate(startDate)} إلى ${formatDate(now)})`,
+    startDate,
+    endDate: now,
+  };
 }
 
 interface CurrencyTotals {
@@ -234,6 +287,8 @@ export default function CustomerDetailsScreen() {
   const [showCurrencyDetails, setShowCurrencyDetails] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const [customPrintDays, setCustomPrintDays] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadCustomerData = useCallback(async () => {
@@ -405,14 +460,22 @@ export default function CustomerDetailsScreen() {
     }
   };
 
-  const handlePrint = async () => {
+  const handlePrint = async (period: PrintPeriod = 'all') => {
     if (!customer) return;
+
+    const periodConfig = buildPrintPeriodConfig(period, customPrintDays);
+
+    if (!periodConfig) {
+      Alert.alert('تنبيه', 'يرجى إدخال عدد أيام صحيح');
+      return;
+    }
 
     if (totalMovementsCount === 0 && movements.length === 0) {
       Alert.alert('تنبيه', 'لا توجد حركات لطباعتها');
       return;
     }
 
+    setShowPrintOptions(false);
     setIsPrinting(true);
 
     try {
@@ -448,6 +511,7 @@ export default function CustomerDetailsScreen() {
         customer.name,
         allMovements,
         logoDataUrl,
+        periodConfig,
       );
 
       console.log('[CustomerDetails] Creating PDF file...');
@@ -975,7 +1039,7 @@ export default function CustomerDetailsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tabButton, isPrinting && styles.tabButtonDisabled]}
-            onPress={handlePrint}
+            onPress={() => setShowPrintOptions(true)}
             disabled={isPrinting || totalMovementsCount === 0}
           >
             {isPrinting ? (
@@ -1208,6 +1272,88 @@ export default function CustomerDetailsScreen() {
           }}
         />
       )}
+
+      <Modal
+        visible={showPrintOptions}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPrintOptions(false)}
+      >
+        <View style={styles.printModalOverlay}>
+          <View style={styles.printModalContent}>
+            <Text style={styles.printModalTitle}>طباعة كشف الحساب</Text>
+            <Text style={styles.printModalSubtitle}>اختر الفترة</Text>
+
+            <TouchableOpacity
+              style={styles.printOptionItem}
+              onPress={() => handlePrint('today')}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printOptionText}>اليوم</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.printOptionItem}
+              onPress={() => handlePrint('lastTwoDays')}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printOptionText}>آخر يومين</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.printOptionItem}
+              onPress={() => handlePrint('lastWeek')}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printOptionText}>آخر أسبوع</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.printOptionItem}
+              onPress={() => handlePrint('lastMonth')}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printOptionText}>آخر شهر</Text>
+            </TouchableOpacity>
+
+            <View style={styles.customPrintRow}>
+              <TouchableOpacity
+                style={[styles.customPrintButton, isPrinting && styles.customPrintButtonDisabled]}
+                onPress={() => handlePrint('custom')}
+                disabled={isPrinting}
+              >
+                <Text style={styles.customPrintButtonText}>طباعة</Text>
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.customPrintInput}
+                placeholder="عدد الأيام"
+                placeholderTextColor="#9CA3AF"
+                value={customPrintDays}
+                onChangeText={setCustomPrintDays}
+                keyboardType="numeric"
+                textAlign="center"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.printOptionItem}
+              onPress={() => handlePrint('all')}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printOptionText}>الكل (التقرير الكامل)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.printCancelButton}
+              onPress={() => setShowPrintOptions(false)}
+              disabled={isPrinting}
+            >
+              <Text style={styles.printCancelButtonText}>إلغاء</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showSettingsMenu}
@@ -1668,6 +1814,85 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  printModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  printModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 28,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+  },
+  printModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  printModalSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  printOptionItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  printOptionText: {
+    fontSize: 17,
+    color: '#374151',
+    textAlign: 'right',
+  },
+  customPrintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  customPrintButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  customPrintButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  customPrintButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  customPrintInput: {
+    flex: 1,
+    height: 52,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+    fontSize: 16,
+    color: '#111827',
+    paddingHorizontal: 16,
+  },
+  printCancelButton: {
+    paddingVertical: 18,
+    marginTop: 8,
+  },
+  printCancelButtonText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,

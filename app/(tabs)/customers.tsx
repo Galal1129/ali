@@ -118,6 +118,16 @@ export default function CustomersScreen() {
     return currency?.symbol || code;
   };
 
+  const formatAmount = (amount: number) => {
+    const numericAmount = Number(amount);
+    const hasFraction = Math.abs(numericAmount % 1) > 0.000001;
+
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: hasFraction ? 2 : 0,
+    }).format(numericAmount);
+  };
+
   const handleDeleteCustomer = async (customer: CustomerWithBalances) => {
     const hasBalances = customer.balances.length > 0;
     let message = `هل تريد حذف ${customer.name}؟\n\n`;
@@ -128,9 +138,9 @@ export default function CustomersScreen() {
         const balanceAmount = Number(balance.balance);
         const symbol = getCurrencySymbol(balance.currency);
         if (balanceAmount > 0) {
-          message += `• له عندنا ${Math.round(balanceAmount)} ${symbol}\n`;
+          message += `• له عندنا ${formatAmount(balanceAmount)} ${symbol}\n`;
         } else {
-          message += `• لنا عنده ${Math.round(Math.abs(balanceAmount))} ${symbol}\n`;
+          message += `• لنا عنده ${formatAmount(Math.abs(balanceAmount))} ${symbol}\n`;
         }
       });
       message += '\n';
@@ -281,8 +291,8 @@ export default function CustomersScreen() {
                     ]}
                   >
                     {balanceAmount > 0
-                      ? `+${Math.round(balanceAmount)}`
-                      : `${Math.round(balanceAmount)}`}{' '}
+                      ? `+${formatAmount(balanceAmount)}`
+                      : `${formatAmount(balanceAmount)}`}{' '}
                     {getCurrencySymbol(balance.currency)}
                   </Text>
                 );

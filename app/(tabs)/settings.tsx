@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +5,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Updates from 'expo-updates';
 import {
   LogOut,
   Lock,
@@ -17,12 +18,47 @@ import {
   Settings as SettingsIcon,
   Building2,
   Users,
+  RefreshCw,
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { logout, settings } = useAuth();
+
+  const handleUpdateApp = async () => {
+    try {
+      if (__DEV__ || Platform.OS === 'web' || !Updates.isEnabled) {
+        Alert.alert('تنبيه', 'التحديث يعمل فقط في نسخة APK وليس أثناء التطوير.');
+        return;
+      }
+
+      const update = await Updates.checkForUpdateAsync();
+
+      if (!update.isAvailable) {
+        Alert.alert('لا يوجد تحديث', 'أنت تستخدم آخر إصدار من التطبيق.');
+        return;
+      }
+
+      await Updates.fetchUpdateAsync();
+
+      Alert.alert(
+        'تم تحميل التحديث',
+        'اضغط موافق لإعادة تشغيل التطبيق وتطبيق التحديث.',
+        [
+          {
+            text: 'موافق',
+            onPress: async () => {
+              await Updates.reloadAsync();
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('خطأ', 'تعذر فحص التحديث. تأكد من اتصال الإنترنت.');
+      console.log('Update error:', error);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert('تسجيل الخروج', 'هل أنت متأكد من تسجيل الخروج؟', [
@@ -66,6 +102,13 @@ export default function SettingsScreen() {
       subtitle: 'نسخ واستعادة البيانات',
       color: '#10B981',
       onPress: () => router.push('/backup' as any),
+    },
+    {
+      icon: RefreshCw,
+      title: 'تحديث التطبيق',
+      subtitle: 'فحص وتحميل آخر تحديث',
+      color: '#2563EB',
+      onPress: handleUpdateApp,
     },
     {
       icon: Info,

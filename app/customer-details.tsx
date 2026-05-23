@@ -90,11 +90,18 @@ function getCurrencyName(code: string): string {
   return currency?.name || code;
 }
 
-function formatWhatsAppAmount(amount: number): string {
+function formatAmount(amount: number): string {
+  const numericAmount = Number(amount);
+  const hasFraction = Math.abs(numericAmount % 1) > 0.000001;
+
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+    minimumFractionDigits: hasFraction ? 2 : 0,
+    maximumFractionDigits: hasFraction ? 2 : 0,
+  }).format(numericAmount);
+}
+
+function formatWhatsAppAmount(amount: number): string {
+  return formatAmount(amount);
 }
 
 function buildPrintPeriodConfig(
@@ -612,9 +619,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          warningMessage += `• له عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
+          warningMessage += `• له عندنا ${formatAmount(currBalance.balance)} ${symbol}\n`;
         } else {
-          warningMessage += `• لنا عنده ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          warningMessage += `• لنا عنده ${formatAmount(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       warningMessage += '\n';
@@ -697,9 +704,9 @@ export default function CustomerDetailsScreen() {
       balances.forEach((currBalance) => {
         const symbol = getCurrencySymbol(currBalance.currency);
         if (currBalance.balance > 0) {
-          accountText += `• للعميل عندنا: ${Math.round(currBalance.balance)} ${symbol}\n`;
+          accountText += `• للعميل عندنا: ${formatAmount(currBalance.balance)} ${symbol}\n`;
         } else {
-          accountText += `• لنا عند العميل: ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+          accountText += `• لنا عند العميل: ${formatAmount(Math.abs(currBalance.balance))} ${symbol}\n`;
         }
       });
       accountText += `\n`;
@@ -724,7 +731,7 @@ export default function CustomerDetailsScreen() {
               : 'له';
           const symbol = getCurrencySymbol(movement.currency);
           accountText += `${date} - ${type} ${movement.movement_number}\n`;
-          accountText += `المبلغ: ${Math.round(Number(movement.amount))} ${symbol}\n`;
+          accountText += `المبلغ: ${formatAmount(Number(movement.amount))} ${symbol}\n`;
           if (movement.notes) {
             accountText += `الملاحظات: ${movement.notes}\n`;
           }
@@ -757,7 +764,7 @@ export default function CustomerDetailsScreen() {
     const movementTypeText =
       movement.movement_type === 'outgoing' ? 'عليه' : 'له';
     const currencySymbol = getCurrencySymbol(movement.currency);
-    const amount = Math.round(Number(movement.amount));
+    const amount = formatAmount(Number(movement.amount));
 
     Alert.alert(
       `${movementTypeText} - ${movement.movement_number}`,
@@ -799,7 +806,7 @@ export default function CustomerDetailsScreen() {
     const movementTypeText =
       movement.movement_type === 'outgoing' ? 'عليه' : 'له';
     const currencySymbol = getCurrencySymbol(movement.currency);
-    const amount = Math.round(Number(movement.amount));
+    const amount = formatAmount(Number(movement.amount));
 
     Alert.alert(
       'تأكيد الحذف',
@@ -964,7 +971,7 @@ export default function CustomerDetailsScreen() {
                   <Text style={styles.summaryLineGreen}>
                     {customer.name} له عندنا{' '}
                     <Text style={styles.summaryAmountGreen}>
-                      {Math.round(currBalance.balance)}{' '}
+                      {formatAmount(currBalance.balance)}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
@@ -972,7 +979,7 @@ export default function CustomerDetailsScreen() {
                   <Text style={styles.summaryLineRed}>
                     لنا عند {customer.name}{' '}
                     <Text style={styles.summaryAmountRed}>
-                      {Math.round(Math.abs(currBalance.balance))}{' '}
+                      {formatAmount(Math.abs(currBalance.balance))}{' '}
                       {getCurrencySymbol(currBalance.currency)}
                     </Text>
                   </Text>
@@ -1201,11 +1208,11 @@ export default function CustomerDetailsScreen() {
                             },
                           ]}
                         >
-                          {Math.round(getCombinedAmount(movement, movements))}
+                          {formatAmount(getCombinedAmount(movement, movements))}
                         </Text>
                         {getRelatedCommission(movement, movements) > 0 && (
                           <Text style={styles.commissionBadge}>
-                            شامل {Math.round(getRelatedCommission(movement, movements))} عمولة
+                            شامل {formatAmount(getRelatedCommission(movement, movements))} عمولة
                           </Text>
                         )}
                         <Text style={styles.movementLabel}>

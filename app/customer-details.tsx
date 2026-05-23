@@ -51,6 +51,11 @@ interface CurrencyBalance {
   balance: number;
 }
 
+const MOVEMENTS_PAGE_SIZE = 100;
+const PDF_FETCH_PAGE_SIZE = 1000;
+const MOVEMENT_SELECT_FIELDS =
+  '*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id';
+
 function groupMovementsByMonth(movements: AccountMovement[]): GroupedMovements {
   const grouped: GroupedMovements = {};
 
@@ -75,6 +80,13 @@ function getCurrencySymbol(code: string): string {
 function getCurrencyName(code: string): string {
   const currency = CURRENCIES.find((c) => c.code === code);
   return currency?.name || code;
+}
+
+function formatWhatsAppAmount(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 interface CurrencyTotals {
@@ -180,12 +192,41 @@ function getRelatedCommission(
   return relatedCommissions.reduce((sum, m) => sum + Number(m.amount), 0);
 }
 
+async function fetchAllCustomerMovements(customerId: string): Promise<AccountMovement[]> {
+  let from = 0;
+  const allMovements: AccountMovement[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('account_movements')
+      .select(MOVEMENT_SELECT_FIELDS)
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .range(from, from + PDF_FETCH_PAGE_SIZE - 1);
+
+    if (error) throw error;
+
+    const batch = (data || []) as AccountMovement[];
+    allMovements.push(...batch);
+
+    if (batch.length < PDF_FETCH_PAGE_SIZE) break;
+
+    from += PDF_FETCH_PAGE_SIZE;
+  }
+
+  return allMovements;
+}
+
 export default function CustomerDetailsScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { lastRefreshTime } = useDataRefresh();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [movements, setMovements] = useState<AccountMovement[]>([]);
+  const [currencyBalances, setCurrencyBalances] = useState<CurrencyBalance[]>([]);
+  const [totalMovementsCount, setTotalMovementsCount] = useState(0);
+  const [hasMoreMovements, setHasMoreMovements] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalIncoming, setTotalIncoming] = useState(0);
   const [totalOutgoing, setTotalOutgoing] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,14 +237,22 @@ export default function CustomerDetailsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const loadCustomerData = useCallback(async () => {
+    const customerId = Array.isArray(id) ? id[0] : id;
+    if (!customerId) return;
+
     try {
-      const [customerResult, movementsResult] = await Promise.all([
-        supabase.from('customers').select('*').eq('id', id).maybeSingle(),
+      const [customerResult, balancesResult, movementsResult] = await Promise.all([
+        supabase.from('customers').select('*').eq('id', customerId).maybeSingle(),
+        supabase
+          .from('customer_balances_by_currency')
+          .select('currency, total_incoming, total_outgoing, balance')
+          .eq('customer_id', customerId),
         supabase
           .from('account_movements')
-          .select('*, is_internal_transfer, transfer_group_id, is_commission_movement, related_commission_movement_id')
-          .eq('customer_id', id)
-          .order('created_at', { ascending: false }),
+          .select(MOVEMENT_SELECT_FIELDS, { count: 'exact' })
+          .eq('customer_id', customerId)
+          .order('created_at', { ascending: false })
+          .range(0, MOVEMENTS_PAGE_SIZE - 1),
       ]);
 
       if (customerResult.error || !customerResult.data) {
@@ -212,28 +261,90 @@ export default function CustomerDetailsScreen() {
         return;
       }
 
+      if (balancesResult.error) {
+        console.error('Error loading customer balances:', balancesResult.error);
+        Alert.alert('خطأ', 'حدث خطأ أثناء تحميل رصيد العميل');
+        return;
+      }
+
+      if (movementsResult.error) {
+        console.error('Error loading customer movements:', movementsResult.error);
+        Alert.alert('خطأ', 'حدث خطأ أثناء تحميل حركات العميل');
+        return;
+      }
+
+      const balances = (balancesResult.data || []).map((row: any) => ({
+        currency: row.currency,
+        incoming: Number(row.total_incoming || 0),
+        outgoing: Number(row.total_outgoing || 0),
+        balance: Number(row.balance || 0),
+      }));
+
+      const loadedMovements = (movementsResult.data || []) as AccountMovement[];
+      const totalCount = movementsResult.count || loadedMovements.length;
+
       setCustomer(customerResult.data);
-      setMovements(movementsResult.data || []);
+      setCurrencyBalances(balances);
+      setMovements(loadedMovements);
+      setTotalMovementsCount(totalCount);
+      setHasMoreMovements(loadedMovements.length < totalCount);
 
-      const incoming =
-        movementsResult.data
-          ?.filter((m) => m.movement_type === 'incoming')
-          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
-
-      const outgoing =
-        movementsResult.data
-          ?.filter((m) => m.movement_type === 'outgoing')
-          .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
-
-      setTotalIncoming(incoming);
-      setTotalOutgoing(outgoing);
+      setTotalIncoming(
+        balances.reduce((sum, item) => sum + Number(item.incoming || 0), 0),
+      );
+      setTotalOutgoing(
+        balances.reduce((sum, item) => sum + Number(item.outgoing || 0), 0),
+      );
     } catch (error) {
       console.error('Error loading customer data:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء تحميل البيانات');
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, router]);
+
+  const loadMoreMovements = useCallback(async () => {
+    const customerId = Array.isArray(id) ? id[0] : id;
+    if (!customerId || isLoadingMore || !hasMoreMovements) return;
+
+    setIsLoadingMore(true);
+
+    try {
+      const from = movements.length;
+      const to = from + MOVEMENTS_PAGE_SIZE - 1;
+
+      const { data, error } = await supabase
+        .from('account_movements')
+        .select(MOVEMENT_SELECT_FIELDS)
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      const batch = (data || []) as AccountMovement[];
+      const existingIds = new Set(movements.map((movement) => movement.id));
+      const uniqueBatch = batch.filter((movement) => !existingIds.has(movement.id));
+      const loadedAfterThisRequest = movements.length + uniqueBatch.length;
+
+      setMovements((previousMovements) => [...previousMovements, ...uniqueBatch]);
+      setHasMoreMovements(
+        batch.length === MOVEMENTS_PAGE_SIZE &&
+          loadedAfterThisRequest < totalMovementsCount,
+      );
+    } catch (error) {
+      console.error('Error loading more movements:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء تحميل المزيد من الحركات');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    id,
+    movements,
+    isLoadingMore,
+    hasMoreMovements,
+    totalMovementsCount,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -260,7 +371,7 @@ export default function CustomerDetailsScreen() {
   const handleWhatsApp = () => {
     if (customer?.phone) {
       const cleanPhone = customer.phone.replace(/[^0-9]/g, '');
-      const balances = calculateBalanceByCurrency(movements);
+      const balances = currencyBalances;
       const currentDate = format(new Date(), 'EEEE، dd MMMM yyyy', {
         locale: ar,
       });
@@ -274,11 +385,11 @@ export default function CustomerDetailsScreen() {
       } else {
         message += `رصيدك الحالي:\n`;
         balances.forEach((currBalance) => {
-          const symbol = getCurrencySymbol(currBalance.currency);
+          const currencyName = getCurrencyName(currBalance.currency);
           if (currBalance.balance > 0) {
-            message += `• لك عندنا ${Math.round(currBalance.balance)} ${symbol}\n`;
+            message += `• لكم: ${formatWhatsAppAmount(currBalance.balance)} ${currencyName}\n`;
           } else {
-            message += `• لنا عندك ${Math.round(Math.abs(currBalance.balance))} ${symbol}\n`;
+            message += `• عليكم: ${formatWhatsAppAmount(Math.abs(currBalance.balance))} ${currencyName}\n`;
           }
         });
       }
@@ -295,7 +406,9 @@ export default function CustomerDetailsScreen() {
   };
 
   const handlePrint = async () => {
-    if (!customer || movements.length === 0) {
+    if (!customer) return;
+
+    if (totalMovementsCount === 0 && movements.length === 0) {
       Alert.alert('تنبيه', 'لا توجد حركات لطباعتها');
       return;
     }
@@ -322,10 +435,18 @@ export default function CustomerDetailsScreen() {
         logoDataUrl = undefined;
       }
 
+      console.log('[CustomerDetails] Fetching all movements for PDF...');
+      const allMovements = await fetchAllCustomerMovements(customer.id);
+
+      if (allMovements.length === 0) {
+        Alert.alert('تنبيه', 'لا توجد حركات لطباعتها');
+        return;
+      }
+
       console.log('[CustomerDetails] Generating HTML for PDF...');
       const html = generateAccountStatementHTML(
         customer.name,
-        movements,
+        allMovements,
         logoDataUrl,
       );
 
@@ -360,7 +481,7 @@ export default function CustomerDetailsScreen() {
 
     Alert.alert(
       'تصفير الحساب',
-      `هل أنت متأكد من تصفير حساب ${customer.name}?\n\nسيتم حذف جميع الحركات (${movements.length} حركة) مع الاحتفاظ ببيانات العميل.\n\nلا يمكن التراجع عن هذه العملية!`,
+      `هل أنت متأكد من تصفير حساب ${customer.name}?\n\nسيتم حذف جميع الحركات (${totalMovementsCount} حركة) مع الاحتفاظ ببيانات العميل.\n\nلا يمكن التراجع عن هذه العملية!`,
       [
         { text: 'إلغاء', style: 'cancel' },
         {
@@ -416,7 +537,7 @@ export default function CustomerDetailsScreen() {
   const handleDeleteCustomer = () => {
     if (!customer) return;
 
-    const balances = calculateBalanceByCurrency(movements);
+    const balances = currencyBalances;
     const hasBalance =
       balances.length > 0 && balances.some((b) => b.balance !== 0);
 
@@ -437,7 +558,7 @@ export default function CustomerDetailsScreen() {
 
     warningMessage += `سيتم حذف:\n`;
     warningMessage += `• جميع بيانات العميل\n`;
-    warningMessage += `• جميع الحركات (${movements.length} حركة)\n\n`;
+    warningMessage += `• جميع الحركات (${totalMovementsCount} حركة)\n\n`;
     warningMessage += `لا يمكن التراجع عن هذه العملية!`;
 
     Alert.alert('حذف العميل', warningMessage, [
@@ -501,7 +622,7 @@ export default function CustomerDetailsScreen() {
   const handleShareAccount = async () => {
     if (!customer) return;
 
-    const balances = calculateBalanceByCurrency(movements);
+    const balances = currencyBalances;
     let accountText = `تقرير حساب العميل: ${customer.name}\n`;
     accountText += `=====================================\n\n`;
 
@@ -521,7 +642,8 @@ export default function CustomerDetailsScreen() {
     }
 
     if (movements.length > 0) {
-      accountText += `تفاصيل الحركات:\n`;
+      accountText += `تفاصيل الحركات المحملة في الشاشة:\n`;
+      accountText += `تم عرض ${movements.length} من أصل ${totalMovementsCount} حركة. اضغط رؤية المزيد داخل صفحة العميل لعرض الباقي.\n`;
       accountText += `=====================================\n\n`;
 
       const grouped = groupMovementsByMonth(movements);
@@ -691,8 +813,11 @@ export default function CustomerDetailsScreen() {
     });
 
   const groupedMovements = groupMovementsByMonth(filteredMovements);
-  const currencyBalances = calculateBalanceByCurrency(movements);
-  const currencyTotals = calculateCurrencyTotals(movements);
+  const currencyTotals = currencyBalances.map((item) => ({
+    currency: item.currency,
+    incoming: item.incoming,
+    outgoing: item.outgoing,
+  }));
 
   if (isLoading) {
     return (
@@ -734,7 +859,13 @@ export default function CustomerDetailsScreen() {
           >
             <ArrowRight size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{customer.name}</Text>
+          <Text
+            style={styles.headerTitle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {customer.name}
+          </Text>
           <TouchableOpacity
             style={styles.settingsButton}
             onPress={() => setShowSettingsMenu(true)}
@@ -745,7 +876,7 @@ export default function CustomerDetailsScreen() {
         <View style={styles.headerInfo}>
           <View style={styles.headerBadge}>
             <Receipt size={14} color="#FFFFFF" />
-            <Text style={styles.headerBadgeText}>{movements.length} حركة</Text>
+            <Text style={styles.headerBadgeText}>{totalMovementsCount} حركة</Text>
           </View>
           <View style={styles.headerBadge}>
             <Text style={styles.headerBadgeText}>
@@ -845,7 +976,7 @@ export default function CustomerDetailsScreen() {
           <TouchableOpacity
             style={[styles.tabButton, isPrinting && styles.tabButtonDisabled]}
             onPress={handlePrint}
-            disabled={isPrinting || movements.length === 0}
+            disabled={isPrinting || totalMovementsCount === 0}
           >
             {isPrinting ? (
               <ActivityIndicator size="small" color="#6B7280" />
@@ -1027,6 +1158,36 @@ export default function CustomerDetailsScreen() {
               ),
             )
           )}
+
+          {!searchQuery.trim() && hasMoreMovements && (
+            <View style={styles.viewMoreContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.viewMoreButton,
+                  isLoadingMore && styles.viewMoreButtonDisabled,
+                ]}
+                onPress={loadMoreMovements}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.viewMoreButtonText}>رؤية المزيد</Text>
+                )}
+              </TouchableOpacity>
+              <Text style={styles.viewMoreInfoText}>
+                تم عرض {movements.length} من أصل {totalMovementsCount} حركة
+              </Text>
+            </View>
+          )}
+
+          {!searchQuery.trim() &&
+            !hasMoreMovements &&
+            totalMovementsCount > MOVEMENTS_PAGE_SIZE && (
+              <Text style={styles.noMoreMovementsText}>
+                تم عرض جميع الحركات
+              </Text>
+            )}
         </View>
       </ScrollView>
 
@@ -1150,6 +1311,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -1158,12 +1320,15 @@ const styles = StyleSheet.create({
   settingsButton: {
     width: 40,
     height: 40,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 20,
   },
   headerTitle: {
+    flex: 1,
+    marginHorizontal: 12,
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
@@ -1453,6 +1618,40 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#9CA3AF',
+  },
+  viewMoreContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+  },
+  viewMoreButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 24,
+    minWidth: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewMoreButtonDisabled: {
+    opacity: 0.6,
+  },
+  viewMoreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  viewMoreInfoText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  noMoreMovementsText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingVertical: 16,
   },
   fab: {
     position: 'absolute',

@@ -58,8 +58,27 @@ export function generateAccountStatementHTML(
 
   const reportDate = format(new Date(), 'EEEE، dd MMMM yyyy', { locale: ar });
 
+  // Rows per page-table: chosen conservatively so each table fits on one page
+  // and the thead is always present at the top of every printed page.
+  // First page of the first currency is shorter because the company header
+  // (logo + title + phones) takes ~1/3 of the available height.
+  const ROWS_PER_PAGE = 22;
+  const ROWS_FIRST_PAGE = 12;
+
+  const tableHead = `
+    <thead>
+      <tr>
+        <th style="width: 12%;">التاريخ</th>
+        <th style="width: 38%;">البيان</th>
+        <th style="width: 15%;">له</th>
+        <th style="width: 15%;">عليه</th>
+        <th style="width: 20%;">الرصيد</th>
+      </tr>
+    </thead>
+  `;
+
   // Generate sections for each currency
-  const currencySections = Object.entries(groupedByCurrency).map(([curr, currMovements]) => {
+  const currencySections = Object.entries(groupedByCurrency).map(([curr, currMovements], sectionIndex) => {
     const movementsWithBalance: MovementWithBalance[] = [];
     let runningBalance = 0;
 
@@ -89,24 +108,23 @@ export function generateAccountStatementHTML(
     const finalBalance = totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
 
-    const movementRows = movementsWithBalance
-      .map((movement) => {
-        const balanceDisplay = movement.runningBalance > 0
-          ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} ${currencyName} (له)`
-          : movement.runningBalance < 0
-          ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
-          : '-';
+    const movementRowHtmls = movementsWithBalance.map((movement) => {
+      const balanceDisplay = movement.runningBalance > 0
+        ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} ${currencyName} (له)`
+        : movement.runningBalance < 0
+        ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
+        : '-';
 
-        const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
-        const combinedAmount = getCombinedAmount(movement);
-        const incomingAmount = movement.movement_type === 'incoming'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
-          : '-';
-        const outgoingAmount = movement.movement_type === 'outgoing'
-          ? Math.round(combinedAmount).toLocaleString('en-US')
-          : '-';
+      const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
+      const combinedAmount = getCombinedAmount(movement);
+      const incomingAmount = movement.movement_type === 'incoming'
+        ? Math.round(combinedAmount).toLocaleString('en-US')
+        : '-';
+      const outgoingAmount = movement.movement_type === 'outgoing'
+        ? Math.round(combinedAmount).toLocaleString('en-US')
+        : '-';
 
-        return `
+      return `
         <tr>
           <td class="cell text-center">${dateStr}</td>
           <td class="cell" style="text-align: right; padding-right: 12px;">${movement.notes || movement.movement_number}</td>
@@ -114,9 +132,8 @@ export function generateAccountStatementHTML(
           <td class="cell text-center">${outgoingAmount}</td>
           <td class="cell text-center">${balanceDisplay}</td>
         </tr>
-        `;
-      })
-      .join('');
+      `;
+    });
 
     const finalBalanceDisplay = finalBalance > 0
       ? `${Math.round(finalBalance).toLocaleString('en-US')} ${currencyName} (له)`
@@ -127,37 +144,67 @@ export function generateAccountStatementHTML(
     const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';
     const totalOutgoingStr = totalOutgoing > 0 ? Math.round(totalOutgoing).toLocaleString('en-US') : '-';
 
-    return `
-    <div class="currency-section">
-      <div class="section-title">
-        <h2>كشف حساب ${customerName} - ${currencyName}</h2>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 12%;">التاريخ</th>
-            <th style="width: 38%;">البيان</th>
-            <th style="width: 15%;">له</th>
-            <th style="width: 15%;">عليه</th>
-            <th style="width: 20%;">الرصيد</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${movementRows}
-          <tr class="total-row">
-            <td colspan="2" class="cell text-center">المجموع</td>
-            <td class="cell text-center">${totalIncomingStr}</td>
-            <td class="cell text-center">${totalOutgoingStr}</td>
-            <td class="cell text-center">-</td>
-          </tr>
-          <tr class="final-row">
-            <td colspan="4" class="cell text-center"><strong>الرصيد النهائي</strong></td>
-            <td class="cell text-center"><strong>${finalBalanceDisplay}</strong></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    const summaryRows = `
+      <tr class="total-row">
+        <td colspan="2" class="cell text-center">المجموع</td>
+        <td class="cell text-center">${totalIncomingStr}</td>
+        <td class="cell text-center">${totalOutgoingStr}</td>
+        <td class="cell text-center">-</td>
+      </tr>
+      <tr class="final-row">
+        <td colspan="4" class="cell text-center"><strong>الرصيد النهائي</strong></td>
+        <td class="cell text-center"><strong>${finalBalanceDisplay}</strong></td>
+      </tr>
     `;
+
+    // Chunk rows into pages so each rendered table fits on a single PDF page
+    // with its own <thead>. This guarantees the header appears on every page
+    // (instead of relying on display: table-header-group, which is unreliable
+    // in expo-print on iOS).
+    const chunks: string[][] = [];
+    if (movementRowHtmls.length === 0) {
+      chunks.push([]);
+    } else {
+      const firstChunkSize = sectionIndex === 0 ? ROWS_FIRST_PAGE : ROWS_PER_PAGE;
+      chunks.push(movementRowHtmls.slice(0, firstChunkSize));
+      let offset = firstChunkSize;
+      while (offset < movementRowHtmls.length) {
+        chunks.push(movementRowHtmls.slice(offset, offset + ROWS_PER_PAGE));
+        offset += ROWS_PER_PAGE;
+      }
+    }
+
+    const totalPages = chunks.length;
+
+    const pagesHtml = chunks.map((rows, pageIndex) => {
+      const isLastPage = pageIndex === totalPages - 1;
+      const isFirstPage = pageIndex === 0;
+      const pageBreakClass = (sectionIndex > 0 && isFirstPage) || !isFirstPage
+        ? 'page-break-before'
+        : '';
+
+      const pageLabel = totalPages > 1
+        ? `<span class="page-indicator">صفحة ${pageIndex + 1} من ${totalPages}</span>`
+        : '';
+
+      return `
+        <div class="currency-page ${pageBreakClass}">
+          <div class="section-title">
+            <h2>كشف حساب ${customerName} - ${currencyName}</h2>
+            ${pageLabel}
+          </div>
+          <table>
+            ${tableHead}
+            <tbody>
+              ${rows.join('')}
+              ${isLastPage ? summaryRows : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    return pagesHtml;
   }).join('');
 
   const headerHTML = generatePDFHeaderHTML({
@@ -203,9 +250,12 @@ export function generateAccountStatementHTML(
       page-break-after: avoid;
     }
 
-    .currency-section {
-      margin-bottom: 40px;
-      page-break-inside: avoid;
+    .currency-page {
+      margin-bottom: 20px;
+    }
+
+    .page-break-before {
+      page-break-before: always;
     }
 
     .section-title {
@@ -214,6 +264,11 @@ export function generateAccountStatementHTML(
       margin-bottom: 0;
       text-align: center;
       background: #f9fafb;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .section-title h2 {
@@ -221,6 +276,14 @@ export function generateAccountStatementHTML(
       font-weight: bold;
       margin: 0;
       color: #111827;
+      flex: 1;
+      text-align: center;
+    }
+
+    .page-indicator {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: normal;
     }
 
     table {
@@ -229,6 +292,10 @@ export function generateAccountStatementHTML(
       border: 2px solid #000;
       border-top: none;
       background: #fff;
+    }
+
+    tr {
+      page-break-inside: avoid;
     }
 
     th {
@@ -303,12 +370,17 @@ export function generateAccountStatementHTML(
         page-break-after: avoid;
       }
 
-      .currency-section {
+      .section-title {
+        page-break-after: avoid;
         page-break-inside: avoid;
       }
 
-      table {
-        page-break-inside: avoid;
+      .page-break-before {
+        page-break-before: always !important;
+      }
+
+      tr {
+        page-break-inside: avoid !important;
       }
 
       th {

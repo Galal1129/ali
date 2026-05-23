@@ -177,17 +177,13 @@ export default function DebtSummaryScreen() {
         showPhones: true,
       });
 
-      const tableRows = filteredData
-        .flatMap((customer) =>
-          customer.balances.map((balance) => {
-            const amount = Number(balance.balance);
-            const totalIncoming = Number(balance.total_incoming);
-            const totalOutgoing = Number(balance.total_outgoing);
+      const allRows: string[] = filteredData.flatMap((customer) =>
+        customer.balances.map((balance) => {
+          const amount = Number(balance.balance);
+          const owedToMe = amount < 0 ? Math.abs(amount) : 0;
+          const owedByMe = amount > 0 ? amount : 0;
 
-            const owedToMe = amount < 0 ? Math.abs(amount) : 0;
-            const owedByMe = amount > 0 ? amount : 0;
-
-            return `
+          return `
               <tr>
                 <td style="padding: 8px; border: 1px solid #000; text-align: right;">${customer.customerName}</td>
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${getCurrencyName(balance.currency)}</td>
@@ -197,9 +193,62 @@ export default function DebtSummaryScreen() {
                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">${owedByMe > 0 ? owedByMe.toFixed(2) : ''}</td>
               </tr>
             `;
-          })
-        )
-        .join('');
+        })
+      );
+
+      // Chunk rows into per-page tables so each rendered table fits on one A4
+      // landscape page with its own thead. This guarantees the header repeats
+      // on every page (display: table-header-group is unreliable in expo-print
+      // on iOS).
+      const ROWS_FIRST_PAGE = 10;
+      const ROWS_PER_PAGE = 18;
+      const chunks: string[][] = [];
+      if (allRows.length === 0) {
+        chunks.push([]);
+      } else {
+        chunks.push(allRows.slice(0, ROWS_FIRST_PAGE));
+        let offset = ROWS_FIRST_PAGE;
+        while (offset < allRows.length) {
+          chunks.push(allRows.slice(offset, offset + ROWS_PER_PAGE));
+          offset += ROWS_PER_PAGE;
+        }
+      }
+
+      const tableHead = `
+              <thead>
+                <tr>
+                  <th rowspan="2">الحساب</th>
+                  <th rowspan="2">العملة</th>
+                  <th colspan="2">حركة الفترة</th>
+                  <th colspan="2">صافي الرصيد</th>
+                </tr>
+                <tr>
+                  <th>له</th>
+                  <th>عليه</th>
+                  <th>له</th>
+                  <th>عليه</th>
+                </tr>
+              </thead>
+      `;
+
+      const totalPages = chunks.length;
+      const tablesHtml = chunks.map((rows, pageIndex) => {
+        const breakClass = pageIndex > 0 ? 'page-break-before' : '';
+        const pageLabel = totalPages > 1
+          ? `<div class="page-indicator">صفحة ${pageIndex + 1} من ${totalPages}</div>`
+          : '';
+        return `
+          <div class="report-page ${breakClass}">
+            ${pageLabel}
+            <table>
+              ${tableHead}
+              <tbody>
+                ${rows.join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }).join('');
 
       const html = `
         <!DOCTYPE html>
@@ -217,11 +266,25 @@ export default function DebtSummaryScreen() {
                 margin: 0;
                 background: white;
               }
+              .report-page {
+                margin-top: 10px;
+              }
+              .page-break-before {
+                page-break-before: always;
+              }
+              .page-indicator {
+                text-align: left;
+                font-size: 11px;
+                color: #6B7280;
+                margin-bottom: 6px;
+              }
               table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-top: 20px;
                 font-size: 11px;
+              }
+              tr {
+                page-break-inside: avoid;
               }
               th {
                 background: #f3f4f6;
@@ -230,6 +293,8 @@ export default function DebtSummaryScreen() {
                 text-align: center;
                 font-weight: bold;
                 font-size: 12px;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
               td {
                 padding: 8px;
@@ -247,28 +312,10 @@ export default function DebtSummaryScreen() {
           <body>
             ${headerHTML}
 
-            <table>
-              <thead>
-                <tr>
-                  <th rowspan="2">الحساب</th>
-                  <th rowspan="2">العملة</th>
-                  <th colspan="2">حركة الفترة</th>
-                  <th colspan="2">صافي الرصيد</th>
-                </tr>
-                <tr>
-                  <th>له</th>
-                  <th>عليه</th>
-                  <th>له</th>
-                  <th>عليه</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${tableRows}
-              </tbody>
-            </table>
+            ${tablesHtml}
 
             <div class="footer">
-              ${new Date().toLocaleDateString('en-CA')} - 1/1
+              ${new Date().toLocaleDateString('en-CA')}
             </div>
           </body>
         </html>

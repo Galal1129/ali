@@ -1,13 +1,50 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { I18nManager } from 'react-native';
+import { Alert, I18nManager, Platform } from 'react-native';
+import * as Updates from 'expo-updates';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { DataRefreshProvider } from '@/contexts/DataRefreshContext';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
+
+function useAutoUpdate() {
+  useEffect(() => {
+    async function checkForUpdates() {
+      try {
+        if (__DEV__ || Platform.OS === 'web' || !Updates.isEnabled) {
+          return;
+        }
+
+        const update = await Updates.checkForUpdateAsync();
+
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+
+          Alert.alert(
+            'تحديث جديد',
+            'تم تحميل تحديث جديد للتطبيق. هل تريد إعادة تشغيل التطبيق الآن؟',
+            [
+              { text: 'لاحقًا', style: 'cancel' },
+              {
+                text: 'تحديث الآن',
+                onPress: async () => {
+                  await Updates.reloadAsync();
+                },
+              },
+            ]
+          );
+        }
+      } catch (error) {
+        console.log('Update check failed:', error);
+      }
+    }
+
+    checkForUpdates();
+  }, []);
+}
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -57,6 +94,7 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useFrameworkReady();
+  useAutoUpdate();
 
   return (
     <AuthProvider>

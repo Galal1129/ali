@@ -7,6 +7,12 @@ interface MovementWithBalance extends AccountMovement {
   runningBalance: number;
 }
 
+interface AccountStatementOptions {
+  periodLabel?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+}
+
 function getCurrencySymbol(code: string): string {
   const currency = CURRENCIES.find((c) => c.code === code);
   return currency?.symbol || code;
@@ -17,14 +23,39 @@ function getCurrencyName(code: string): string {
   return currency?.name || code;
 }
 
+function formatAmount(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(Number(amount) || 0);
+}
+
+function formatBalance(balance: number, currencyName: string): string {
+  if (balance > 0) {
+    return `${formatAmount(balance)} ${currencyName} (له)`;
+  }
+
+  if (balance < 0) {
+    return `${formatAmount(Math.abs(balance))} ${currencyName} (عليه)`;
+  }
+
+  return 'متساوي';
+}
+
 export function generateAccountStatementHTML(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  options: AccountStatementOptions = {}
 ): string {
   const allMovements = [...movements];
+  const startTime = options.startDate
+    ? new Date(options.startDate).getTime()
+    : null;
+  const endTime = options.endDate ? new Date(options.endDate).getTime() : null;
+  const showPreviousBalanceSummary = startTime !== null;
 
-  const filteredMovements = allMovements
+  const allMainMovements = allMovements
     .filter((m) => !(m as any).is_commission_movement)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
@@ -46,7 +77,36 @@ export function generateAccountStatementHTML(
     return baseAmount + commissionTotal;
   };
 
-  // Group movements by currency
+  const previousBalanceByCurrency: Record<string, number> = {};
+
+  if (startTime !== null) {
+    allMainMovements.forEach((movement) => {
+      const movementTime = new Date(movement.created_at).getTime();
+      if (movementTime >= startTime) return;
+
+      const combinedAmount = getCombinedAmount(movement);
+      previousBalanceByCurrency[movement.currency] =
+        (previousBalanceByCurrency[movement.currency] || 0) +
+        (movement.movement_type === 'incoming' ? combinedAmount : -combinedAmount);
+    });
+  }
+
+  const filteredMovements = allMainMovements.filter((movement) => {
+    const movementTime = new Date(movement.created_at).getTime();
+
+    if (startTime !== null && movementTime < startTime) {
+      return false;
+    }
+
+    if (endTime !== null && movementTime > endTime) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Group printed movements by currency. When a period is selected, also keep
+  // currencies that only have a previous balance so the PDF can still show the summary.
   const groupedByCurrency = filteredMovements.reduce((acc, movement) => {
     if (!acc[movement.currency]) {
       acc[movement.currency] = [];
@@ -55,6 +115,12 @@ export function generateAccountStatementHTML(
 
     return acc;
   }, {} as Record<string, AccountMovement[]>);
+
+  Object.entries(previousBalanceByCurrency).forEach(([currency, balance]) => {
+    if (balance !== 0 && !groupedByCurrency[currency]) {
+      groupedByCurrency[currency] = [];
+    }
+  });
 
   const reportDate = format(new Date(), 'EEEE، dd MMMM yyyy', { locale: ar });
 
@@ -80,7 +146,8 @@ export function generateAccountStatementHTML(
   // Generate sections for each currency
   const currencySections = Object.entries(groupedByCurrency).map(([curr, currMovements], sectionIndex) => {
     const movementsWithBalance: MovementWithBalance[] = [];
-    let runningBalance = 0;
+    const previousBalance = previousBalanceByCurrency[curr] || 0;
+    let runningBalance = previousBalance;
 
     currMovements.forEach((movement) => {
       const combinedAmount = getCombinedAmount(movement);
@@ -105,23 +172,19 @@ export function generateAccountStatementHTML(
       .filter(m => m.movement_type === 'incoming')
       .reduce((sum, m) => sum + getCombinedAmount(m), 0);
 
-    const finalBalance = totalIncoming - totalOutgoing;
+    const finalBalance = previousBalance + totalIncoming - totalOutgoing;
     const currencyName = getCurrencyName(curr);
 
     const movementRowHtmls = movementsWithBalance.map((movement) => {
-      const balanceDisplay = movement.runningBalance > 0
-        ? `${Math.round(movement.runningBalance).toLocaleString('en-US')} ${currencyName} (له)`
-        : movement.runningBalance < 0
-        ? `${Math.round(Math.abs(movement.runningBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
-        : '-';
+      const balanceDisplay = formatBalance(movement.runningBalance, currencyName);
 
       const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy');
       const combinedAmount = getCombinedAmount(movement);
       const incomingAmount = movement.movement_type === 'incoming'
-        ? Math.round(combinedAmount).toLocaleString('en-US')
+        ? formatAmount(combinedAmount)
         : '-';
       const outgoingAmount = movement.movement_type === 'outgoing'
-        ? Math.round(combinedAmount).toLocaleString('en-US')
+        ? formatAmount(combinedAmount)
         : '-';
 
       return `
@@ -135,14 +198,21 @@ export function generateAccountStatementHTML(
       `;
     });
 
-    const finalBalanceDisplay = finalBalance > 0
-      ? `${Math.round(finalBalance).toLocaleString('en-US')} ${currencyName} (له)`
-      : finalBalance < 0
-      ? `${Math.round(Math.abs(finalBalance)).toLocaleString('en-US')} ${currencyName} (عليه)`
-      : '-';
+    const finalBalanceDisplay = formatBalance(finalBalance, currencyName);
+    const previousBalanceDisplay = formatBalance(previousBalance, currencyName);
 
-    const totalIncomingStr = totalIncoming > 0 ? Math.round(totalIncoming).toLocaleString('en-US') : '-';
-    const totalOutgoingStr = totalOutgoing > 0 ? Math.round(totalOutgoing).toLocaleString('en-US') : '-';
+    const totalIncomingStr = totalIncoming > 0 ? formatAmount(totalIncoming) : '-';
+    const totalOutgoingStr = totalOutgoing > 0 ? formatAmount(totalOutgoing) : '-';
+
+    const previousBalanceRow = showPreviousBalanceSummary
+      ? `
+        <tr class="previous-balance-row">
+          <td colspan="5" class="cell text-center">
+            <strong>الرصيد السابق قبل الفترة:</strong> ${previousBalanceDisplay}
+          </td>
+        </tr>
+      `
+      : '';
 
     const summaryRows = `
       <tr class="total-row">
@@ -196,6 +266,7 @@ export function generateAccountStatementHTML(
           <table>
             ${tableHead}
             <tbody>
+              ${isFirstPage ? previousBalanceRow : ''}
               ${rows.join('')}
               ${isLastPage ? summaryRows : ''}
             </tbody>
@@ -248,6 +319,19 @@ export function generateAccountStatementHTML(
       margin-bottom: 25px;
       page-break-inside: avoid;
       page-break-after: avoid;
+    }
+
+    .report-period {
+      margin: 0 0 14px 0;
+      padding: 10px 14px;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      page-break-inside: avoid;
     }
 
     .currency-page {
@@ -325,6 +409,16 @@ export function generateAccountStatementHTML(
       min-height: 30px;
     }
 
+    .previous-balance-row {
+      background-color: #fef3c7;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .previous-balance-row td {
+      padding: 10px 8px;
+    }
+
     .total-row {
       background-color: #f3f4f6;
       font-weight: bold;
@@ -388,6 +482,11 @@ export function generateAccountStatementHTML(
         -webkit-print-color-adjust: exact !important;
       }
 
+      .previous-balance-row {
+        background-color: #fef3c7 !important;
+        -webkit-print-color-adjust: exact !important;
+      }
+
       .total-row {
         background-color: #f3f4f6 !important;
         -webkit-print-color-adjust: exact !important;
@@ -410,6 +509,8 @@ export function generateAccountStatementHTML(
     ${headerHTML}
   </div>
 
+  ${options.periodLabel ? `<div class="report-period">الفترة: ${options.periodLabel}</div>` : ''}
+
   ${currencySections}
 
   <div class="footer">
@@ -423,7 +524,8 @@ export function generateAccountStatementHTML(
 export function generateAccountStatementForAllCurrencies(
   customerName: string,
   movements: AccountMovement[],
-  logoDataUrl?: string
+  logoDataUrl?: string,
+  options: AccountStatementOptions = {}
 ): string {
-  return generateAccountStatementHTML(customerName, movements, logoDataUrl);
+  return generateAccountStatementHTML(customerName, movements, logoDataUrl, options);
 }

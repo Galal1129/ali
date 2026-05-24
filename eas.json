@@ -13,7 +13,7 @@
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote",
-        "gradleCommand": ":app:assembleRelease"
+        
       },
       "autoIncrement": true,
       "env": {

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { subDays, startOfDay, endOfDay } from 'date-fns';
 import { TotalBalanceByCurrency } from '@/types/database';
 
@@ -63,38 +64,51 @@ export class StatisticsService {
     const start = startOfDay(startDate).toISOString();
     const end = endOfDay(endDate).toISOString();
 
-    const [transactionsResult, movementsResult] = await Promise.all([
-      supabase
-        .from('transactions')
-        .select('amount_sent')
-        .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('account_movements')
-        .select('amount, commission, commission_currency')
-        .gte('created_at', start)
-        .lte('created_at', end),
-    ]);
+    try {
+      const [transactions, movements] = await Promise.all([
+        fetchAllRows<{ amount_sent: number }>(
+          'transactions',
+          'amount_sent',
+          [{ column: 'id', ascending: true }],
+          (query) => query.gte('created_at', start).lte('created_at', end)
+        ),
+        fetchAllRows<{ amount: number; commission: number | null; commission_currency: string | null }>(
+          'account_movements',
+          'amount, commission, commission_currency',
+          [{ column: 'id', ascending: true }],
+          (query) => query.gte('created_at', start).lte('created_at', end)
+        ),
+      ]);
 
-    const transactionAmount =
-      transactionsResult.data?.reduce((sum, t) => sum + Number(t.amount_sent), 0) || 0;
+      const transactionAmount = transactions.reduce(
+        (sum, t) => sum + Number(t.amount_sent),
+        0
+      );
 
-    const movementAmount =
-      movementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const movementAmount = movements.reduce((sum, m) => sum + Number(m.amount), 0);
 
-    const commissionAmount =
-      movementsResult.data?.reduce(
+      const commissionAmount = movements.reduce(
         (sum, m) => sum + (m.commission ? Number(m.commission) : 0),
         0
-      ) || 0;
+      );
 
-    return {
-      transactions: transactionsResult.data?.length || 0,
-      movements: movementsResult.data?.length || 0,
-      transactionAmount,
-      movementAmount,
-      commissionAmount,
-    };
+      return {
+        transactions: transactions.length,
+        movements: movements.length,
+        transactionAmount,
+        movementAmount,
+        commissionAmount,
+      };
+    } catch (error) {
+      console.error('Error fetching period stats:', error);
+      return {
+        transactions: 0,
+        movements: 0,
+        transactionAmount: 0,
+        movementAmount: 0,
+        commissionAmount: 0,
+      };
+    }
   }
 
   static async fetchTopCustomers(limit: number = 5): Promise<TopCustomer[]> {
@@ -124,13 +138,16 @@ export class StatisticsService {
   }
 
   static async fetchCommissionStats(): Promise<CommissionStats> {
-    const { data, error } = await supabase
-      .from('account_movements')
-      .select('commission, commission_currency')
-      .not('commission', 'is', null)
-      .gt('commission', 0);
+    let data: { commission: number | null; commission_currency: string | null }[];
 
-    if (error) {
+    try {
+      data = await fetchAllRows(
+        'account_movements',
+        'commission, commission_currency',
+        [{ column: 'id', ascending: true }],
+        (query) => query.not('commission', 'is', null).gt('commission', 0)
+      );
+    } catch (error) {
       console.error('Error fetching commission stats:', error);
       return {
         totalCommission: 0,
@@ -175,11 +192,18 @@ export class StatisticsService {
   }
 
   static async fetchDebtStats(): Promise<DebtStats> {
-    const { data: balances, error } = await supabase
-      .from('customer_balances_by_currency')
-      .select('*');
+    let balances: { balance: number; currency: string }[];
 
-    if (error) {
+    try {
+      balances = await fetchAllRows(
+        'customer_balances_by_currency',
+        'customer_id, currency, balance',
+        [
+          { column: 'customer_id', ascending: true },
+          { column: 'currency', ascending: true },
+        ]
+      );
+    } catch (error) {
       console.error('Error fetching debt stats:', error);
       return {
         totalOwedToUs: 0,
@@ -233,12 +257,21 @@ export class StatisticsService {
   }
 
   static async fetchCashFlowByCurrency(): Promise<CashFlowByCurrency[]> {
-    const { data: movements, error } = await supabase
-      .from('account_movements')
-      .select('amount, currency, movement_type, is_internal_transfer')
-      .or('is_internal_transfer.is.null,is_internal_transfer.eq.false');
+    let movements: {
+      amount: number;
+      currency: string;
+      movement_type: string;
+      is_internal_transfer: boolean | null;
+    }[];
 
-    if (error) {
+    try {
+      movements = await fetchAllRows(
+        'account_movements',
+        'amount, currency, movement_type, is_internal_transfer',
+        [{ column: 'id', ascending: true }],
+        (query) => query.or('is_internal_transfer.is.null,is_internal_transfer.eq.false')
+      );
+    } catch (error) {
       console.error('Error fetching cash flow:', error);
       return [];
     }
@@ -298,9 +331,19 @@ export class StatisticsService {
         debtStats,
         cashFlowByCurrency,
       ] = await Promise.all([
-        supabase.from('customers').select('id', { count: 'exact' }),
-        supabase.from('transactions').select('amount_sent'),
-        supabase.from('account_movements').select('amount'),
+        supabase.from('customers').select('id', { count: 'exact', head: true }),
+        fetchAllRows<{ amount_sent: number }>('transactions', 'amount_sent', [
+          { column: 'id', ascending: true },
+        ]).catch((error) => {
+          console.error('Error fetching transactions:', error);
+          return [] as { amount_sent: number }[];
+        }),
+        fetchAllRows<{ amount: number }>('account_movements', 'amount', [
+          { column: 'id', ascending: true },
+        ]).catch((error) => {
+          console.error('Error fetching movements:', error);
+          return [] as { amount: number }[];
+        }),
         supabase.from('total_balances_by_currency').select('*'),
         this.fetchPeriodStats(today, today),
         this.fetchPeriodStats(yesterday, yesterday),
@@ -315,23 +358,19 @@ export class StatisticsService {
       if (customersResult.error) {
         console.error('Error fetching customers count:', customersResult.error);
       }
-      if (allTransactionsResult.error) {
-        console.error('Error fetching transactions:', allTransactionsResult.error);
-      }
-      if (allMovementsResult.error) {
-        console.error('Error fetching movements:', allMovementsResult.error);
-      }
       if (currencyBalancesResult.error) {
         console.error('Error fetching currency balances:', currencyBalancesResult.error);
       }
 
-      const totalAmount =
-        allMovementsResult.data?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const totalAmount = allMovementsResult.reduce(
+        (sum, m) => sum + Number(m.amount),
+        0
+      );
 
       return {
         totalCustomers: customersResult.count || 0,
-        totalTransactions: allTransactionsResult.data?.length || 0,
-        totalMovements: allMovementsResult.data?.length || 0,
+        totalTransactions: allTransactionsResult.length,
+        totalMovements: allMovementsResult.length,
         totalAmount,
         totalDebts: debtStats.totalOwedToUs,
         totalWeOwe: debtStats.totalWeOwe,

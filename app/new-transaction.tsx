@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ArrowRight, Save, ArrowRightLeft, DollarSign } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { getExchangeRate } from '@/services/exchangeRateService';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { KeyboardAwareView } from '@/components/KeyboardAwareView';
@@ -59,14 +60,11 @@ export default function NewTransactionScreen() {
 
   const loadCustomers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (!error && data) {
-        setCustomers(data);
-      }
+      const data = await fetchAllRows<Customer>('customers', '*', [
+        { column: 'name', ascending: true },
+        { column: 'id', ascending: true },
+      ]);
+      setCustomers(data);
     } catch (error) {
       console.error('Error loading customers:', error);
     }

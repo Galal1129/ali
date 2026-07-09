@@ -12,7 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Store, User, Search, X } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { Customer } from '@/types/database';
 
 interface PartySelectorProps {
@@ -61,18 +61,13 @@ export default function PartySelector({
   const loadCustomers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name');
+      const data = await fetchAllRows<Customer>('customers', '*', [
+        { column: 'name', ascending: true },
+        { column: 'id', ascending: true },
+      ]);
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      console.log('Loaded customers:', data?.length || 0);
-      const filteredData = data?.filter(c => c.id !== excludeCustomerId) || [];
+      console.log('Loaded customers:', data.length);
+      const filteredData = data.filter(c => c.id !== excludeCustomerId);
       console.log('Filtered customers:', filteredData.length);
       setCustomers(filteredData);
       setFilteredCustomers(filteredData);

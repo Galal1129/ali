@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Plus, Search, TrendingUp } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { Customer, CustomerBalanceByCurrency, CURRENCIES } from '@/types/database';
 import { useDataRefresh } from '@/contexts/DataRefreshContext';
 
@@ -20,7 +21,7 @@ interface CustomerWithBalances extends Customer {
 }
 
 const ZERO_BALANCE_THRESHOLD = 0.000001;
-const BALANCES_PAGE_SIZE = 1000;
+const DISPLAY_PAGE_SIZE = 100;
 
 export default function CustomersScreen() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function CustomersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [displayCount, setDisplayCount] = useState(DISPLAY_PAGE_SIZE);
 
   useEffect(() => {
     loadCustomers();
@@ -46,53 +48,27 @@ export default function CustomersScreen() {
     filterCustomers();
   }, [searchQuery, customers]);
 
-  const fetchAllCustomerBalances = async (): Promise<CustomerBalanceByCurrency[]> => {
-    let from = 0;
-    const allBalances: CustomerBalanceByCurrency[] = [];
-
-    while (true) {
-      const { data, error } = await supabase
-        .from('customer_balances_by_currency')
-        .select('customer_id, customer_name, currency, total_incoming, total_outgoing, balance')
-        .order('customer_id', { ascending: true })
-        .order('currency', { ascending: true })
-        .range(from, from + BALANCES_PAGE_SIZE - 1);
-
-      if (error) {
-        console.error('Error loading customer balances:', error);
-        break;
-      }
-
-      const batch = (data || []) as CustomerBalanceByCurrency[];
-      allBalances.push(...batch);
-
-      if (batch.length < BALANCES_PAGE_SIZE) {
-        break;
-      }
-
-      from += BALANCES_PAGE_SIZE;
-    }
-
-    return allBalances;
-  };
-
   const loadCustomers = async () => {
     try {
-      const customersResult = await supabase
-        .from('customers_with_last_activity')
-        .select('*')
-        .order('is_profit_loss_account', { ascending: false })
-        .order('last_activity_date', { ascending: false });
-
-      if (customersResult.error) {
-        console.error('Error loading customers:', customersResult.error);
-        return;
-      }
-
-      const customersData = customersResult.data || [];
+      const customersData = await fetchAllRows<Customer>(
+        'customers_with_last_activity',
+        '*',
+        [
+          { column: 'is_profit_loss_account', ascending: false },
+          { column: 'last_activity_date', ascending: false },
+          { column: 'id', ascending: true },
+        ]
+      );
       const customerIds = new Set(customersData.map((customer) => customer.id));
       const balancesMap = new Map<string, CustomerBalanceByCurrency[]>();
-      const balancesData = await fetchAllCustomerBalances();
+      const balancesData = await fetchAllRows<CustomerBalanceByCurrency>(
+        'customer_balances_by_currency',
+        'customer_id, customer_name, currency, total_incoming, total_outgoing, balance',
+        [
+          { column: 'customer_id', ascending: true },
+          { column: 'currency', ascending: true },
+        ]
+      );
 
       balancesData.forEach((balance) => {
         if (!customerIds.has(balance.customer_id)) {
@@ -143,6 +119,12 @@ export default function CustomersScreen() {
     );
     setFilteredCustomers(filtered);
   };
+
+  const isSearching = searchQuery.trim().length > 0;
+  const visibleCustomers = isSearching
+    ? filteredCustomers
+    : filteredCustomers.slice(0, displayCount);
+  const remainingCount = filteredCustomers.length - visibleCustomers.length;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -383,7 +365,7 @@ export default function CustomersScreen() {
       </View>
 
       <FlatList
-        data={filteredCustomers}
+        data={visibleCustomers}
         renderItem={renderCustomer}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -394,6 +376,18 @@ export default function CustomersScreen() {
               {isLoading ? 'جاري التحميل...' : 'لا يوجد عملاء'}
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          remainingCount > 0 ? (
+            <TouchableOpacity
+              style={styles.showMoreButton}
+              onPress={() => setDisplayCount((count) => count + DISPLAY_PAGE_SIZE)}
+            >
+              <Text style={styles.showMoreText}>
+                عرض المزيد ({remainingCount} عميل متبقي)
+              </Text>
+            </TouchableOpacity>
+          ) : null
         }
       />
 
@@ -503,6 +497,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 64,
+  },
+  showMoreButton: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  showMoreText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4F46E5',
   },
   emptyText: {
     fontSize: 16,

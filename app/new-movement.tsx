@@ -21,6 +21,7 @@ import * as Print from 'expo-print';
 import * as FileSystem from 'expo-file-system/legacy';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { Customer, Currency, CURRENCIES } from '@/types/database';
 import { generateReceiptHTML, generateQRCodeData } from '@/utils/receiptGenerator';
 import { getReceiptLogoBase64 } from '@/utils/logoHelper';
@@ -127,14 +128,11 @@ export default function NewMovementScreen() {
 
   const loadCustomers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (!error && data) {
-        setCustomers(data);
-      }
+      const data = await fetchAllRows<Customer>('customers', '*', [
+        { column: 'name', ascending: true },
+        { column: 'id', ascending: true },
+      ]);
+      setCustomers(data);
     } catch (error) {
       console.error('Error loading customers:', error);
     }

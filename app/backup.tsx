@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowRight, Download, Upload, Database, Calendar } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 
 export default function BackupScreen() {
   const router = useRouter();
@@ -20,20 +20,20 @@ export default function BackupScreen() {
     setIsExporting(true);
     try {
       const [customers, transactions, debts, exchangeRates] = await Promise.all([
-        supabase.from('customers').select('*'),
-        supabase.from('transactions').select('*'),
-        supabase.from('debts').select('*'),
-        supabase.from('exchange_rates').select('*'),
+        fetchAllRows('customers'),
+        fetchAllRows('transactions'),
+        fetchAllRows('debts'),
+        fetchAllRows('exchange_rates'),
       ]);
 
       const backupData = {
         version: '1.0',
         timestamp: new Date().toISOString(),
         data: {
-          customers: customers.data || [],
-          transactions: transactions.data || [],
-          debts: debts.data || [],
-          exchange_rates: exchangeRates.data || [],
+          customers,
+          transactions,
+          debts,
+          exchange_rates: exchangeRates,
         },
       };
 

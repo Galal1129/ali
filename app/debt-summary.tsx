@@ -19,7 +19,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { fetchAllRows } from '@/lib/fetchAll';
 import { CustomerBalanceByCurrency, CURRENCIES, Currency } from '@/types/database';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -57,31 +57,33 @@ export default function DebtSummaryScreen() {
 
   const loadData = async () => {
     try {
-      const { data: balances, error } = await supabase
-        .from('customer_balances_by_currency')
-        .select('*')
-        .order('customer_name');
+      const balances = await fetchAllRows<CustomerBalanceByCurrency>(
+        'customer_balances_by_currency',
+        '*',
+        [
+          { column: 'customer_id', ascending: true },
+          { column: 'currency', ascending: true },
+        ]
+      );
 
-      if (!error && balances) {
-        const grouped = new Map<string, CustomerDebtSummary>();
+      const grouped = new Map<string, CustomerDebtSummary>();
 
-        balances.forEach((balance) => {
-          if (!grouped.has(balance.customer_id)) {
-            grouped.set(balance.customer_id, {
-              customerId: balance.customer_id,
-              customerName: balance.customer_name,
-              balances: [],
-              totalBalanceUSD: 0,
-            });
-          }
+      balances.forEach((balance) => {
+        if (!grouped.has(balance.customer_id)) {
+          grouped.set(balance.customer_id, {
+            customerId: balance.customer_id,
+            customerName: balance.customer_name,
+            balances: [],
+            totalBalanceUSD: 0,
+          });
+        }
 
-          const customer = grouped.get(balance.customer_id)!;
-          customer.balances.push(balance);
-          customer.totalBalanceUSD += Number(balance.balance);
-        });
+        const customer = grouped.get(balance.customer_id)!;
+        customer.balances.push(balance);
+        customer.totalBalanceUSD += Number(balance.balance);
+      });
 
-        setData(Array.from(grouped.values()));
-      }
+      setData(Array.from(grouped.values()));
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
